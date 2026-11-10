@@ -40,16 +40,16 @@ a{color:var(--accent)}
 .small{font-size:12px}
 
 /* Header */
-header{display:flex;align-items:center;gap:18px;padding:0 18px;height:56px;border-bottom:1px solid var(--line);background:var(--paper);flex:none}
+header{display:flex;align-items:center;gap:14px;padding:0 18px;height:56px;border-bottom:1px solid var(--line);background:var(--paper);flex:none}
 .brand{color:inherit;text-decoration:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:19px;font-weight:600;white-space:nowrap}
 .brand svg{flex:none}
 nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-nav a{padding:7px 12px;border-radius:8px;text-decoration:none;color:var(--ink2);font-weight:500;white-space:nowrap}
+nav a{padding:7px 10px;border-radius:8px;text-decoration:none;color:var(--ink2);font-weight:500;white-space:nowrap}
 nav a:hover{background:var(--paper2)}
 nav a.on{background:var(--ink);color:var(--paper)}
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .search{position:relative}
-.search input{width:220px;padding:7px 10px 7px 30px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.search input{width:180px;padding:7px 10px 7px 30px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
 .search svg{position:absolute;left:9px;top:9px;color:var(--ink3)}
 .search .res{position:absolute;top:38px;right:0;width:300px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);z-index:50;max-height:360px;overflow:auto;display:none}
 .search .res.open{display:block}
@@ -233,6 +233,22 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .progress{height:6px;background:var(--paper2);border-radius:4px;overflow:hidden;margin-top:10px}
 .progress i{display:block;height:100%;background:var(--accent);width:0}
 
+/* View selector */
+.viewsel{position:relative}
+.viewbtn{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;cursor:pointer;color:var(--ink2);font-size:13px;max-width:240px;white-space:nowrap}
+.viewbtn .vname{overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.viewbtn:hover{background:var(--paper2);color:var(--ink)}
+.viewbtn.active{border-color:var(--accent);color:var(--accent);background:var(--accent2)}
+.pop{position:absolute;top:40px;right:0;width:290px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:60;padding:6px;display:none}
+.pop.open{display:block}
+.vp-h{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:600;padding:8px 10px 4px}
+.vp-i{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.vp-i span{font-size:12px;color:var(--ink3)}
+.vp-i:hover{background:var(--paper2)}
+.vp-i.on{background:var(--accent2)}.vp-i.on b:before{content:'✓ ';color:var(--accent)}
+.vp-sep{height:1px;background:var(--line);margin:6px 4px}
+.vp-a{padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--accent);font-weight:500}
+.vp-a:hover{background:var(--paper2)}
 /* Theme toggle, demo banner */
 .themebtn{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2);flex:none}
 .themebtn:hover{color:var(--ink);background:var(--paper2)}
@@ -312,6 +328,7 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .rel-col .arrow{width:2px;height:18px;background:var(--line2)}
 .rel-top{display:flex;gap:8px;justify-content:center;margin-bottom:0}
 
+@media (max-width:1280px){ .search input{width:130px} .brand span{display:none} }
 @media (max-width:900px){
   .hero{grid-template-columns:1fr}.hero-art{display:none}.hero h1{font-size:32px}
   .pc-grid{grid-template-columns:1fr}.pc-head{grid-template-columns:1fr;text-align:center;justify-items:center}.pc-photo{width:110px;height:110px}
@@ -321,6 +338,8 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
   .brand span{display:none}
   .search input{width:130px}
   .status span{display:none}
+  .search input{width:110px}
+  .viewbtn .vname{max-width:70px}.viewbtn .tag{display:none}
   #panel{position:absolute;inset:0;width:auto;z-index:30;border-left:none}
   .view-pad{padding:16px}
   .map-side{width:auto;right:14px;max-height:40%}
@@ -346,6 +365,7 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
     <a href="#import" data-v="import">Import/export</a>
   </nav>
   <div class="hdr-right">
+    <div class="viewsel"><button class="viewbtn" id="viewBtn" title="Välj vad som ska synas"></button><div class="pop" id="viewPop"></div></div>
     <div class="search">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg>
       <input id="q" placeholder="Sök person…" autocomplete="off">
@@ -355,7 +375,7 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
     <button class="themebtn" id="themeBtn" title="Växla mörkt/ljust läge" aria-label="Växla mörkt/ljust läge"></button>
   </div>
 </header>
-<div id="demoBar"><span>👑 Du tittar på exemplet <b>Vasaätten</b>. När du avslutar tas exemplet bort – egna personer du lagt till ligger kvar.</span><span style="flex:1"></span><button class="btn" onclick="location.hash='start'">Till startsidan</button><button class="btn primary" onclick="exitDemo()">Avsluta exemplet</button></div>
+<div id="demoBar"><span>👑 Du tittar på exemplet <b>Vasaätten</b>. När du avslutar tas exemplet bort – egna personer du lagt till ligger kvar.</span><span style="flex:1"></span><button class="btn" onclick="location.hash='start'">Till startsidan</button><button class="btn primary" id="demoExitBtn" onclick="exitDemo()">Avsluta exemplet</button></div>
 <main>
   <section id="view"></section>
   <aside id="panel"></aside>
@@ -377,7 +397,7 @@ function dateKey(s){
   return +m[1]+((+(m[2]||6))-1)/12+((+(m[3]||15))-1)/372;
 }
 const NOW_Y=new Date().getFullYear();
-function toast(msg,ms=2600){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
+function toast(msg,ms=2600){document.querySelectorAll('.toast').forEach(o=>o.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
 
 const EVENT_TYPES=['Dop','Konfirmation','Vigsel','Kröning','Skilsmässa','Flytt','Bosatt','Yrke','Militärtjänst','Utvandring','Invandring','Begravning','Bouppteckning','Fotografi','Övrigt'];
 const SOURCE_TYPES=['Husförhörslängd','Församlingsbok','Födelse- och dopbok','Lysnings- och vigselbok','Död- och begravningsbok','Flyttlängd','Bouppteckning','Folkräkning','Mantalslängd','Generalmönsterrulla','Emigrantregister','Passagerarlista','Domstolsprotokoll','Fotografi','Brev','Muntlig uppgift','Webbplats','Övrigt'];
@@ -402,15 +422,41 @@ const HIST=[
 ];
 
 /* ============ State ============ */
-const S={persons:{},places:{},sources:{}};
-const KIND={person:'persons',place:'places',source:'sources'};
+const ALL={persons:{},places:{},sources:{},views:{}};
+const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
+const KIND={person:'persons',place:'places',source:'sources',view:'views'};
 const ui={view:'trad',focus:null,sel:null,ancGen:3,descGen:2,plFilter:'alla',plSort:'namn',plQuery:'',
-  tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null};
-try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f;}catch(e){}
+  tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
+try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
+let HIDDEN=new Set();
+const activeView=()=>(ui.viewId&&ALL.views[ui.viewId])||null;
+function applyView(){
+  const v=activeView(); HIDDEN=v?computeHidden(v):new Set();
+  const o={}; for(const id in ALL.persons) if(!HIDDEN.has(id)) o[id]=ALL.persons[id];
+  S.persons=o; S.places=ALL.places; S.sources=ALL.sources; S.views=ALL.views;
+}
+function withAll(fn){const saved=S.persons; S.persons=ALL.persons; try{return fn();} finally{S.persons=saved;}}
+function computeHidden(v){
+  const H=new Set(), A=ALL.persons, ch={}, spx={};
+  for(const p of Object.values(A)){ for(const k of ['fatherId','motherId']) if(p[k]) (ch[p[k]]=ch[p[k]]||[]).push(p.id);
+    for(const s of p.spouseIds||[]){(spx[p.id]=spx[p.id]||new Set()).add(s); (spx[s]=spx[s]||new Set()).add(p.id);} }
+  const anc=id=>{const out=new Set(), st=[id]; while(st.length){const x=A[st.pop()]; if(!x) continue; for(const k of ['fatherId','motherId']) if(x[k]&&!out.has(x[k])){out.add(x[k]); st.push(x[k]);}} return out;};
+  const desc=id=>{const out=new Set(), st=[id]; while(st.length){for(const c of ch[st.pop()]||[]) if(!out.has(c)){out.add(c); st.push(c);}} return out;};
+  for(const id of v.hideUp||[]){const keep=desc(id); keep.add(id); for(const a of anc(id)){H.add(a); for(const d of desc(a)) if(!keep.has(d)) H.add(d);}}
+  for(const id of v.hideDown||[]) for(const d of desc(id)) H.add(d);
+  for(const id of v.hide||[]) H.add(id);
+  // people only connected through hidden people (e.g. an aunt's husband) are hidden too
+  for(let pass=0;pass<2;pass++) for(const p of Object.values(A)){ if(H.has(p.id)) continue;
+    const links=new Set([p.fatherId,p.motherId,...(ch[p.id]||[]),...(spx[p.id]||[])].filter(x=>x&&A[x]));
+    for(const c of ch[p.id]||[]){const cc=A[c]; const o=cc&&(cc.fatherId===p.id?cc.motherId:cc.fatherId); if(o&&A[o]) links.add(o);}
+    if(links.size&&[...links].every(x=>H.has(x))) H.add(p.id); }
+  return H;
+}
+function viewCounts(v){return computeHidden(v).size;}
 
 /* ============ Store ============ */
 const Store={
-  mode:'loading',col:null,canEdit:true,assets:null,downloads:null,chains:{},loaded:false,
+  mode:'loading',col:null,canEdit:true,isAdmin:true,myId:null,user:null,assets:null,downloads:null,chains:{},loaded:false,
   async init(){
     let db=null,user=null;
     if(window.claude && typeof window.claude.use==='function'){
@@ -418,11 +464,15 @@ const Store={
       [db,user,this.assets,this.downloads]=await Promise.all([get('db'),get('user'),get('assets'),get('downloads')]);
     }
     if(db){
-      this.mode='db'; this.col=db.collection('tree');
-      if(user){try{const c=await user.canEdit(); if(c===false) this.canEdit=false;}catch(e){}}
+      this.mode='db'; this.col=db.collection('tree'); this.user=user;
+      if(user){
+        try{const w=await user.can('data.write'); if(w===false) this.canEdit=false;}catch(e){}
+        try{this.isAdmin=!!(await user.canEdit());}catch(e){this.isAdmin=false;}
+        try{this.myId=await user.id();}catch(e){}
+      } else this.isAdmin=false;
       this.subscribe();
     }else{
-      this.mode='local'; this.loadLocal(); this.loaded=true;
+      this.mode='local'; this.loadLocal(); this.loaded=true; applyView();
       setStatus('warn','Sparas bara i den här webbläsaren');
       renderAll();
     }
@@ -431,18 +481,18 @@ const Store={
     setStatus('', 'Hämtar…');
     let timer=setTimeout(()=>setStatus('warn','Databasen svarar inte ännu'),10000);
     this.col.onSnapshot(snap=>{
-      if(!snap.metadata.fromCache){clearTimeout(timer); setStatus('ok','Sparat i molnet');}
-      S.persons={};S.places={};S.sources={};
-      for(const d of snap.docs){const o=d.data(); if(o&&KIND[o.kind]) S[KIND[o.kind]][d.id]=o;}
-      this.loaded=true; renderAll();
+      if(!snap.metadata.fromCache){clearTimeout(timer); setStatus('ok',this.canEdit?'Delas & sparas i molnet':'Endast läsning');}
+      ALL.persons={};ALL.places={};ALL.sources={};ALL.views={};
+      for(const d of snap.docs){const o=d.data(); if(o&&KIND[o.kind]) ALL[KIND[o.kind]][d.id]=o;}
+      this.loaded=true; applyView(); renderAll();
     },err=>{clearTimeout(timer); setStatus('err','Kunde inte läsa data ('+err.code+')'); this.loaded=true; renderAll();});
   },
   loadLocal(){
-    try{const raw=localStorage.getItem('slaktarkivet-v1'); if(raw){const o=JSON.parse(raw); Object.assign(S,{persons:o.persons||{},places:o.places||{},sources:o.sources||{}});}}catch(e){}
+    try{const raw=localStorage.getItem('slaktarkivet-v1'); if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
   },
   saveLocal(){
     clearTimeout(this._lt);
-    this._lt=setTimeout(()=>{try{localStorage.setItem('slaktarkivet-v1',JSON.stringify(S));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
+    this._lt=setTimeout(()=>{try{localStorage.setItem('slaktarkivet-v1',JSON.stringify(ALL));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
   },
   async write(id,fn){
     const prev=this.chains[id]||Promise.resolve();
@@ -457,34 +507,35 @@ const Store={
       }
     }
   },
+  stamp(o){o.updatedAt=new Date().toISOString(); if(this.myId) o.updatedBy=this.myId; return o;},
   put(obj,{silent}={}){
-    obj=clone(obj); obj.updatedAt=new Date().toISOString();
-    S[KIND[obj.kind]][obj.id]=obj;
+    obj=this.stamp(clone(obj));
+    ALL[KIND[obj.kind]][obj.id]=obj; applyView();
     if(!silent) renderAll();
     if(this.mode==='db'){
       return this.write(obj.id,()=>this.retry(()=>this.col.doc(obj.id).set(obj))).catch(e=>{
         if(e&&e.code==='quota_exceeded') toast('Databasen är full – ta bort något först.');
-        else if(e&&e.code==='invalid_argument') toast('Du har inte behörighet att ändra (eller posten är för stor).');
+        else if(e&&e.code==='invalid_argument'){toast('Du har inte behörighet att ändra i det här trädet.',5000); this.canEdit=false; renderAll();}
         else toast('Kunde inte spara: '+(e&&e.code||e));
       });
     } else {this.saveLocal(); return Promise.resolve();}
   },
   del(kind,id,{silent}={}){
-    delete S[KIND[kind]][id];
+    delete ALL[KIND[kind]][id]; applyView();
     if(!silent) renderAll();
     if(this.mode==='db') return this.write(id,()=>this.retry(()=>this.col.doc(id).delete())).catch(e=>toast('Kunde inte ta bort: '+(e&&e.code||e)));
     this.saveLocal(); return Promise.resolve();
   },
   async putMany(objs,onProgress){
     let done=0; const queue=objs.slice();
-    if(this.mode!=='db'){for(const o of queue){o.updatedAt=new Date().toISOString(); S[KIND[o.kind]][o.id]=clone(o);} this.saveLocal(); onProgress&&onProgress(1); renderAll(); return;}
-    for(const o of queue){o.updatedAt=new Date().toISOString(); S[KIND[o.kind]][o.id]=clone(o);}
+    for(const o of queue){this.stamp(o); ALL[KIND[o.kind]][o.id]=clone(o);} applyView();
+    if(this.mode!=='db'){this.saveLocal(); onProgress&&onProgress(1); renderAll(); return;}
     renderAll();
     const worker=async()=>{while(queue.length){const o=queue.shift(); await this.write(o.id,()=>this.retry(()=>this.col.doc(o.id).set(clone(o)))).catch(e=>{console.warn(e)}); done++; onProgress&&onProgress(done/objs.length);}};
     await Promise.all([worker(),worker(),worker()]);
   }
 };
-function setStatus(cls,txt){const s=$('#status'); s.className='status '+cls; s.querySelector('span').textContent=txt; s.title=txt;}
+function setStatus(cls,txt){const s=$('#status'); s.className='status '+cls; const short={'Sparas bara i den här webbläsaren':'Lokalt','Delas & sparas i molnet':'Delat','Endast läsning':'Läsläge','Hämtar…':'Hämtar…','Databasen svarar inte ännu':'Väntar…'}[txt]; s.querySelector('span').textContent=short||txt; s.title=txt;}
 
 /* ============ Domain helpers ============ */
 const P=id=>S.persons[id];
@@ -500,7 +551,7 @@ const isImg=m=>/^image\//.test(m&&m.contentType||'');
 function avatarUrl(p){const imgs=(p.media||[]).filter(isImg); const m=imgs.find(m=>m.profile)||imgs[0]; return m?m.url:null;}
 const homePerson=()=>Object.values(S.persons).find(p=>p.home);
 function goHome(){const h=homePerson(); if(h) setFocus(h.id); else {const first=Object.values(S.persons).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''))[0]; if(first) setFocus(first.id);} ui.sel=null; ui.treeKey=null; ui.plQuery=''; if(location.hash!=='#trad') location.hash='trad'; else renderAll(true); window.scrollTo(0,0);}
-async function setHome(id){for(const p of Object.values(S.persons)) if(p.home&&p.id!==id){const q=clone(p); delete q.home; await Store.put(q,{silent:true});} const q=clone(P(id)); q.home=true; await Store.put(q); toast('⌂ '+fullName(q)+' är nu startperson – loggan tar dig hit.');}
+async function setHome(id){for(const p of Object.values(ALL.persons)) if(p.home&&p.id!==id){const q=clone(p); delete q.home; await Store.put(q,{silent:true});} const q=clone(P(id)); q.home=true; await Store.put(q); toast('⌂ '+fullName(q)+' är nu startperson – loggan tar dig hit.');}
 function ancestorsOf(id,max=50){const out=new Set();const walk=(i,d)=>{const p=P(i);if(!p||d>max)return;for(const k of ['fatherId','motherId']){if(p[k]&&!out.has(p[k])){out.add(p[k]);walk(p[k],d+1);}}};walk(id,0);return out;}
 function descendantsOf(id){const out=new Set();const walk=i=>{for(const c of children(i)){if(!out.has(c.id)){out.add(c.id);walk(c.id);}}};walk(id);return out;}
 function scopeSet(scope){
@@ -523,25 +574,27 @@ function ensurePlace(name){
   if(ex) return {id:ex.id,created:null};
   const pl={kind:'place',id:uid('pl'),name}; S.places[pl.id]=pl; return {id:pl.id,created:pl};
 }
-const genitive=n=>/[sxz]$/i.test(n)?n:n+'s';
+const genitive=n=>/\s[IVXLC]+$|[0-9A-ZÅÄÖ]$/.test(n)?n+':s':/[sxz]$/i.test(n)?n:n+'s';
 function ageAt(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(b&&d) return d-b; return null;}
 function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.replace(/\s/g,'')+')':'');}
 
 /* ============ Router ============ */
 const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
 const NAVMAP={personkort:'personer',dubbletter:'personer'};
-function route(){const h=location.hash.slice(1); ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
+function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
 window.addEventListener('hashchange',route);
 let lastView=null;
 function renderAll(force){
   if(!Store.loaded){ $('#view').innerHTML='<div class="empty"><p class="muted">Laddar släktarkivet…</p></div>'; return; }
+  if(ui.pendingView){const pv=Object.values(ALL.views).find(x=>x.slug===ui.pendingView); ui.pendingView=null; if(pv){ui.viewId=pv.id; try{localStorage.setItem('sa-viewid',pv.id);}catch(e){} applyView(); ui.treeKey=null; setTimeout(()=>toast('Visar vyn '+pv.name),300);}}
+  if(ui.viewId&&!ALL.views[ui.viewId]){ui.viewId=null; applyView();}
   if(ui.focus&&!P(ui.focus)) ui.focus=null;
   if(!ui.focus){const h=homePerson(); if(h) ui.focus=h.id;}
   if(!ui.focus){const first=Object.values(S.persons).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''))[0]; if(first) ui.focus=first.id;}
   if(ui.sel&&ui.sel.type==='person'&&!P(ui.sel.id)) ui.sel=null;
   if(ui.sel&&ui.sel.type==='place'&&!S.places[ui.sel.id]) ui.sel=null;
   if(ui.sel&&ui.sel.type==='source'&&!S.sources[ui.sel.id]) ui.sel=null;
-  renderPanel(); updateDemoBar();
+  renderPanel(); updateDemoBar(); updateViewBtn();
   VIEWS[ui.view](force||lastView!==ui.view); lastView=ui.view;
 }
 function setFocus(id){ui.focus=id; try{localStorage.setItem('sa-focus',id)}catch(e){} }
@@ -557,7 +610,7 @@ function emptyState(){
     <div class="acts">
       ${Store.canEdit?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button>
       <a class="btn" href="#import">Importera från Excel</a>
-      <button class="btn" onclick="loadDemo()">Visa Vasaätten som exempel</button>`:'<p class="muted">Arkivet är tomt.</p>'}
+      ${Store.isAdmin?'<button class="btn" onclick="loadDemo()">Visa Vasaätten som exempel</button>':''}`:'<p class="muted">Arkivet är tomt.</p>'}
     </div></div>`;
 }
 
@@ -591,7 +644,7 @@ function renderTree(fresh){
   const svg=d3.select('#treeSvg'), g=svg.select('g.vp');
   const nodes=[],links=[];
   // ancestors
-  const anc=(p,depth)=>{const n={p,children:[]}; if(depth<ui.ancGen){for(const rel of ['father','mother']){const q=P(p[rel+'Id']); if(q) n.children.push(anc(q,depth+1)); else if(Store.canEdit) n.children.push({ghost:rel,of:p.id,children:[]});}} return n;};
+  const anc=(p,depth)=>{const n={p,children:[]}; if(depth<ui.ancGen){for(const rel of ['father','mother']){const q=P(p[rel+'Id']); if(q) n.children.push(anc(q,depth+1)); else if(Store.canEdit&&!p[rel+'Id']) n.children.push({ghost:rel,of:p.id,children:[]});}} return n;};
   const aRoot=d3.hierarchy(anc(F,0));
   d3.tree().nodeSize([CW+18,CH+56]).separation((a,b)=>a.parent===b.parent?1:1.12)(aRoot);
   aRoot.each(n=>{n.y=-n.depth*(CH+56); if(n.depth>0){nodes.push(n); links.push({type:'anc',s:n.parent,t:n});}});
@@ -740,17 +793,19 @@ function personPanel(p){
       <button class="btn sm" data-act="card">Personkort</button>
       <button class="btn sm" data-act="focus">Visa i trädet</button>
       <button class="btn sm" data-act="rel">Hur är vi släkt?</button>
+      ${ed?'<button class="btn sm" data-act="hide" title="Dölj personen eller en hel gren i en vy">Dölj i vyn…</button>':''}
       ${ed?`<button class="btn sm ${p.home?'primary':''}" data-act="home" title="Loggan uppe till vänster tar dig till startpersonen">${p.home?'⌂ Startperson':'Gör till startperson'}</button>`:''}
       ${ed?`<button class="btn sm" data-act="edit">Redigera</button><button class="btn sm ghost danger" data-act="delp">Ta bort</button>`:''}
     </div></div>
+  ${p.updatedBy&&Store.user?`<div class="sec small muted" style="padding:8px 20px">Senast ändrad ${esc(fmtDate((p.updatedAt||'').slice(0,10)))} av <span data-uid="${esc(p.updatedBy)}">…</span></div>`:''}
   <div class="sec"><h4>Fakta</h4><dl class="facts">
     <dt>Född</dt><dd>${esc(p.birthDate||'–')}${p.birthPlace?` <a href="#" data-place="${p.birthPlace}">${esc(placeName(p.birthPlace))}</a>`:''}</dd>
     <dt>Död</dt><dd>${esc(p.deathDate||'–')}${p.deathPlace?` <a href="#" data-place="${p.deathPlace}">${esc(placeName(p.deathPlace))}</a>`:''}</dd>
     <dt>Kön</dt><dd>${p.sex==='M'?'Man':p.sex==='K'?'Kvinna':'Okänt'}</dd>
   </dl></div>
   <div class="sec"><h4>Familj</h4>
-    ${father?relRow('Far',father,ed?`<button class="iconbtn" title="Koppla bort" data-unlink="fatherId">×</button>`:''):ed?`<div class="rel"><span class="lbl">Far</span><button class="btn sm ghost" data-add="father">+ Lägg till far</button></div>`:''}
-    ${mother?relRow('Mor',mother,ed?`<button class="iconbtn" title="Koppla bort" data-unlink="motherId">×</button>`:''):ed?`<div class="rel"><span class="lbl">Mor</span><button class="btn sm ghost" data-add="mother">+ Lägg till mor</button></div>`:''}
+    ${father?relRow('Far',father,ed?`<button class="iconbtn" title="Koppla bort" data-unlink="fatherId">×</button>`:''):p.fatherId?`<div class="rel"><span class="lbl">Far</span><span class="muted small">Dold i den här vyn</span></div>`:ed?`<div class="rel"><span class="lbl">Far</span><button class="btn sm ghost" data-add="father">+ Lägg till far</button></div>`:''}
+    ${mother?relRow('Mor',mother,ed?`<button class="iconbtn" title="Koppla bort" data-unlink="motherId">×</button>`:''):p.motherId?`<div class="rel"><span class="lbl">Mor</span><span class="muted small">Dold i den här vyn</span></div>`:ed?`<div class="rel"><span class="lbl">Mor</span><button class="btn sm ghost" data-add="mother">+ Lägg till mor</button></div>`:''}
     ${parts.map(sp=>relRow('Partner',sp,ed&&(p.spouseIds||[]).includes(sp.id)?`<button class="iconbtn" title="Koppla bort" data-unspouse="${sp.id}">×</button>`:'')).join('')}
     ${kids.map(c=>relRow('Barn',c)).join('')}
     ${sibs.map(s=>relRow('Syskon',s)).join('')}
@@ -785,6 +840,7 @@ function bindPanel(){
   pn.querySelectorAll('[data-src]').forEach(el=>el.onclick=e=>{e.preventDefault();select('source',el.dataset.src);});
   if(!ui.sel) return;
   if(ui.sel.type==='person') bindPersonPanel(P(ui.sel.id));
+  fillNames(pn);
   if(ui.sel.type==='place') bindPlacePanel(S.places[ui.sel.id]);
   if(ui.sel.type==='source') bindSourcePanel(S.sources[ui.sel.id]);
   bindMedia();
@@ -796,6 +852,7 @@ function bindPersonPanel(p){
     if(act==='focus'){setFocus(p.id);ui.treeKey=null; if(ui.view!=='trad') location.hash='trad'; else renderAll();}
     if(act==='edit') openPersonModal(p);
     if(act==='card') openCard(p.id);
+    if(act==='hide') hideModal(p);
     if(act==='rel'){ui.relB=p.id; if(!ui.relA||ui.relA===p.id) ui.relA=(homePerson()&&homePerson().id!==p.id)?homePerson().id:(ui.focus!==p.id?ui.focus:null); location.hash='slaktskap';}
     if(act==='home'&&!p.home) setHome(p.id);
     if(act==='delp') confirmBox(`Ta bort ${fullName(p)}?`,'Personen tas bort och kopplingar till familjemedlemmar lossas. Det går inte att ångra.','Ta bort',()=>deletePerson(p.id));
@@ -897,7 +954,7 @@ function openLightbox(o,i){
   }
 }
 async function deletePerson(id){
-  const others=Object.values(S.persons).filter(x=>x.id!==id&&(x.fatherId===id||x.motherId===id||(x.spouseIds||[]).includes(id)||(x.events||[]).some(e=>e.withId===id)));
+  const others=Object.values(ALL.persons).filter(x=>x.id!==id&&(x.fatherId===id||x.motherId===id||(x.spouseIds||[]).includes(id)||(x.events||[]).some(e=>e.withId===id)));
   for(const o of others){const q=clone(o); if(q.fatherId===id) q.fatherId=''; if(q.motherId===id) q.motherId=''; q.spouseIds=(q.spouseIds||[]).filter(x=>x!==id); (q.events||[]).forEach(e=>{if(e.withId===id) e.withId='';}); Store.put(q,{silent:true});}
   if(ui.focus===id) ui.focus=null;
   ui.sel=null; Store.del('person',id);
@@ -938,8 +995,8 @@ function openPersonModal(p,ctx){
     <div class="row2"><label class="f"><span>Död (datum)</span><input class="t" id="mDD" value="${esc(p.deathDate||'')}"></label>
     <label class="f"><span>Dödsort</span><input class="t" id="mDP" list="dlPlaces" value="${esc(placeName(p.deathPlace))}"></label></div>
     ${placeOptions()}
-    ${ctx.rel==='father'||ctx.rel==='mother'?'':`<div class="row2"><label class="f"><span>Far</span><input class="t" id="mF" list="dlPersons2" value="${pl(p.fatherId)}" placeholder="Sök befintlig person"></label>
-    <label class="f"><span>Mor</span><input class="t" id="mM" list="dlPersons2" value="${pl(p.motherId)}" placeholder="Sök befintlig person"></label></div>
+    ${ctx.rel==='father'||ctx.rel==='mother'?'':`<div class="row2"><label class="f"><span>Far</span><input class="t" id="mF" list="dlPersons2" value="${pl(p.fatherId)}" placeholder="${p.fatherId&&!P(p.fatherId)?'Dold i den här vyn – lämna tomt':'Sök befintlig person'}"></label>
+    <label class="f"><span>Mor</span><input class="t" id="mM" list="dlPersons2" value="${pl(p.motherId)}" placeholder="${p.motherId&&!P(p.motherId)?'Dold i den här vyn – lämna tomt':'Sök befintlig person'}"></label></div>
     <datalist id="dlPersons2">${Object.values(S.persons).filter(x=>x.id!==p.id).map(x=>`<option value="${esc(personLabel(x))}">`).join('')}</datalist>`}
     <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>${isNew?'Lägg till':'Spara'}</button></div>`,
   (ov,close)=>{
@@ -957,7 +1014,7 @@ function openPersonModal(p,ctx){
         p.birthPlace=bp.id; p.deathPlace=dp.id;
         if(q('#mF')){const fv=q('#mF').value.trim(),mv=q('#mM').value.trim(); const f=personByLabel(fv),m=personByLabel(mv);
           if(fv&&!f){toast('Hittade inte fadern i listan.');return;} if(mv&&!m){toast('Hittade inte modern i listan.');return;}
-          p.fatherId=f?f.id:''; p.motherId=m?m.id:'';}
+          p.fatherId=f?f.id:(!fv&&p.fatherId&&!P(p.fatherId)?p.fatherId:''); p.motherId=m?m.id:(!mv&&p.motherId&&!P(p.motherId)?p.motherId:'');}
         if(isNew) p.createdAt=new Date().toISOString();
         target=p;
       }
@@ -1029,7 +1086,7 @@ function placeModal(pl){
   });
 }
 function replacePlace(from,to){
-  for(const p of Object.values(S.persons)){
+  for(const p of Object.values(ALL.persons)){
     let ch=false; const q=clone(p);
     if(q.birthPlace===from){q.birthPlace=to;ch=true;} if(q.deathPlace===from){q.deathPlace=to;ch=true;}
     (q.events||[]).forEach(e=>{if(e.placeId===from){e.placeId=to;ch=true;}});
@@ -1047,7 +1104,7 @@ function mergeModal(pl){
 }
 
 /* ============ Sources ============ */
-function citationsOf(sid){const out=[]; for(const p of Object.values(S.persons)) for(const c of p.citations||[]) if(c.sourceId===sid) out.push({p,c}); return out;}
+function citationsOf(sid,all){const out=[]; for(const p of Object.values(all?ALL.persons:S.persons)) for(const c of p.citations||[]) if(c.sourceId===sid) out.push({p,c}); return out;}
 function renderSources(){
   const v=$('#view'); const all=Object.values(S.sources).sort((a,b)=>a.title.localeCompare(b.title,'sv'));
   const sel=ui.sel&&ui.sel.type==='source'?ui.sel.id:null;
@@ -1072,7 +1129,7 @@ function sourcePanel(s){
 function bindSourcePanel(s){
   $('#panel').querySelectorAll('[data-sact]').forEach(b=>b.onclick=()=>{
     if(b.dataset.sact==='edit') sourceModal(s);
-    if(b.dataset.sact==='del') confirmBox('Ta bort källan?','Källhänvisningar till den tas också bort från personerna.','Ta bort',()=>{for(const r of citationsOf(s.id)){const q=clone(P(r.p.id)); q.citations=q.citations.filter(c=>c.sourceId!==s.id); Store.put(q,{silent:true});} ui.sel=null; Store.del('source',s.id);});
+    if(b.dataset.sact==='del') confirmBox('Ta bort källan?','Källhänvisningar till den tas också bort från personerna.','Ta bort',()=>{for(const r of citationsOf(s.id,true)){const q=clone(ALL.persons[r.p.id]); q.citations=q.citations.filter(c=>c.sourceId!==s.id); Store.put(q,{silent:true});} ui.sel=null; Store.del('source',s.id);});
   });
 }
 function sourceModal(s){
@@ -1279,7 +1336,7 @@ function renderImport(){
         <button class="btn" data-exp="ged">GEDCOM</button>
         <button class="btn" data-exp="csv">Personlista (.csv för Excel)</button>
       </div><div id="expOut"></div></div>
-    ${E.canEdit?`<div class="box"><h3>Återställ från säkerhetskopia</h3><p>Läs in en .json-fil som du tidigare exporterat härifrån. Befintliga poster med samma id skrivs över, övriga behålls.</p>
+    ${Store.isAdmin?`<div class="box"><h3>Återställ från säkerhetskopia</h3><p>Läs in en .json-fil som du tidigare exporterat härifrån. Befintliga poster med samma id skrivs över, övriga behålls.</p>
       <label class="btn" style="cursor:pointer">Välj säkerhetskopia<input type="file" id="restore" accept=".json" hidden></label></div>
     <div class="box"><h3>Övrigt</h3><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(S.persons).length?'':'<button class="btn" onclick="loadDemo()">Ladda Vasaätten som exempel</button>'}<button class="btn danger" id="wipe">Töm hela arkivet…</button></div>
       <p class="small muted" style="margin-top:10px">${Store.mode==='db'?'Ditt arkiv sparas i molnet och syns bara för dig tills du väljer att dela sidan. Delar du den kan andra läsa, men bara du och de du gör till redigerare kan ändra.':'Sidan körs utanför claude.ai, så allt sparas bara i den här webbläsaren. Exportera regelbundet!'}</p></div>`:''}
@@ -1294,8 +1351,8 @@ function renderImport(){
   fi.onchange=()=>fi.files[0]&&readImportFile(fi.files[0]);
   $('#impPasteBtn').onclick=()=>{const t=$('#impPaste').value; if(!t.trim()) return; setImportRows(parseDelimited(t));};
   $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('slaktarkivet-mall.csv','﻿'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
-  $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>Store.putMany(objs).then(()=>toast('Återställt ✓')));});};
-  $('#wipe').onclick=()=>modal(`<h3>Töm hela arkivet?</h3><p>Alla ${Object.keys(S.persons).length} personer, ${Object.keys(S.sources).length} källor och ${Object.keys(S.places).length} platser tas bort. Exportera en säkerhetskopia först! Skriv <b>TÖM</b> för att bekräfta.</p><input class="t" id="wipeIn"><div class="foot" style="margin-top:12px"><button class="btn" data-x>Avbryt</button><button class="btn primary" style="background:var(--err);border-color:var(--err)" data-ok>Töm arkivet</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{if(ov.querySelector('#wipeIn').value.trim().toUpperCase()!=='TÖM')return; close(); ui.sel=null; ui.focus=null; const all=[...Object.values(S.persons),...Object.values(S.places),...Object.values(S.sources)]; for(const o of all) Store.del(o.kind,o.id,{silent:true}); renderAll(); toast('Arkivet är tömt');};});
+  if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{}),...Object.values(o.views||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>Store.putMany(objs).then(()=>toast('Återställt ✓')));});};
+  if($('#wipe')) $('#wipe').onclick=()=>modal(`<h3>Töm hela arkivet?</h3><p>Alla ${Object.keys(ALL.persons).length} personer, ${Object.keys(S.sources).length} källor och ${Object.keys(S.places).length} platser tas bort. Exportera en säkerhetskopia först! Skriv <b>TÖM</b> för att bekräfta.</p><input class="t" id="wipeIn"><div class="foot" style="margin-top:12px"><button class="btn" data-x>Avbryt</button><button class="btn primary" style="background:var(--err);border-color:var(--err)" data-ok>Töm arkivet</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{if(ov.querySelector('#wipeIn').value.trim().toUpperCase()!=='TÖM')return; close(); ui.sel=null; ui.focus=null; const all=[...Object.values(ALL.persons),...Object.values(ALL.places),...Object.values(ALL.sources),...Object.values(ALL.views)]; for(const o of all) Store.del(o.kind,o.id,{silent:true}); renderAll(); toast('Arkivet är tömt');};});
   if(imp.rows.length) renderImportStep2();
 }
 function loadXLSX(){return new Promise((res,rej)=>{if(window.XLSX) return res(); const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; s.onload=res; s.onerror=()=>rej(new Error('Kunde inte ladda Excel-läsaren')); document.head.appendChild(s);});}
@@ -1378,7 +1435,7 @@ async function runImport(){
   const rows=imp.rows.map(mapRow).filter(r=>r.given||r.surname);
   const created=[],newPlaces={},newSources={};
   const byRef={},byName={};
-  const existing=Object.values(S.persons);
+  const existing=Object.values(ALL.persons);
   const key=(n,y)=>norm(n)+'|'+(y||'');
   const addName=(p)=>{const n=norm(fullName(p)); (byName[n]=byName[n]||[]).push(p);};
   existing.forEach(addName);
@@ -1428,9 +1485,10 @@ async function saveFile(name,data){
   try{const blob=data instanceof Blob?data:new Blob([data],{type:'application/octet-stream'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);}
   catch(e){toast('Kunde inte spara filen: '+(e.message||e));}
 }
-function doExport(kind){
+function doExport(kind){ return withAll(()=>doExport0(kind)); }
+function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
-  if(kind==='json') saveFile(`slaktarkivet-${stamp}.json`,JSON.stringify({app:'Släktarkivet',version:1,exported:new Date().toISOString(),persons:S.persons,places:S.places,sources:S.sources},null,1));
+  if(kind==='json') saveFile(`slaktarkivet-${stamp}.json`,JSON.stringify({app:'Släktarkivet',version:1,exported:new Date().toISOString(),persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},null,1));
   if(kind==='csv'){
     const ids={}; Object.values(S.persons).forEach((p,i)=>ids[p.id]=i+1);
     const c=v=>{v=String(v??''); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -1514,7 +1572,7 @@ function renderStart(){
     v.innerHTML=`<div class="start"><div class="hero"><div>
       <h1>Ditt släktarkiv</h1>
       <p>Samla släkten på ett ställe – med träd, solfjäder, källor från kyrkböckerna, bilder, tidslinje och karta. Börja med dig själv eller den äldsta ana du känner till, eller läs in en lista du redan har i Excel.</p>
-      <div class="acts">${ed?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button><a class="btn" href="#import">Importera från Excel</a>`:''}<button class="btn" onclick="loadDemo()">👑 Utforska Vasaätten</button></div>
+      <div class="acts">${ed?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button><a class="btn" href="#import">Importera från Excel</a>`:''}${Store.isAdmin?'<button class="btn" onclick="loadDemo()">👑 Utforska Vasaätten</button>':''}</div>
     </div><div class="hero-art">${heroArt()}</div></div>
     <h2 class="sec-t">Så kommer du igång</h2>
     <div class="tiles">
@@ -1546,12 +1604,13 @@ function renderStart(){
   v.innerHTML=`<div class="start"><div class="hero"><div>
       <h1>${home?'Släkten kring '+esc(fullName(home)):'Ditt släktarkiv'}</h1>
       <p>${all.length} personer${years.length?`, från ${Math.min(...years)} till ${Math.max(...years)}`:''}. ${home&&anc?`Du har hittat ${anc} anor till ${esc(home.given||fullName(home))}, ${maxGen} generationer bakåt.`:''}${home&&!anc&&descendantsOf(home.id).size?`${descendantsOf(home.id).size} ättlingar till ${esc(home.given||fullName(home))}.`:''}</p>
-      <div class="acts"><button class="btn primary" onclick="goHome()">Öppna släktträdet</button>${home?`<button class="btn" onclick="openCard('${home.id}')">Personkort</button>`:''}${ed?'<button class="btn" onclick="openPersonModal()">+ Ny person</button>':''}${demoActive()?'<button class="btn" onclick="exitDemo()">Avsluta exemplet</button>':''}</div>
+      <div class="acts"><button class="btn primary" onclick="goHome()">Öppna släktträdet</button>${home?`<button class="btn" onclick="openCard('${home.id}')">Personkort</button>`:''}${ed?'<button class="btn" onclick="openPersonModal()">+ Ny person</button>':''}<button class="btn" onclick="shareModal(activeView())">🔗 Dela med släkten</button>${demoActive()&&Store.isAdmin?'<button class="btn" onclick="exitDemo()">Avsluta exemplet</button>':''}</div>
     </div><div class="hero-art">${heroArt()}</div></div>
     <div class="tiles">${tiles.map(([h,ic,t,d])=>`<a class="tile" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>
     <h2 class="sec-t">Senast ändrade</h2>
-    <div class="recent">${recent.map(p=>chipHTML(p)).join('')}</div></div>`;
-  bindChips(v,openCard);
+    <div class="recent">${recent.map(p=>chipHTML(p,p.updatedBy&&Store.user?`av <span data-uid="${esc(p.updatedBy)}">…</span>`:'')).join('')}</div>
+    ${activeView()?`<p class="small muted" style="margin-top:18px">Du tittar på vyn <b>${esc(activeView().name)}</b> – ${HIDDEN.size} personer är dolda. Byt vy uppe till höger.</p>`:''}</div>`;
+  bindChips(v,openCard); fillNames(v);
 }
 
 /* ============ FAN CHART ============ */
@@ -1588,7 +1647,7 @@ function renderFan(fresh){
     const path=arc({innerRadius:r0,outerRadius:r1,startAngle:a0,endAngle:a1});
     if(!s.p){
       const el=g.append('path').attr('d',path).attr('class','fan-empty');
-      if(s.child&&Store.canEdit){el.append('title').text('Lägg till '+(s.k?'mor':'far')+' till '+fullName(s.child)); el.on('click',()=>openPersonModal(null,{rel:s.k?'mother':'father',of:s.child.id}));}
+      if(s.child&&Store.canEdit&&!s.child[s.k?'motherId':'fatherId']){el.append('title').text('Lägg till '+(s.k?'mor':'far')+' till '+fullName(s.child)); el.on('click',()=>openPersonModal(null,{rel:s.k?'mother':'father',of:s.child.id}));}
       else el.style('cursor','default').style('opacity',.45);
       continue;
     }
@@ -1762,7 +1821,7 @@ async function mergePersons(keepId,dropId){
   k.notDup=[...new Set([...(k.notDup||[]),...(d.notDup||[])])].filter(x=>x!==dropId);
   if(d.home) k.home=true;
   await Store.put(k,{silent:true});
-  for(const o of Object.values(S.persons)){ if(o.id===keepId||o.id===dropId) continue; let ch=false; const q=clone(o);
+  for(const o of Object.values(ALL.persons)){ if(o.id===keepId||o.id===dropId) continue; let ch=false; const q=clone(o);
     if(q.fatherId===dropId){q.fatherId=keepId;ch=true;} if(q.motherId===dropId){q.motherId=keepId;ch=true;}
     if((q.spouseIds||[]).includes(dropId)){q.spouseIds=[...new Set(q.spouseIds.map(x=>x===dropId?keepId:x))];ch=true;}
     (q.events||[]).forEach(e=>{if(e.withId===dropId){e.withId=keepId;ch=true;}});
@@ -1938,6 +1997,111 @@ async function personPdf(p){
   }catch(e){toast('Kunde inte skapa PDF: '+(e.message||e));}
 }
 
+/* ============ Views (dölj/visa) & sharing ============ */
+const ARTIFACT_URL='https://claude.ai/artifact/JvGs2s1WF8hstNwPqi7SW1';
+const slugify=t=>String(t||'vy').toLowerCase().replace(/[åä]/g,'a').replace(/ö/g,'o').replace(/é/g,'e').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'vy';
+function viewLink(v){const base=Store.mode==='db'?ARTIFACT_URL:location.href.split('#')[0]; return base+(v?'#vy-'+v.slug:'');}
+function setActiveView(id){ui.viewId=id||null; try{id?localStorage.setItem('sa-viewid',id):localStorage.removeItem('sa-viewid');}catch(e){} applyView(); ui.treeKey=null; ui.fanKey=null; mapState.drawn=false; if(ui.sel&&ui.sel.type==='person'&&!P(ui.sel.id)) ui.sel=null; renderAll(true);}
+function updateViewBtn(){
+  const b=$('#viewBtn'); if(!b) return; const v=activeView();
+  b.innerHTML=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span class="vname">${esc(v?v.name:'Hela släkten')}</span>${v&&HIDDEN.size?`<span class="tag" style="margin:0">${HIDDEN.size} dolda</span>`:''}<span style="opacity:.6">▾</span>`;
+  b.classList.toggle('active',!!v);
+}
+function openViewMenu(){
+  const pop=$('#viewPop'); if(pop.classList.contains('open')){pop.classList.remove('open');return;}
+  const vs=Object.values(ALL.views).sort((a,b)=>a.name.localeCompare(b.name,'sv')); const cur=activeView();
+  pop.innerHTML=`<div class="vp-h">Vad vill du se?</div>
+    <div class="vp-i ${!cur?'on':''}" data-v=""><b>Hela släkten</b><span>${Object.keys(ALL.persons).length} personer</span></div>
+    ${vs.map(v=>`<div class="vp-i ${cur&&cur.id===v.id?'on':''}" data-v="${v.id}"><b>${esc(v.name)}</b><span>${viewCounts(v)} dolda</span></div>`).join('')}
+    <div class="vp-sep"></div>
+    ${Store.canEdit?'<div class="vp-a" data-a="new">+ Ny vy…</div>':''}
+    ${cur&&Store.canEdit?'<div class="vp-a" data-a="edit">Redigera vyn…</div>':''}
+    <div class="vp-a" data-a="share">🔗 Dela ${cur?'länk till vyn':'med släkten'}…</div>`;
+  pop.classList.add('open');
+  pop.querySelectorAll('[data-v]').forEach(el=>el.onclick=()=>{pop.classList.remove('open'); setActiveView(el.dataset.v||null); toast(el.dataset.v?'Visar vyn '+ALL.views[el.dataset.v].name:'Visar hela släkten');});
+  pop.querySelectorAll('[data-a]').forEach(el=>el.onclick=()=>{pop.classList.remove('open'); const a=el.dataset.a; if(a==='new') viewModal(null); if(a==='edit') viewModal(activeView()); if(a==='share') shareModal(activeView());});
+}
+document.addEventListener('mousedown',e=>{const pop=$('#viewPop'); if(pop&&pop.classList.contains('open')&&!e.target.closest('.viewsel')) pop.classList.remove('open');});
+function ruleLabel(kind,id){const p=ALL.persons[id]; const n=p?fullName(p):'(borttagen person)'; return kind==='hide'?`Dölj ${n}`:kind==='hideUp'?`Dölj ${genitive(n)} släkt bakåt`:`Dölj ${genitive(n)} ättlingar`;}
+function viewModal(v,preset){
+  const isNew=!v; v=v?clone(v):{kind:'view',id:uid('v'),name:'',hide:[],hideUp:[],hideDown:[]};
+  if(preset) for(const k of ['hide','hideUp','hideDown']) v[k]=[...new Set([...(v[k]||[]),...(preset[k]||[])])];
+  const rules=()=>[...['hideUp','hideDown','hide'].flatMap(k=>(v[k]||[]).map(id=>({k,id})))];
+  modal(`<h3>${isNew?'Ny vy':'Redigera vyn'}</h3>
+    <p class="muted" style="line-height:1.5;margin-top:-6px">En vy bestämmer vad som syns – till exempel <i>Pappas sida</i> för kusinerna på fars sida. Alla med länken kan välja vy, och uppgifterna finns kvar för de andra vyerna.</p>
+    <label class="f"><span>Namn</span><input class="t" id="vwN" value="${esc(v.name)}" placeholder="t.ex. Pappas sida"></label>
+    <div id="vwRules"></div>
+    <div class="mini"><div class="row2"><label class="f"><span>Person</span><input class="t" id="vwP" list="dlVwP" placeholder="Sök person"><datalist id="dlVwP">${Object.values(ALL.persons).map(x=>`<option value="${esc(personLabel(x))}">`).join('')}</datalist></label>
+      <label class="f"><span>Vad ska döljas?</span><select class="t" id="vwK"><option value="hideUpSelf">Personen och hela hens släkt bakåt</option><option value="hideUp">Hens släkt bakåt (personen syns)</option><option value="hideDown">Hens ättlingar</option><option value="hide">Bara personen</option></select></label></div>
+      <button class="btn sm" id="vwAdd">+ Lägg till</button> <span class="small muted" id="vwCount"></span></div>
+    <div class="foot">${!isNew?'<button class="btn ghost danger" data-del style="margin-right:auto">Ta bort vyn</button>':''}<button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>${isNew?'Skapa och visa':'Spara'}</button></div>`,(ov,close)=>{
+    const q=x=>ov.querySelector(x);
+    const draw=()=>{q('#vwRules').innerHTML=rules().length?rules().map(r=>`<div class="rel"><span style="flex:1">${esc(ruleLabel(r.k,r.id))}</span><button class="iconbtn" data-rm="${r.k}|${r.id}" title="Visa igen">×</button></div>`).join(''):'<p class="muted small">Inget dolt ännu – lägg till en person eller gren nedan.</p>';
+      q('#vwCount').textContent=rules().length?`${computeHidden(v).size} personer döljs`:'';
+      ov.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{const [k,id]=b.dataset.rm.split('|'); v[k]=v[k].filter(x=>x!==id); draw();});};
+    draw(); q('#vwN').focus();
+    q('#vwAdd').onclick=()=>{const p=personByLabelAll(q('#vwP').value); if(!p){toast('Välj en person i listan');return;} const k=q('#vwK').value;
+      if(k==='hideUpSelf'){v.hideUp=[...new Set([...(v.hideUp||[]),p.id])]; v.hide=[...new Set([...(v.hide||[]),p.id])];} else v[k]=[...new Set([...(v[k]||[]),p.id])];
+      q('#vwP').value=''; draw();};
+    q('[data-x]').onclick=close;
+    if(!isNew) q('[data-del]').onclick=()=>{close(); confirmBox(`Ta bort vyn ${v.name}?`,'Länkar till vyn slutar fungera. Inga personer tas bort.','Ta bort',()=>{if(ui.viewId===v.id) setActiveView(null); Store.del('view',v.id);});};
+    q('[data-ok]').onclick=async()=>{const n=q('#vwN').value.trim(); if(!n){q('#vwN').focus();toast('Ge vyn ett namn');return;}
+      v.name=n; if(!v.slug||isNew){let sl=slugify(n),i=2; while(Object.values(ALL.views).some(x=>x.slug===sl&&x.id!==v.id)) sl=slugify(n)+'-'+(i++); v.slug=sl;}
+      close(); await Store.put(v,{silent:true}); setActiveView(v.id); toast(`Visar vyn ${n} – ${HIDDEN.size} personer dolda`);};
+  });
+}
+function personByLabelAll(label){return withAll(()=>personByLabel(label));}
+function hideModal(p){
+  const cur=activeView(); const name=fullName(p);
+  const opts=[
+    ['hideUpSelf',`${name} och hela ${p.sex==='K'?'hennes':p.sex==='M'?'hans':'hens'} släkt bakåt`,`Föräldrar, anor och deras övriga ättlingar – t.ex. "mammas sida".`],
+    ['hideUp',`${genitive(name)} släkt bakåt, men inte ${p.given||name}`,'Föräldrar, anor och deras övriga ättlingar.'],
+    ['hideDown',`${genitive(name)} ättlingar`,'Barn, barnbarn osv.'],
+    ['hide',`Bara ${name}`,''],
+  ];
+  const count=k=>{const v=clone(cur||{hide:[],hideUp:[],hideDown:[]}); if(k==='hideUpSelf'){v.hideUp=[...(v.hideUp||[]),p.id]; v.hide=[...(v.hide||[]),p.id];} else v[k]=[...(v[k]||[]),p.id]; return computeHidden(v).size-(cur?HIDDEN.size:0);};
+  modal(`<h3>Dölj i vyn</h3>
+    ${cur?`<p class="muted" style="margin-top:-6px">Ändrar vyn <b>${esc(cur.name)}</b>. Inget raderas – allt syns fortfarande i <i>Hela släkten</i>.</p>`
+      :`<p class="muted" style="margin-top:-6px;line-height:1.5">Du tittar på <i>Hela släkten</i>, så en ny vy skapas. Inget raderas.</p><label class="f"><span>Namn på vyn</span><input class="t" id="hvN" value="Utan ${esc(genitive(p.given||name))} släkt"></label>`}
+    <div style="display:flex;flex-direction:column;gap:8px">${opts.map(([k,t,d])=>`<button class="btn" data-k="${k}" style="justify-content:flex-start;text-align:left;white-space:normal;padding:10px 12px"><span style="flex:1"><b>${esc(t)}</b>${d?`<br><span class="small muted">${esc(d)}</span>`:''}</span><span class="tag">${count(k)} pers.</span></button>`).join('')}</div>
+    <div class="foot"><button class="btn" data-x>Avbryt</button></div>`,(ov,close)=>{
+    ov.querySelector('[data-x]').onclick=close;
+    ov.querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{
+      const k=b.dataset.k; const v=cur?clone(cur):{kind:'view',id:uid('v'),name:(ov.querySelector('#hvN').value.trim()||'Min vy'),hide:[],hideUp:[],hideDown:[]};
+      if(!v.slug){let sl=slugify(v.name),i=2; while(Object.values(ALL.views).some(x=>x.slug===sl)) sl=slugify(v.name)+'-'+(i++); v.slug=sl;}
+      if(k==='hideUpSelf'){v.hideUp=[...new Set([...(v.hideUp||[]),p.id])]; v.hide=[...new Set([...(v.hide||[]),p.id])];} else v[k]=[...new Set([...(v[k]||[]),p.id])];
+      close(); if(ui.focus===p.id&&(k==='hide'||k==='hideUpSelf')) ui.focus=null;
+      await Store.put(v,{silent:true}); setActiveView(v.id); toast(`${HIDDEN.size} personer dolda i vyn ${v.name}`);
+    });
+  });
+}
+function shareModal(v){
+  const link=viewLink(v); const inClaude=Store.mode==='db';
+  modal(`<h3>Dela med släkten</h3>
+    ${inClaude?`<p style="line-height:1.55;margin-top:-6px">Alla som får tillgång ser samma träd, och ändringar syns för alla direkt. Varje ändring märks med vem som gjorde den.</p>
+      <label class="f"><span>${v?`Länk som öppnar vyn ${esc(v.name)}`:'Länk till hela släkten'}</span><div style="display:flex;gap:6px"><input class="t" id="shL" readonly value="${esc(link)}"><button class="btn primary" id="shC">Kopiera</button></div></label>
+      <div class="box" style="background:var(--paper);margin:6px 0 0">
+        <b>Så bjuder du in släktingar som ska kunna lägga till uppgifter</b>
+        <ol style="margin:8px 0 0;padding-left:20px;line-height:1.6;color:var(--ink2)">
+          <li>Öppna sidan på claude.ai och klicka på <b>Dela</b> uppe till höger.</li>
+          <li>Bjud in varje släkting med e-postadress som <b>redigerare</b>. De behöver ett (gratis) claude.ai-konto.</li>
+          <li>Skicka länken ovan. ${v?'Den öppnar direkt i vyn '+esc(v.name)+'.':''}</li>
+        </ol>
+        <p class="small muted" style="margin:10px 0 0;line-height:1.5">Slå inte på delning via öppen länk om släktingarna ska kunna ändra – då kan inbjudna redigerare utanför ditt konto bara läsa. En öppen länk passar för den som bara ska titta.</p>
+      </div>
+      <p class="small muted" style="margin-top:12px;line-height:1.5">⚠️ Vyer döljer i visningen, men skyddar inte uppgifterna: den som har tillgång kan byta till <i>Hela släkten</i>. Lägg inte in sådant du inte vill att alla inbjudna ska kunna se.</p>`
+    :`<p style="line-height:1.55;margin-top:-6px">Den här kopian körs utanför claude.ai, så allt sparas bara i din webbläsare och kan inte delas härifrån.</p>
+      <p style="line-height:1.55">För ett gemensamt träd: använd versionen på claude.ai och bjud in släkten där, eller exportera en säkerhetskopia (Import/export) och skicka filen så kan andra läsa in den.</p>`}
+    <div class="foot"><button class="btn" data-x>Stäng</button></div>`,(ov,close)=>{
+    ov.querySelector('[data-x]').onclick=close;
+    const c=ov.querySelector('#shC'); if(c) c.onclick=async()=>{try{await navigator.clipboard.writeText(link); toast('Länken är kopierad');}catch(e){const i=ov.querySelector('#shL'); i.select(); toast('Markerad – tryck Ctrl/Cmd+C');}};
+  });
+}
+async function fillNames(root){
+  const els=[...root.querySelectorAll('[data-uid]')]; if(!els.length||!Store.user) return;
+  try{const ps=await Store.user.profiles([...new Set(els.map(e=>e.dataset.uid))]); for(const e of els){const p=ps[e.dataset.uid]; e.textContent=p&&p.isMe?'dig':(p&&p.name)||'någon i släkten';}}catch(e){}
+}
+$('#viewBtn').onclick=openViewMenu;
 /* ============ Global search ============ */
 (function(){
   const q=$('#q'),res=$('#qres'); let hl=0,items=[];
@@ -2047,8 +2211,8 @@ function demoData(){
 }
 let _demoIds=null;
 const demoIds=()=>_demoIds||(_demoIds=(()=>{const d=demoData(); return new Set([...d.places,...d.sources,...d.persons].map(o=>o.id));})());
-const demoActive=()=>{const ids=demoIds(); return Object.keys(S.persons).some(id=>ids.has(id));};
-function updateDemoBar(){const b=$('#demoBar'); if(b) b.classList.toggle('on',Store.loaded&&demoActive());}
+const demoActive=()=>{const ids=demoIds(); return Object.keys(ALL.persons).some(id=>ids.has(id));};
+function updateDemoBar(){const b=$('#demoBar'); if(b) b.classList.toggle('on',Store.loaded&&demoActive()); const x=$('#demoExitBtn'); if(x) x.style.display=Store.isAdmin?'':'none';}
 function loadDemo(){
   const {places,sources,persons}=demoData();
   setFocus('p_gustav1'); ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel=null;
@@ -2058,11 +2222,11 @@ function loadDemo(){
 function exitDemo(){
   confirmBox('Avsluta exemplet Vasaätten?','Alla personer, platser och källor från exemplet tas bort. Sådant du själv har lagt till ligger kvar.','Avsluta exemplet',async()=>{
     const ids=demoIds();
-    for(const p of Object.values(S.persons)){ if(ids.has(p.id)) continue; const q=clone(p); let ch=false;
+    for(const p of Object.values(ALL.persons)){ if(ids.has(p.id)) continue; const q=clone(p); let ch=false;
       for(const k of ['fatherId','motherId']) if(ids.has(q[k])){q[k]='';ch=true;}
       const sp=(q.spouseIds||[]).filter(x=>!ids.has(x)); if(sp.length!==(q.spouseIds||[]).length){q.spouseIds=sp;ch=true;}
       if(ch) Store.put(q,{silent:true}); }
-    for(const [kind,col] of [['person','persons'],['place','places'],['source','sources']]) for(const id of Object.keys(S[col])) if(ids.has(id)) Store.del(kind,id,{silent:true});
+    for(const [kind,col] of [['person','persons'],['place','places'],['source','sources']]) for(const id of Object.keys(ALL[col])) if(ids.has(id)) Store.del(kind,id,{silent:true});
     ui.sel=null; ui.focus=null; ui.treeKey=null; try{localStorage.removeItem('sa-focus');}catch(e){}
     toast('Exemplet är borttaget');
     if(location.hash!=='#start') location.hash='start'; else renderAll(true);

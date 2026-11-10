@@ -20,6 +20,8 @@ Allt är en enda HTML-sida utan byggsteg – ingen `npm install` behövs.
 - **Dubblettsökning** – hittar troliga dubbletter (även stavningsvarianter som Gustaf/Gustav, Wasa/Vasa) och slår ihop dem.
 - **Utskrift** – träd och solfjäder som PDF (A3/A4) eller PNG, personkort som PDF.
 - **Mörkt läge** – växla med knappen uppe till höger.
+- **Vyer** – dölj personer, en hel gren bakåt (t.ex. mammas sida) eller ättlingar. Varje vy har en egen länk (`#vy-namn`). Vyer döljer bara i visningen; uppgifterna finns kvar i *Hela släkten*.
+- **Samarbete** (claude.ai-versionen) – bjud in släktingar som redigerare så bygger ni trädet tillsammans; ändringar syns för alla direkt och märks med vem som gjorde dem.
 
 ## Exempeldata
 
