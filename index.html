@@ -28,7 +28,7 @@ a{color:var(--accent)}
 
 /* Header */
 header{display:flex;align-items:center;gap:18px;padding:0 18px;height:56px;border-bottom:1px solid var(--line);background:var(--paper);flex:none}
-.brand{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:19px;font-weight:600;white-space:nowrap}
+.brand{color:inherit;text-decoration:none;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:19px;font-weight:600;white-space:nowrap}
 .brand svg{flex:none}
 nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 nav a{padding:7px 12px;border-radius:8px;text-decoration:none;color:var(--ink2);font-weight:500;white-space:nowrap}
@@ -134,6 +134,7 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 /* Panel */
 .ph{padding:18px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:3}
 .ph .top{display:flex;gap:12px;align-items:flex-start}
+.avatar.clickable{cursor:pointer}.avatar.clickable:hover{border-color:var(--accent)!important;opacity:.9}
 .avatar{width:54px;height:54px;border-radius:50%;flex:none;background:var(--paper2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:20px;color:var(--ink2);overflow:hidden;border:2px solid var(--line)}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .ph h3{font-size:21px;line-height:1.2}
@@ -232,10 +233,10 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 </head>
 <body>
 <header>
-  <div class="brand">
+  <a class="brand" href="#trad" id="home" title="Till startsidan">
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 24V13M13 13c0-4 -3-6-6-6M13 13c0-4 3-6 6-6M13 17c-2-1-5-1-7 1M13 17c2-1 5-1 7 1"/><circle cx="7" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="13" cy="3.6" r="2"/></svg>
     <span>Släktarkivet</span>
-  </div>
+  </a>
   <nav id="nav">
     <a href="#trad" data-v="trad">Träd</a>
     <a href="#personer" data-v="personer">Personer</a>
@@ -339,7 +340,7 @@ const Store={
   },
   saveLocal(){
     clearTimeout(this._lt);
-    this._lt=setTimeout(()=>{try{localStorage.setItem('slaktarkivet-v1',JSON.stringify(S));}catch(e){toast('Kunde inte spara i webbläsaren');}},250);
+    this._lt=setTimeout(()=>{try{localStorage.setItem('slaktarkivet-v1',JSON.stringify(S));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
   },
   async write(id,fn){
     const prev=this.chains[id]||Promise.resolve();
@@ -393,7 +394,11 @@ const placeName=id=>id&&S.places[id]?S.places[id].name:'';
 function children(id){return Object.values(S.persons).filter(c=>c.fatherId===id||c.motherId===id).sort((a,b)=>(dateKey(a.birthDate)||9999)-(dateKey(b.birthDate)||9999));}
 function partners(p){const set=new Set(p.spouseIds||[]); for(const c of children(p.id)){const o=c.fatherId===p.id?c.motherId:c.fatherId; if(o) set.add(o);} set.delete(p.id); return [...set].map(P).filter(Boolean);}
 function siblings(p){if(!p.fatherId&&!p.motherId) return []; return Object.values(S.persons).filter(s=>s.id!==p.id&&((p.fatherId&&s.fatherId===p.fatherId)||(p.motherId&&s.motherId===p.motherId))).sort((a,b)=>(dateKey(a.birthDate)||9999)-(dateKey(b.birthDate)||9999));}
-function avatarUrl(p){const m=(p.media||[]).find(m=>/^image\//.test(m.contentType||'')); return m?m.url:null;}
+const isImg=m=>/^image\//.test(m&&m.contentType||'');
+function avatarUrl(p){const imgs=(p.media||[]).filter(isImg); const m=imgs.find(m=>m.profile)||imgs[0]; return m?m.url:null;}
+const homePerson=()=>Object.values(S.persons).find(p=>p.home);
+function goHome(){const h=homePerson(); if(h) setFocus(h.id); else {const first=Object.values(S.persons).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''))[0]; if(first) setFocus(first.id);} ui.sel=null; ui.treeKey=null; ui.plQuery=''; if(location.hash!=='#trad') location.hash='trad'; else renderAll(true); window.scrollTo(0,0);}
+async function setHome(id){for(const p of Object.values(S.persons)) if(p.home&&p.id!==id){const q=clone(p); delete q.home; await Store.put(q,{silent:true});} const q=clone(P(id)); q.home=true; await Store.put(q); toast('⌂ '+fullName(q)+' är nu startperson – loggan tar dig hit.');}
 function ancestorsOf(id,max=50){const out=new Set();const walk=(i,d)=>{const p=P(i);if(!p||d>max)return;for(const k of ['fatherId','motherId']){if(p[k]&&!out.has(p[k])){out.add(p[k]);walk(p[k],d+1);}}};walk(id,0);return out;}
 function descendantsOf(id){const out=new Set();const walk=i=>{for(const c of children(i)){if(!out.has(c.id)){out.add(c.id);walk(c.id);}}};walk(id);return out;}
 function scopeSet(scope){
@@ -428,6 +433,7 @@ let lastView=null;
 function renderAll(force){
   if(!Store.loaded){ $('#view').innerHTML='<div class="empty"><p class="muted">Laddar släktarkivet…</p></div>'; return; }
   if(ui.focus&&!P(ui.focus)) ui.focus=null;
+  if(!ui.focus){const h=homePerson(); if(h) ui.focus=h.id;}
   if(!ui.focus){const first=Object.values(S.persons).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''))[0]; if(first) ui.focus=first.id;}
   if(ui.sel&&ui.sel.type==='person'&&!P(ui.sel.id)) ui.sel=null;
   if(ui.sel&&ui.sel.type==='place'&&!S.places[ui.sel.id]) ui.sel=null;
@@ -622,11 +628,12 @@ function personPanel(p){
   const cites=p.citations||[];
   const aboutLabel=a=>{if(!a) return 'Allmänt'; if(a.startsWith('event:')){const e=(p.events||[]).find(e=>'event:'+e.id===a); return e?e.type+(e.date?' '+e.date:''):'Händelse';} return a;};
   return `<div class="ph"><div class="top">
-      <div class="avatar" style="border-color:${sexColor(p)}">${av?`<img src="${esc(av)}" alt="">`:esc(initials(p))}</div>
+      ${ed?`<label class="avatar clickable" style="border-color:${sexColor(p)}" title="${av?'Byt profilbild':'Lägg till profilbild'}">${av?`<img src="${esc(av)}" alt="">`:`<span>${esc(initials(p))}</span>`}<input type="file" id="uplAv" accept="image/*" hidden></label>`:`<div class="avatar" style="border-color:${sexColor(p)}">${av?`<img src="${esc(av)}" alt="">`:esc(initials(p))}</div>`}
       <div style="flex:1;min-width:0"><h3>${esc(fullName(p))}</h3><div class="sub">${esc(lifespan(p))}${age!=null?` · ${age} år`:''}${p.occupation?` · ${esc(p.occupation)}`:''}</div></div>
       ${closeBtn}</div>
     <div class="acts">
       <button class="btn sm" data-act="focus">Visa i trädet</button>
+      ${ed?`<button class="btn sm ${p.home?'primary':''}" data-act="home" title="Loggan uppe till vänster tar dig till startpersonen">${p.home?'⌂ Startperson':'Gör till startperson'}</button>`:''}
       ${ed?`<button class="btn sm" data-act="edit">Redigera</button><button class="btn sm ghost danger" data-act="delp">Ta bort</button>`:''}
     </div></div>
   <div class="sec"><h4>Fakta</h4><dl class="facts">
@@ -658,10 +665,10 @@ function personPanel(p){
   </div>`;
 }
 function mediaSection(o){
-  const ed=E.canEdit; const can=ed&&E.assets;
-  return `<div class="sec"><h4>Bilder &amp; dokument ${can?'<label class="btn sm" style="cursor:pointer">+ Ladda upp<input type="file" id="upl" multiple accept="image/*,application/pdf" hidden></label>':''}</h4>
+  const ed=E.canEdit; const can=ed;
+  return `<div class="sec"><h4>Bilder &amp; dokument ${can?`<label class="btn sm" style="cursor:pointer">+ Ladda upp<input type="file" id="upl" multiple accept="${E.assets?'image/*,application/pdf':'image/*'}" hidden></label>`:''}</h4>
     <div id="uplprog"></div>
-    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(m.url)}" alt="${esc(m.caption||'')}">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}</div>`).join('')}</div>`:`<div class="muted small">${can?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':ed&&!E.assets?'Uppladdning fungerar när sidan är öppen på claude.ai.':'Inga filer.'}</div>`}
+    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(m.url)}" alt="${esc(m.caption||'')}">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
   </div>`;
 }
 function bindPanel(){
@@ -681,6 +688,7 @@ function bindPersonPanel(p){
     const act=b.dataset.act;
     if(act==='focus'){setFocus(p.id);ui.treeKey=null; if(ui.view!=='trad') location.hash='trad'; else renderAll();}
     if(act==='edit') openPersonModal(p);
+    if(act==='home'&&!p.home) setHome(p.id);
     if(act==='delp') confirmBox(`Ta bort ${fullName(p)}?`,'Personen tas bort och kopplingar till familjemedlemmar lossas. Det går inte att ångra.','Ta bort',()=>deletePerson(p.id));
     if(act==='addev') eventForm(p,null);
     if(act==='addcite') citeForm(p);
@@ -735,20 +743,32 @@ function citeForm(p){
     Store.put(q);
   };
 }
+function shrinkImage(file,max=900,q=.8){
+  return new Promise((res,rej)=>{const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',q));};
+    img.onerror=()=>{URL.revokeObjectURL(url); rej(new Error('Kunde inte läsa bilden'));}; img.src=url;});
+}
+async function uploadMedia(files,{profile}={}){
+  files=[...files]; if(!files.length) return;
+  const prog=$('#uplprog'); if(prog) prog.innerHTML=`<div class="small muted">Laddar upp ${files.length} fil(er)…</div><div class="progress"><i></i></div>`;
+  const added=[]; let i=0;
+  for(const file of files){
+    try{
+      if(E.assets){const r=await E.assets.upload(file); added.push({assetId:r.id,url:r.url,name:file.name,contentType:r.contentType||file.type,caption:''});}
+      else{ if(!/^image\//.test(file.type)) throw new Error('bara bilder kan sparas här'); const url=await shrinkImage(file,Store.mode==='db'?600:900,Store.mode==='db'?.72:.8); added.push({url,name:file.name,contentType:'image/jpeg',caption:'',local:true}); }
+    }catch(e){toast('Kunde inte ladda upp '+file.name+(e&&e.message?': '+e.message:''));}
+    i++; const bar=prog&&prog.querySelector('i'); if(bar) bar.style.width=(100*i/files.length)+'%';
+  }
+  if(!added.length){if(prog) prog.innerHTML=''; return;}
+  const cur=clone(currentSelObj()); cur.media=cur.media||[];
+  const hasProfile=cur.media.some(m=>m.profile);
+  if(profile||(!hasProfile&&!cur.media.some(isImg))){ const first=added.find(isImg); if(first){cur.media.forEach(m=>delete m.profile); first.profile=true;} }
+  cur.media=cur.media.concat(added); Store.put(cur);
+}
 function bindMedia(){
   const pn=$('#panel'); const o=currentSelObj(); if(!o) return;
-  const up=pn.querySelector('#upl');
-  if(up) up.onchange=async()=>{
-    const files=[...up.files]; if(!files.length) return;
-    const prog=$('#uplprog'); prog.innerHTML=`<div class="small muted">Laddar upp ${files.length} fil(er)…</div><div class="progress"><i></i></div>`;
-    const added=[]; let i=0;
-    for(const file of files){
-      try{const r=await E.assets.upload(file); added.push({assetId:r.id,url:r.url,name:file.name,contentType:r.contentType||file.type,caption:''});}
-      catch(e){toast('Kunde inte ladda upp '+file.name+(e&&e.message?': '+e.message:''));}
-      i++; const bar=prog.querySelector('i'); if(bar) bar.style.width=(100*i/files.length)+'%';
-    }
-    const cur=clone(currentSelObj()); cur.media=(cur.media||[]).concat(added); Store.put(cur);
-  };
+  const up=pn.querySelector('#upl'); if(up) up.onchange=()=>uploadMedia(up.files);
+  const av=pn.querySelector('#uplAv'); if(av) av.onchange=()=>uploadMedia(av.files,{profile:true});
   pn.querySelectorAll('[data-media]').forEach(el=>el.onclick=()=>openLightbox(o,+el.dataset.media));
 }
 function currentSelObj(){if(!ui.sel) return null; return ui.sel.type==='person'?P(ui.sel.id):ui.sel.type==='place'?S.places[ui.sel.id]:S.sources[ui.sel.id];}
@@ -756,13 +776,14 @@ function openLightbox(o,i){
   const m=o.media[i]; const isImg=/^image\//.test(m.contentType||'');
   const lb=document.createElement('div'); lb.className='lightbox';
   lb.innerHTML=`${isImg?`<img src="${esc(m.url)}" alt="">`:`<div style="font-size:48px">📄</div><p>${esc(m.name)}</p><a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener" style="color:var(--ink)">Öppna dokumentet</a>`}
-    <div class="cap">${E.canEdit?`<input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button><button class="btn danger" id="lbDel">Ta bort</button>`:`<span>${esc(m.caption||'')}</span>`}<button class="btn" id="lbClose">Stäng</button></div>`;
+    <div class="cap">${E.canEdit?`<input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button>${isImg&&ui.sel&&ui.sel.type==='person'&&!m.profile?'<button class="btn" id="lbProf">Använd som profilbild</button>':''}<button class="btn danger" id="lbDel">Ta bort</button>`:`<span>${esc(m.caption||'')}</span>`}<button class="btn" id="lbClose">Stäng</button></div>`;
   document.body.appendChild(lb);
   const close=()=>lb.remove();
   lb.onclick=e=>{if(e.target===lb) close();};
   $('#lbClose').onclick=close;
   if(E.canEdit){
     $('#lbSave').onclick=()=>{const c=clone(currentSelObj()); c.media[i].caption=$('#lbCap').value; Store.put(c); close();};
+    const pb=$('#lbProf'); if(pb) pb.onclick=()=>{const c=clone(currentSelObj()); c.media.forEach((x,j)=>{if(j===i) x.profile=true; else delete x.profile;}); Store.put(c); close(); toast('Profilbilden är bytt');};
     $('#lbDel').onclick=()=>{close(); confirmBox('Ta bort filen?','Filen tas bort från arkivet för gott.','Ta bort',async()=>{const c=clone(currentSelObj()); const [rm]=c.media.splice(i,1); await Store.put(c); if(rm&&rm.assetId&&E.assets){try{await E.assets.delete(rm.assetId);}catch(e){}}});};
   }
 }
@@ -1355,6 +1376,7 @@ function toGedcom(){
   q.onkeydown=e=>{if(!res.classList.contains('open')) return; if(e.key==='ArrowDown'){hl=Math.min(hl+1,items.length-1);draw();e.preventDefault();} if(e.key==='ArrowUp'){hl=Math.max(hl-1,0);draw();e.preventDefault();} if(e.key==='Enter'&&items[hl]) pick(items[hl].id); if(e.key==='Escape'){res.classList.remove('open');}};
   q.onblur=()=>setTimeout(()=>res.classList.remove('open'),120);
 })();
+$('#home').addEventListener('click',e=>{e.preventDefault(); goHome();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.placing){ui.placing=null; if(ui.view==='karta') renderMap();}});
 window.addEventListener('resize',()=>{clearTimeout(window._rz); window._rz=setTimeout(()=>{ui.treeKey=null; mapState.drawn=false; renderAll();},200);});
 
@@ -1399,7 +1421,7 @@ function loadDemo(){
   const G='p_gustav1',KS='p_kat_sachsen',ML='p_margareta',KST='p_kat_stenbock';
   const persons=[
     // Gustav Vasa och hans tre hustrur
-    per(G,'Gustav','Vasa','M','1496-05-12','pl_rydbo','1560-09-29','pl_sthlm','Kung av Sverige 1523–1560','','',[KS,ML,KST],{createdAt:'1000',
+    per(G,'Gustav','Vasa','M','1496-05-12','pl_rydbo','1560-09-29','pl_sthlm','Kung av Sverige 1523–1560','','',[KS,ML,KST],{createdAt:'1000',home:true,
       notes:'Född Gustav Eriksson. Födelseorten är osäker – Rydboholm eller Lindholmen i Uppland.\n\nDatum i exemplet följer den julianska kalendern (”gamla stilen”) som gällde i Sverige till 1753.',
       events:[ev('Övrigt','1521-08-23','pl_vadstena','Vald till riksföreståndare'),ev('Övrigt','1523-06-06','pl_strangnas','Vald till kung – Sveriges nationaldag'),ev('Vigsel','1531-09-24','pl_sthlm','',KS),ev('Vigsel','1536-10-01','','',ML),ev('Kröning','1528-01-12','pl_uppsala','Krönt i Uppsala domkyrka'),ev('Vigsel','1552-08-22','pl_vadstena','',KST),ev('Begravning','1560-12-21','pl_uppsala','Uppsala domkyrka')],
       citations:[c('s_sbl','','Gustav I'),c('s_kungl','','Gustav I')]}),
