@@ -13,6 +13,13 @@ Allt är en enda HTML-sida utan byggsteg – ingen `npm install` behövs.
 - **Karta** – platser och en persons livsväg. Placera orter genom att klicka på kartan.
 - **Import** – Excel (.xlsx), CSV eller inklistrade celler, med automatisk kolumnmatchning.
 - **Export** – JSON-säkerhetskopia, GEDCOM 5.5.1 och CSV.
+- **Startsida** – översikt, senast ändrade personer och genvägar. Loggan tar dig alltid hit.
+- **Solfjäder** – anorna i en halvcirkel med hur fullständig varje generation är.
+- **Personkort** – egen sida per person med automatisk livsberättelse, familj, tidslinje, bilder och källor.
+- **Släktskapsberäknare** – svenska termer som farbror, moster, brorson, kusin, tremänning, halvkusin, svåger och svärmor, med vägen via gemensam ana.
+- **Dubblettsökning** – hittar troliga dubbletter (även stavningsvarianter som Gustaf/Gustav, Wasa/Vasa) och slår ihop dem.
+- **Utskrift** – träd och solfjäder som PDF (A3/A4) eller PNG, personkort som PDF.
+- **Mörkt läge** – växla med knappen uppe till höger.
 
 ## Exempeldata
 

@@ -16,7 +16,20 @@
   --male:#56769a; --female:#a65d6b; --unk:#8b8174;
   --serif:'Fraunces',Georgia,serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
   --r:10px; --shadow:0 1px 2px rgba(60,45,20,.06),0 4px 16px rgba(60,45,20,.07);
+  --input:#fff; --hover:#faf6ee; --glass:rgba(255,253,248,.93); --sea:#dfe7ea; --land:#f3eee3; --land2:#fbf8f1; --landline:#c9bfae;
+  --grid:#ece4d4; --warnbg:#f6e7cf; --warnfg:#7a5115; --dot:rgba(120,100,70,.13); --accentH:#264d42; --dangerline:#dcb9b2; --citebg:#fdfbf6;
+  color-scheme:light;
 }
+[data-theme=dark]{
+  --paper:#1b1916; --paper2:#26231f; --card:#221f1b; --ink:#ece6da; --ink2:#c0b7a8; --ink3:#8f8677;
+  --line:#37322b; --line2:#4a443b; --accent:#7db4a1; --accent2:#24342e; --warn:#d9a14a; --err:#e07a6a;
+  --male:#86a6cc; --female:#d48f9c; --unk:#9a9182;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+  --input:#171512; --hover:#2a2622; --glass:rgba(34,31,27,.93); --sea:#151c20; --land:#2b2722; --land2:#35302a; --landline:#4d463c;
+  --grid:#2c2823; --warnbg:#3b2f1c; --warnfg:#e8bd73; --dot:rgba(255,240,210,.07); --accentH:#94c7b5; --dangerline:#6a3a33; --citebg:#26231f;
+  color-scheme:dark;
+}
+[data-theme=dark] .btn.primary{color:#10201b}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--paper);display:flex;flex-direction:column;overflow:hidden}
@@ -57,10 +70,11 @@ main{flex:1;display:flex;min-height:0;position:relative}
 
 /* Buttons & form */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:1px solid var(--line2);background:var(--card);cursor:pointer;font-weight:500;white-space:nowrap}
+a.btn{text-decoration:none;color:inherit}
 .btn:hover{background:var(--paper2)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.primary:hover{background:#264d42}
-.btn.danger{color:var(--err);border-color:#dcb9b2}
+.btn.primary:hover{background:var(--accentH)}
+.btn.danger{color:var(--err);border-color:var(--dangerline)}
 .btn.ghost{border-color:transparent;background:transparent}
 .btn.ghost:hover{background:var(--paper2)}
 .btn.sm{padding:4px 9px;font-size:12.5px}
@@ -69,7 +83,7 @@ main{flex:1;display:flex;min-height:0;position:relative}
 .iconbtn:hover{background:var(--paper2);color:var(--ink)}
 label.f{display:block;margin-bottom:12px}
 label.f>span{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px}
-input.t,select.t,textarea.t{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:#fff}
+input.t,select.t,textarea.t{width:100%;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--input)}
 input.t:focus,select.t:focus,textarea.t:focus{outline:2px solid var(--accent2);border-color:var(--accent)}
 textarea.t{min-height:90px;resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -88,11 +102,11 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .list th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:600;padding:9px 12px;background:var(--paper2);border-bottom:1px solid var(--line)}
 .list td{padding:9px 12px;border-bottom:1px solid var(--paper2);vertical-align:top}
 .list tr.click{cursor:pointer}
-.list tr.click:hover td{background:#faf6ee}
+.list tr.click:hover td{background:var(--hover)}
 .list tr.sel td{background:var(--accent2)}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
 .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:99px;background:var(--paper2);color:var(--ink2);margin:1px 3px 1px 0}
-.tag.warn{background:#f6e7cf;color:#7a5115}
+.tag.warn{background:var(--warnbg);color:var(--warnfg)}
 
 /* Stats */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
@@ -102,23 +116,23 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 
 /* Tree */
 #treeWrap{position:absolute;inset:0;background:
-  radial-gradient(circle at 1px 1px,rgba(120,100,70,.13) 1px,transparent 0) 0 0/22px 22px,var(--paper)}
+  radial-gradient(circle at 1px 1px,var(--dot) 1px,transparent 0) 0 0/22px 22px,var(--paper)}
 #treeSvg{width:100%;height:100%;display:block;cursor:grab}
 #treeSvg:active{cursor:grabbing}
-.tree-tools{position:absolute;top:14px;left:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:10px;padding:7px 10px;box-shadow:var(--shadow);z-index:5}
+.tree-tools{position:absolute;top:14px;left:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:7px 10px;box-shadow:var(--shadow);z-index:5}
 .tree-tools .fname{font-family:var(--serif);font-weight:600;font-size:15px;margin-right:4px}
 .card rect.bg{fill:var(--card);stroke:var(--line2);stroke-width:1}
 .card:hover rect.bg{stroke:var(--ink2)}
 .card.focus rect.bg{stroke:var(--accent);stroke-width:2.5}
-.card.sel rect.bg{fill:#f2f7f4}
+.card.sel rect.bg{fill:var(--accent2)}
 .card text{font-family:var(--sans);fill:var(--ink)}
 .card .nm{font-weight:600;font-size:13px}
 .card .yr{font-size:11.5px;fill:var(--ink2)}
 .card .pl{font-size:11px;fill:var(--ink3)}
 .card{cursor:pointer}
-.ghost rect{fill:rgba(255,253,248,.6);stroke:var(--line2);stroke-dasharray:4 4}
+.ghost rect{fill:var(--glass);fill-opacity:.6;stroke:var(--line2);stroke-dasharray:4 4}
 .ghost text{font-size:12px;fill:var(--ink3);font-family:var(--sans)}
-.ghost:hover rect{stroke:var(--accent);fill:#fff}
+.ghost:hover rect{stroke:var(--accent);fill:var(--card)}
 .ghost:hover text{fill:var(--accent)}
 .ghost{cursor:pointer}
 .link{fill:none;stroke:var(--line2);stroke-width:1.6}
@@ -154,7 +168,7 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .ev:last-child{border-bottom:none}
 .ev .d{white-space:nowrap;font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
 .ev .w b{font-weight:600}
-.cite{padding:8px 10px;border:1px solid var(--paper2);border-radius:8px;margin-bottom:6px;background:#fdfbf6}
+.cite{padding:8px 10px;border:1px solid var(--paper2);border-radius:8px;margin-bottom:6px;background:var(--citebg)}
 .cite b{cursor:pointer}
 .media{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .media .m{aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--paper2);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;padding:4px;color:var(--ink2)}
@@ -166,26 +180,26 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 /* Timeline */
 #tlChart{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:auto;position:relative}
 #tlChart svg text{font-family:var(--sans)}
-.tl-row:hover .tl-bg{fill:#f6f1e6}
+.tl-row:hover .tl-bg{fill:var(--hover)}
 .tl-name{font-size:12.5px;fill:var(--ink);cursor:pointer}
 .tl-name:hover{text-decoration:underline}
 .axis text{font-size:11px;fill:var(--ink3)}
 .axis path,.axis line{stroke:var(--line2)}
-.hist-band{fill:#a06a1c;opacity:.07}
-.hist-lbl{font-size:10.5px;fill:#7a5115}
+.hist-band{fill:var(--warn);opacity:.08}
+.hist-lbl{font-size:10.5px;fill:var(--warnfg)}
 .evlist{margin-top:18px}
 
 /* Map */
-#mapWrap{position:absolute;inset:0;background:#dfe7ea}
+#mapWrap{position:absolute;inset:0;background:var(--sea)}
 #mapSvg{width:100%;height:100%;display:block}
-.land{fill:#f3eee3;stroke:#c9bfae;stroke-width:.6;vector-effect:non-scaling-stroke}
-.land.home{fill:#fbf8f1}
+.land{fill:var(--land);stroke:var(--landline);stroke-width:.6;vector-effect:non-scaling-stroke}
+.land.home{fill:var(--land2)}
 .mk{cursor:pointer}
-.mk circle{fill:var(--accent);fill-opacity:.82;stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.mk circle{fill:var(--accent);fill-opacity:.82;stroke:var(--card);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .mk:hover circle,.mk.sel circle{fill:var(--err)}
-.mk text{font-size:11px;font-family:var(--sans);fill:var(--ink);paint-order:stroke;stroke:#fffdf8;stroke-width:3px;pointer-events:none}
+.mk text{font-size:11px;font-family:var(--sans);fill:var(--ink);paint-order:stroke;stroke:var(--card);stroke-width:3px;pointer-events:none}
 .route{fill:none;stroke:var(--err);stroke-width:2.2;vector-effect:non-scaling-stroke;stroke-dasharray:6 4}
-.map-side{position:absolute;top:14px;left:14px;width:270px;max-height:calc(100% - 28px);overflow:auto;background:rgba(255,253,248,.95);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px;z-index:5}
+.map-side{position:absolute;top:14px;left:14px;width:270px;max-height:calc(100% - 28px);overflow:auto;background:var(--glass);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:14px;z-index:5}
 .map-side h3{font-size:17px;margin-bottom:8px}
 .pl-item{display:flex;align-items:center;gap:8px;padding:6px 4px;border-radius:6px;cursor:pointer}
 .pl-item:hover{background:var(--paper2)}
@@ -202,7 +216,7 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .drop.over{border-color:var(--accent);background:var(--accent2)}
 .mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 16px}
 .mapgrid label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:var(--ink2)}
-.mapgrid select{padding:6px;border:1px solid var(--line2);border-radius:7px;background:#fff;font-weight:400}
+.mapgrid select{padding:6px;border:1px solid var(--line2);border-radius:7px;background:var(--input);font-weight:400}
 .prev{overflow:auto;max-height:300px;margin-top:12px}
 .prev table{font-size:12.5px}
 .check{display:flex;gap:8px;align-items:flex-start;margin:6px 0;cursor:pointer}
@@ -219,7 +233,90 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .progress{height:6px;background:var(--paper2);border-radius:4px;overflow:hidden;margin-top:10px}
 .progress i{display:block;height:100%;background:var(--accent);width:0}
 
+/* Theme toggle, demo banner */
+.themebtn{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink2);flex:none}
+.themebtn:hover{color:var(--ink);background:var(--paper2)}
+#demoBar{display:none;align-items:center;gap:12px;padding:8px 18px;background:var(--warnbg);color:var(--warnfg);border-bottom:1px solid var(--line);font-size:13.5px;flex:none;flex-wrap:wrap}
+#demoBar.on{display:flex}
+#demoBar .btn{padding:4px 11px;font-size:12.5px}
+
+/* Start page */
+.start{max-width:1040px;margin:0 auto;padding:44px 28px 60px}
+.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:34px;align-items:center;margin-bottom:34px}
+.hero h1{font-size:44px;line-height:1.08;margin-bottom:14px}
+.hero p{color:var(--ink2);font-size:16px;line-height:1.6;margin:0 0 20px}
+.hero .acts{display:flex;gap:10px;flex-wrap:wrap}
+.hero .btn{padding:10px 16px;font-size:14.5px}
+.hero-art{aspect-ratio:1.25;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;text-decoration:none;color:inherit;display:block;transition:transform .12s,box-shadow .12s}
+.tile:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--line2)}
+.tile .ic{font-size:22px;margin-bottom:8px;display:block}
+.tile b{font-family:var(--serif);font-size:17px;font-weight:600;display:block;margin-bottom:3px}
+.tile span{color:var(--ink3);font-size:13px;line-height:1.45}
+.start h2.sec-t{font-size:20px;margin:34px 0 12px}
+.recent{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.pchip{display:flex;gap:10px;align-items:center;padding:8px 10px;background:var(--card);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.pchip:hover{border-color:var(--line2);background:var(--hover)}
+.pchip .avatar{width:36px;height:36px;font-size:14px;border-width:2px}
+.pchip .t{min-width:0}.pchip .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pchip .t span{font-size:12px;color:var(--ink3)}
+
+/* Fan chart */
+#fanWrap{position:absolute;inset:0;background:var(--paper)}
+#fanSvg{width:100%;height:100%;display:block;cursor:grab}
+.fan-seg{stroke:var(--card);stroke-width:1.5;cursor:pointer}
+.fan-seg:hover{filter:brightness(1.08)}
+.fan-empty{fill:transparent;stroke:var(--line2);stroke-dasharray:3 3;cursor:pointer}
+.fan-empty:hover{fill:var(--accent2)}
+.fan-txt{font-family:var(--sans);fill:var(--ink);pointer-events:none}
+.fan-legend{position:absolute;right:14px;top:14px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;box-shadow:var(--shadow);z-index:5;min-width:190px}
+.fan-legend .row{display:flex;align-items:center;gap:8px;margin:3px 0}
+.fan-legend .bar{flex:1;height:5px;border-radius:3px;background:var(--paper2);overflow:hidden}
+.fan-legend .bar i{display:block;height:100%;background:var(--accent)}
+
+/* Person card page */
+.pc{max-width:980px;margin:0 auto;padding:28px 28px 60px}
+.pc-head{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;padding-bottom:22px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.pc-photo{width:150px;height:150px;border-radius:50%;overflow:hidden;background:var(--paper2);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:48px;color:var(--ink3);border:4px solid var(--card);box-shadow:0 0 0 2px var(--line2),var(--shadow)}
+.pc-photo img{width:100%;height:100%;object-fit:cover}
+.pc-head h1{font-size:38px;line-height:1.1}
+.pc-head .life{font-size:17px;color:var(--ink2);margin-top:6px}
+.pc-head .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pc-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:26px}
+.pc h3{font-size:19px;margin:0 0 12px}
+.story{font-family:var(--serif);font-size:17px;line-height:1.7;color:var(--ink);margin:0 0 26px}
+.vtl{position:relative;padding-left:22px;margin-bottom:26px}
+.vtl:before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.vtl .it{position:relative;padding:0 0 14px}
+.vtl .it:before{content:'';position:absolute;left:-21px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--card);border:2px solid var(--accent)}
+.vtl .it .d{font-size:12.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.fam-group{margin-bottom:16px}
+.fam-group h5{margin:0 0 6px;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);font-weight:600}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:26px}
+.gallery .m{aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;background:var(--paper2);display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.gallery .m img{width:100%;height:100%;object-fit:cover}
+
+/* Duplicates & relationship */
+.dup{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.dup-grid{display:grid;grid-template-columns:110px 1fr 1fr;gap:4px 14px;font-size:13px;margin:10px 0}
+.dup-grid .h{font-weight:600}
+.dup-grid .k{color:var(--ink3)}
+.dup-grid .diff{color:var(--warnfg);background:var(--warnbg);border-radius:4px;padding:0 4px}
+.score{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:var(--accent2);color:var(--accent)}
+.rel-pick{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:end;margin-bottom:22px}
+.rel-answer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
+.rel-answer .big{font-family:var(--serif);font-size:28px;line-height:1.25}
+.rel-path{display:flex;gap:30px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:18px}
+.rel-col{display:flex;flex-direction:column;align-items:center;gap:0}
+.rel-col .pchip{min-width:220px}
+.rel-col .arrow{width:2px;height:18px;background:var(--line2)}
+.rel-top{display:flex;gap:8px;justify-content:center;margin-bottom:0}
+
 @media (max-width:900px){
+  .hero{grid-template-columns:1fr}.hero-art{display:none}.hero h1{font-size:32px}
+  .pc-grid{grid-template-columns:1fr}.pc-head{grid-template-columns:1fr;text-align:center;justify-items:center}.pc-photo{width:110px;height:110px}
+  .rel-pick{grid-template-columns:1fr}
+  .dup-grid{grid-template-columns:80px 1fr 1fr}
   header{gap:10px;padding:0 10px}
   .brand span{display:none}
   .search input{width:130px}
@@ -238,12 +335,15 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
     <span>Släktarkivet</span>
   </a>
   <nav id="nav">
+    <a href="#start" data-v="start">Start</a>
     <a href="#trad" data-v="trad">Träd</a>
+    <a href="#solfjader" data-v="solfjader">Solfjäder</a>
     <a href="#personer" data-v="personer">Personer</a>
+    <a href="#slaktskap" data-v="slaktskap">Släktskap</a>
     <a href="#tidslinje" data-v="tidslinje">Tidslinje</a>
     <a href="#karta" data-v="karta">Karta</a>
     <a href="#kallor" data-v="kallor">Källor</a>
-    <a href="#import" data-v="import">Import &amp; export</a>
+    <a href="#import" data-v="import">Import/export</a>
   </nav>
   <div class="hdr-right">
     <div class="search">
@@ -252,8 +352,10 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
       <div class="res" id="qres"></div>
     </div>
     <div class="status" id="status"><i></i><span>Ansluter…</span></div>
+    <button class="themebtn" id="themeBtn" title="Växla mörkt/ljust läge" aria-label="Växla mörkt/ljust läge"></button>
   </div>
 </header>
+<div id="demoBar"><span>👑 Du tittar på exemplet <b>Vasaätten</b>. När du avslutar tas exemplet bort – egna personer du lagt till ligger kvar.</span><span style="flex:1"></span><button class="btn" onclick="location.hash='start'">Till startsidan</button><button class="btn primary" onclick="exitDemo()">Avsluta exemplet</button></div>
 <main>
   <section id="view"></section>
   <aside id="panel"></aside>
@@ -426,8 +528,9 @@ function ageAt(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(b&&d) re
 function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.replace(/\s/g,'')+')':'');}
 
 /* ============ Router ============ */
-const VIEWS={trad:renderTree,personer:renderPersons,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
-function route(){const h=location.hash.slice(1); ui.view=VIEWS[h]?h:'trad'; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===ui.view)); ui.treeKey=null; mapState.drawn=false; renderAll(true);}
+const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
+const NAVMAP={personkort:'personer',dubbletter:'personer'};
+function route(){const h=location.hash.slice(1); ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
 window.addEventListener('hashchange',route);
 let lastView=null;
 function renderAll(force){
@@ -438,7 +541,7 @@ function renderAll(force){
   if(ui.sel&&ui.sel.type==='person'&&!P(ui.sel.id)) ui.sel=null;
   if(ui.sel&&ui.sel.type==='place'&&!S.places[ui.sel.id]) ui.sel=null;
   if(ui.sel&&ui.sel.type==='source'&&!S.sources[ui.sel.id]) ui.sel=null;
-  renderPanel();
+  renderPanel(); updateDemoBar();
   VIEWS[ui.view](force||lastView!==ui.view); lastView=ui.view;
 }
 function setFocus(id){ui.focus=id; try{localStorage.setItem('sa-focus',id)}catch(e){} }
@@ -472,11 +575,13 @@ function renderTree(fresh){
         <span class="ctl">Anor <select id="tAnc">${[1,2,3,4,5,6].map(n=>`<option ${n===ui.ancGen?'selected':''}>${n}</option>`).join('')}</select></span>
         <span class="ctl">Ättlingar <select id="tDesc">${[0,1,2,3,4].map(n=>`<option ${n===ui.descGen?'selected':''}>${n}</option>`).join('')}</select></span>
         <button class="btn sm" id="tFit">Centrera</button>
+        <button class="btn sm" id="tPrint">⎙ Skriv ut / spara</button>
         ${Store.canEdit?'<button class="btn sm primary" onclick="openPersonModal()">+ Person</button>':''}
       </div></div>`;
     $('#tAnc').onchange=e=>{ui.ancGen=+e.target.value;ui.treeKey=null;renderTree();};
     $('#tDesc').onchange=e=>{ui.descGen=+e.target.value;ui.treeKey=null;renderTree();};
     $('#tFit').onclick=()=>{ui.treeKey=null;renderTree();};
+    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'slakttrad');
     const svg=d3.select('#treeSvg');
     treeZoom=d3.zoom().scaleExtent([.15,2.5]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform));
     svg.call(treeZoom).on('dblclick.zoom',null);
@@ -575,7 +680,7 @@ function renderPersons(){
   const sel=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
   const cnt=k=>all.filter(flt[k]).length;
   v.innerHTML=`<div class="view-pad">
-    <div class="toolbar"><h2>Personer</h2>${Store.canEdit?'<button class="btn primary" onclick="openPersonModal()">+ Ny person</button>':''}</div>
+    <div class="toolbar"><h2>Personer</h2><a class="btn" href="#dubbletter">🧩 Hitta dubbletter</a>${Store.canEdit?'<button class="btn primary" onclick="openPersonModal()">+ Ny person</button>':''}</div>
     <div class="stats">
       <div class="stat"><b>${all.length}</b><span>personer</span></div>
       <div class="stat"><b>${Math.round(100*nSrc/all.length)}%</b><span>har minst en källa</span></div>
@@ -632,7 +737,9 @@ function personPanel(p){
       <div style="flex:1;min-width:0"><h3>${esc(fullName(p))}</h3><div class="sub">${esc(lifespan(p))}${age!=null?` · ${age} år`:''}${p.occupation?` · ${esc(p.occupation)}`:''}</div></div>
       ${closeBtn}</div>
     <div class="acts">
+      <button class="btn sm" data-act="card">Personkort</button>
       <button class="btn sm" data-act="focus">Visa i trädet</button>
+      <button class="btn sm" data-act="rel">Hur är vi släkt?</button>
       ${ed?`<button class="btn sm ${p.home?'primary':''}" data-act="home" title="Loggan uppe till vänster tar dig till startpersonen">${p.home?'⌂ Startperson':'Gör till startperson'}</button>`:''}
       ${ed?`<button class="btn sm" data-act="edit">Redigera</button><button class="btn sm ghost danger" data-act="delp">Ta bort</button>`:''}
     </div></div>
@@ -688,6 +795,8 @@ function bindPersonPanel(p){
     const act=b.dataset.act;
     if(act==='focus'){setFocus(p.id);ui.treeKey=null; if(ui.view!=='trad') location.hash='trad'; else renderAll();}
     if(act==='edit') openPersonModal(p);
+    if(act==='card') openCard(p.id);
+    if(act==='rel'){ui.relB=p.id; if(!ui.relA||ui.relA===p.id) ui.relA=(homePerson()&&homePerson().id!==p.id)?homePerson().id:(ui.focus!==p.id?ui.focus:null); location.hash='slaktskap';}
     if(act==='home'&&!p.home) setHome(p.id);
     if(act==='delp') confirmBox(`Ta bort ${fullName(p)}?`,'Personen tas bort och kopplingar till familjemedlemmar lossas. Det går inte att ångra.','Ta bort',()=>deletePerson(p.id));
     if(act==='addev') eventForm(p,null);
@@ -1023,7 +1132,7 @@ function renderTimeline(){
   const x=d3.scaleLinear().domain([x0,x1]).range([LW,W-20]);
   const svg=d3.select(box).append('svg').attr('width',W).attr('height',H);
   const defs=svg.append('defs');
-  ['M','K','U'].forEach(s=>{const c={M:'#56769a',K:'#a65d6b',U:'#8b8174'}[s];
+  ['M','K','U'].forEach(s=>{const c={M:cssv('--male'),K:cssv('--female'),U:cssv('--unk')}[s];
     const gR=defs.append('linearGradient').attr('id','fr'+s); gR.append('stop').attr('offset','0').attr('stop-color',c); gR.append('stop').attr('offset','1').attr('stop-color',c).attr('stop-opacity',0);
     const gL=defs.append('linearGradient').attr('id','fl'+s); gL.append('stop').attr('offset','0').attr('stop-color',c).attr('stop-opacity',0); gL.append('stop').attr('offset','1').attr('stop-color',c);});
   if(ui.tlHist){
@@ -1032,18 +1141,18 @@ function renderTimeline(){
     hs.forEach((h,i)=>{const xa=x(h.a),xb=Math.max(x(h.b+1),xa+2); hg.append('rect').attr('class','hist-band').attr('x',xa).attr('y',TOP-6).attr('width',xb-xa).attr('height',H-TOP); hg.append('text').attr('class','hist-lbl').attr('x',xa>W-200?xb-2:xa+2).attr('text-anchor',xa>W-200?'end':'start').attr('y',TOP-10-(i%3)*12).text(h.t).append('title').text(h.a===h.b?h.a+': '+h.t:h.a+'–'+h.b+': '+h.t);});
   }
   svg.append('g').attr('class','axis').attr('transform',`translate(0,${H-4})`);
-  svg.append('g').attr('class','axis').attr('transform',`translate(0,24)`).call(d3.axisTop(x).ticks(Math.min(14,(x1-x0)/10)).tickFormat(d3.format('d')).tickSize(-(H-24))).call(g=>g.selectAll('.tick line').attr('stroke','#ece4d4')).call(g=>g.select('.domain').remove());
+  svg.append('g').attr('class','axis').attr('transform',`translate(0,24)`).call(d3.axisTop(x).ticks(Math.min(14,(x1-x0)/10)).tickFormat(d3.format('d')).tickSize(-(H-24))).call(g=>g.selectAll('.tick line').attr('stroke',cssv('--grid'))).call(g=>g.select('.domain').remove());
   const sel=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
   const g=svg.selectAll('g.tl-row').data(rows).join('g').attr('class','tl-row').attr('transform',(r,i)=>`translate(0,${TOP+i*RH})`);
-  g.append('rect').attr('class','tl-bg').attr('x',0).attr('width',W).attr('height',RH).attr('fill',r=>r.p.id===sel?'#e3ece6':'transparent');
+  g.append('rect').attr('class','tl-bg').attr('x',0).attr('width',W).attr('height',RH).attr('fill',r=>r.p.id===sel?cssv('--accent2'):'transparent');
   g.append('text').attr('class','tl-name').attr('x',12).attr('y',RH/2+4).text(r=>{const n=fullName(r.p);return n.length>24?n.slice(0,23)+'…':n;}).on('click',(e,r)=>showPerson(r.p.id));
   g.each(function(r){
-    const el=d3.select(this); const s=r.p.sex==='M'?'M':r.p.sex==='K'?'K':'U'; const col={M:'#56769a',K:'#a65d6b',U:'#8b8174'}[s];
+    const el=d3.select(this); const s=r.p.sex==='M'?'M':r.p.sex==='K'?'K':'U'; const col={M:cssv('--male'),K:cssv('--female'),U:cssv('--unk')}[s];
     const xa=x(r.s),xb=x(r.t),y=RH/2-4;
     el.append('rect').attr('x',xa).attr('y',y).attr('width',Math.max(2,xb-xa)).attr('height',8).attr('rx',4).attr('fill',r.ft?`url(#fr${s})`:r.fs?`url(#fl${s})`:col).attr('opacity',.85).style('cursor','pointer').on('click',()=>showPerson(r.p.id))
       .append('title').text(`${fullName(r.p)}: ${r.p.birthDate||'?'} – ${r.p.deathDate||(r.alive?'':'?')}`);
-    for(const ev of r.evs){el.append('circle').attr('cx',x(ev.k)).attr('cy',RH/2).attr('r',4.2).attr('fill','#fffdf8').attr('stroke',col).attr('stroke-width',1.8).append('title').text(`${ev.e.type} ${ev.e.date}${ev.e.placeId?' – '+placeName(ev.e.placeId):''}`);}
-    if(!r.fs) el.append('circle').attr('cx',xa).attr('cy',RH/2).attr('r',2.5).attr('fill','#fff');
+    for(const ev of r.evs){el.append('circle').attr('cx',x(ev.k)).attr('cy',RH/2).attr('r',4.2).attr('fill',cssv('--card')).attr('stroke',col).attr('stroke-width',1.8).append('title').text(`${ev.e.type} ${ev.e.date}${ev.e.placeId?' – '+placeName(ev.e.placeId):''}`);}
+    if(!r.fs) el.append('circle').attr('cx',xa).attr('cy',RH/2).attr('r',2.5).attr('fill',cssv('--card'));
   });
 }
 
@@ -1068,7 +1177,7 @@ function renderMap(fresh){
   const withC=used.filter(pl=>pl.lat!=null), without=used.filter(pl=>pl.lat==null);
   const placingPl=ui.placing?S.places[ui.placing]:null;
   if(!$('#mapSvg')||fresh){
-    v.innerHTML=`<div id="mapWrap"><svg id="mapSvg"><defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#9b3a2e"/></marker></defs><g class="vp"><g class="lands"></g><g class="routes"></g><g class="mks"></g></g></svg>
+    v.innerHTML=`<div id="mapWrap"><svg id="mapSvg"><defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" style="fill:var(--err)"/></marker></defs><g class="vp"><g class="lands"></g><g class="routes"></g><g class="mks"></g></g></svg>
       <div class="map-side" id="mapSide"></div><div id="mapBanner"></div>
       <div class="map-zoom"><button id="zIn" title="Zooma in">+</button><button id="zOut" title="Zooma ut">−</button></div></div>`;
     mapState.drawn=false;
@@ -1316,9 +1425,8 @@ async function runImport(){
 }
 async function saveFile(name,data){
   if(E.downloads){ try{await E.downloads.save({filename:name,data}); return;}catch(e){ if(e&&e.code==='declined') return; if(e&&e.code!=='unavailable'&&e.code!=='not_granted'){toast('Kunde inte spara: '+(e.message||e.code)); } } }
-  // fallback: copy box
-  const out=$('#expOut')||document.body;
-  modal(`<h3>${esc(name)}</h3><p class="muted">Nedladdning fungerar inte här. Kopiera innehållet och spara det i en textfil med namnet ovan.</p><textarea class="t" style="min-height:240px;font-family:ui-monospace,monospace;font-size:11px" readonly>${esc(data)}</textarea><div class="foot"><button class="btn" data-x>Stäng</button><button class="btn primary" data-ok>Kopiera</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{try{await navigator.clipboard.writeText(data);toast('Kopierat');}catch(e){ov.querySelector('textarea').select();toast('Markerat – tryck Ctrl/Cmd+C');}};});
+  try{const blob=data instanceof Blob?data:new Blob([data],{type:'application/octet-stream'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000);}
+  catch(e){toast('Kunde inte spara filen: '+(e.message||e));}
 }
 function doExport(kind){
   const stamp=new Date().toISOString().slice(0,10);
@@ -1367,6 +1475,469 @@ function toGedcom(){
   add(0,'TRLR'); return L.join('\r\n');
 }
 
+/* ============ Theme ============ */
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function currentTheme(){return document.documentElement.dataset.theme==='dark'?'dark':'light';}
+function applyTheme(t){
+  document.documentElement.dataset.theme=t;
+  const b=$('#themeBtn'); if(b) b.innerHTML=t==='dark'
+    ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
+}
+(function(){let t=null; try{t=localStorage.getItem('sa-theme');}catch(e){} if(!t) t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'; applyTheme(t);})();
+$('#themeBtn').onclick=()=>{const t=currentTheme()==='dark'?'light':'dark'; applyTheme(t); try{localStorage.setItem('sa-theme',t);}catch(e){} mapState.drawn=false; renderAll();};
+
+/* ============ Shared bits ============ */
+const MONTHS=['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+function fmtDate(s){if(!s) return ''; const m=String(s).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); if(m) return `${+m[3]} ${MONTHS[+m[2]-1]} ${m[1]}`; const m2=String(s).match(/^(\d{4})-(\d{1,2})$/); if(m2) return `${MONTHS[+m2[2]-1]} ${m2[1]}`; return String(s);}
+function whenText(s){if(!s) return ''; if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) return 'den '+fmtDate(s); if(/^\d{4}-\d{1,2}$/.test(s)) return 'i '+fmtDate(s); if(/^\d{4}$/.test(s)) return 'år '+s; return s;}
+const NUMW=['noll','ett','två','tre','fyra','fem','sex','sju','åtta','nio','tio','elva','tolv'];
+const numw=n=>NUMW[n]||String(n);
+function listJoin(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' och '+a[a.length-1];}
+function chipHTML(p,extra=''){const av=avatarUrl(p); return `<div class="pchip" data-card="${p.id}"><div class="avatar" style="border-color:${sexColor(p)}">${av?`<img src="${esc(av)}" alt="">`:esc(initials(p))}</div><div class="t"><b>${esc(fullName(p))}</b><span>${esc(lifespan(p))}${extra?' · '+extra:''}</span></div></div>`;}
+function bindChips(root,fn){root.querySelectorAll('[data-card]').forEach(el=>el.onclick=()=>fn(el.dataset.card));}
+function openCard(id){ui.cardId=id; if(location.hash!=='#personkort') location.hash='personkort'; else renderAll(true);}
+function personPicker(id,value,ph){return `<input class="t" id="${id}" list="dlAllP" value="${esc(value&&P(value)?personLabel(P(value)):'')}" placeholder="${ph}">`;}
+function allPersonsDatalist(){return `<datalist id="dlAllP">${Object.values(S.persons).map(x=>`<option value="${esc(personLabel(x))}">`).join('')}</datalist>`;}
+
+/* ============ START ============ */
+function heroArt(){
+  const arc=d3.arc(); const parts=[]; const cols=[cssv('--male'),'#5f8f7f','#b08a4a',cssv('--female')];
+  for(let g=1;g<=5;g++){const n=2**g, span=Math.PI/n; for(let j=0;j<n;j++){const q=g===1?(j?3:0):Math.floor(j/(n/4)); const r0=34+(g-1)*30, r1=r0+29;
+    parts.push(`<path d="${arc({innerRadius:r0,outerRadius:r1,startAngle:-Math.PI/2+j*span,endAngle:-Math.PI/2+(j+1)*span})}" fill="${cols[q]}" fill-opacity="${(0.9-g*0.13).toFixed(2)}" stroke="${cssv('--card')}" stroke-width="1.5"/>`);}}
+  return `<svg viewBox="-200 -200 400 230" width="88%"><g>${parts.join('')}<circle r="30" fill="${cssv('--accent')}"/></g></svg>`;
+}
+function renderStart(){
+  const v=$('#view'); const all=Object.values(S.persons);
+  const ed=Store.canEdit;
+  if(!all.length){
+    v.innerHTML=`<div class="start"><div class="hero"><div>
+      <h1>Ditt släktarkiv</h1>
+      <p>Samla släkten på ett ställe – med träd, solfjäder, källor från kyrkböckerna, bilder, tidslinje och karta. Börja med dig själv eller den äldsta ana du känner till, eller läs in en lista du redan har i Excel.</p>
+      <div class="acts">${ed?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button><a class="btn" href="#import">Importera från Excel</a>`:''}<button class="btn" onclick="loadDemo()">👑 Utforska Vasaätten</button></div>
+    </div><div class="hero-art">${heroArt()}</div></div>
+    <h2 class="sec-t">Så kommer du igång</h2>
+    <div class="tiles">
+      <div class="tile"><span class="ic">1</span><b>Lägg in personer</b><span>En i taget, eller importera en hel lista från Excel eller CSV.</span></div>
+      <div class="tile"><span class="ic">2</span><b>Koppla källor</b><span>Husförhörslängder, dopböcker och bouppteckningar – med sida och bild-ID.</span></div>
+      <div class="tile"><span class="ic">3</span><b>Utforska</b><span>Träd, solfjäder, tidslinje, karta och släktskapsberäknare.</span></div>
+    </div></div>`;
+    return;
+  }
+  const home=homePerson()||P(ui.focus);
+  const years=all.map(p=>yearOf(p.birthDate)).filter(Boolean);
+  const anc=home?ancestorsOf(home.id).size:0;
+  let maxGen=0; if(home){const walk=(id,d)=>{const p=P(id); if(!p) return; maxGen=Math.max(maxGen,d); walk(p.fatherId,d+1); walk(p.motherId,d+1);}; walk(home.id,0);}
+  const nNoSrc=all.filter(p=>!(p.citations||[]).length).length;
+  const nPl=Object.values(S.places).filter(pl=>pl.lat==null).length;
+  const dups=findDups().length;
+  const recent=all.slice().sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')).slice(0,8);
+  const tiles=[
+    ['#trad','🌳','Släktträd','Anor och ättlingar runt '+esc(home?home.given||fullName(home):'startpersonen')],
+    ['#solfjader','◠','Solfjäder',anc?`${anc} kända anor i ${maxGen} generationer`:'Anorna i en halvcirkel'],
+    ['#personer','👥','Personer',`${all.length} personer${nNoSrc?` · ${nNoSrc} utan källa`:''}`],
+    ['#slaktskap','🔗','Släktskap','Hur är två personer släkt med varandra?'],
+    ['#tidslinje','📅','Tidslinje','Livslinjer mot historiska händelser'],
+    ['#karta','🗺️','Karta',`${Object.keys(S.places).length} platser${nPl?` · ${nPl} saknar position`:''}`],
+    ['#kallor','📜','Källor',`${Object.keys(S.sources).length} registrerade källor`],
+    ['#dubbletter','🧩','Dubbletter',dups?`${dups} möjliga dubbletter att granska`:'Inga misstänkta dubbletter'],
+    ['#import','⇅','Import & export','Excel, GEDCOM och säkerhetskopior'],
+  ];
+  v.innerHTML=`<div class="start"><div class="hero"><div>
+      <h1>${home?'Släkten kring '+esc(fullName(home)):'Ditt släktarkiv'}</h1>
+      <p>${all.length} personer${years.length?`, från ${Math.min(...years)} till ${Math.max(...years)}`:''}. ${home&&anc?`Du har hittat ${anc} anor till ${esc(home.given||fullName(home))}, ${maxGen} generationer bakåt.`:''}${home&&!anc&&descendantsOf(home.id).size?`${descendantsOf(home.id).size} ättlingar till ${esc(home.given||fullName(home))}.`:''}</p>
+      <div class="acts"><button class="btn primary" onclick="goHome()">Öppna släktträdet</button>${home?`<button class="btn" onclick="openCard('${home.id}')">Personkort</button>`:''}${ed?'<button class="btn" onclick="openPersonModal()">+ Ny person</button>':''}${demoActive()?'<button class="btn" onclick="exitDemo()">Avsluta exemplet</button>':''}</div>
+    </div><div class="hero-art">${heroArt()}</div></div>
+    <div class="tiles">${tiles.map(([h,ic,t,d])=>`<a class="tile" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>
+    <h2 class="sec-t">Senast ändrade</h2>
+    <div class="recent">${recent.map(p=>chipHTML(p)).join('')}</div></div>`;
+  bindChips(v,openCard);
+}
+
+/* ============ FAN CHART ============ */
+let fanZoom=null;
+function renderFan(fresh){
+  const v=$('#view');
+  if(!Object.keys(S.persons).length){v.innerHTML=emptyState();return;}
+  let F=P(ui.focus); if(!ui.fanGen) ui.fanGen=5; let fanNote='';
+  if(F&&!F.fatherId&&!F.motherId){let best=null,bn=0; for(const p of Object.values(S.persons)){const n=ancestorsOf(p.id).size; if(n>bn){bn=n;best=p;}} if(best){fanNote=`${esc(F.given||fullName(F))} har inga registrerade föräldrar – visar ${esc(fullName(best))}, som har flest kända anor.`; F=best;}}
+  if(!$('#fanSvg')||fresh){
+    v.innerHTML=`<div id="fanWrap"><svg id="fanSvg"><g class="vp"></g></svg>
+      <div class="tree-tools"><span class="fname" id="fanName"></span>
+        <span class="ctl">Generationer <select id="fanGen">${[3,4,5,6,7].map(n=>`<option ${n===ui.fanGen?'selected':''}>${n}</option>`).join('')}</select></span>
+        <button class="btn sm" id="fanFit">Centrera</button><button class="btn sm" id="fanPrint">⎙ Skriv ut / spara</button></div>
+      <div class="fan-legend" id="fanLegend"></div><div id="fanNote" class="banner" style="top:auto;bottom:70px;display:none;font-size:13px;max-width:80%"></div></div>`;
+    $('#fanGen').onchange=e=>{ui.fanGen=+e.target.value; ui.fanKey=null; renderFan();};
+    $('#fanFit').onclick=()=>{ui.fanKey=null; renderFan();};
+    $('#fanPrint').onclick=()=>printChart($('#fanSvg'),'Solfjäder för '+$('#fanName').textContent,'solfjader');
+    const svg=d3.select('#fanSvg'); fanZoom=d3.zoom().scaleExtent([.2,4]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform)); svg.call(fanZoom).on('dblclick.zoom',null);
+    ui.fanKey=null;
+  }
+  $('#fanName').textContent=fullName(F); const fnEl=$('#fanNote'); fnEl.style.display=fanNote?'flex':'none'; fnEl.innerHTML=fanNote;
+  const N=ui.fanGen, R0=66, W=[0,80,80,86,104,110,112,112];
+  const rIn=g=>R0+W.slice(1,g).reduce((a,b)=>a+b,0), rOut=g=>rIn(g)+W[g];
+  const cols=[cssv('--male'),'#5f8f7f','#b08a4a',cssv('--female')];
+  const slots=[]; const known=Array(N+1).fill(0);
+  (function walk(p,g,i){ if(g>N) return; for(const k of [0,1]){ const j=2*i+k; const q=p?P(p[k?'motherId':'fatherId']):null; slots.push({g,j,p:q,child:p,k}); if(q) known[g]++; walk(q,g+1,j);} })(F,1,0);
+  const svg=d3.select('#fanSvg'), g=svg.select('g.vp'); g.selectAll('*').remove();
+  const defs=g.append('defs'); const arc=d3.arc();
+  const pt=(a,r)=>[r*Math.sin(a),-r*Math.cos(a)];
+  for(const s of slots){
+    const n=2**s.g, span=Math.PI/n, a0=-Math.PI/2+s.j*span, a1=a0+span, r0=rIn(s.g), r1=rOut(s.g);
+    const quad=s.g===1?(s.j?3:0):Math.floor(s.j/(n/4));
+    const path=arc({innerRadius:r0,outerRadius:r1,startAngle:a0,endAngle:a1});
+    if(!s.p){
+      const el=g.append('path').attr('d',path).attr('class','fan-empty');
+      if(s.child&&Store.canEdit){el.append('title').text('Lägg till '+(s.k?'mor':'far')+' till '+fullName(s.child)); el.on('click',()=>openPersonModal(null,{rel:s.k?'mother':'father',of:s.child.id}));}
+      else el.style('cursor','default').style('opacity',.45);
+      continue;
+    }
+    const p=s.p;
+    g.append('path').attr('d',path).attr('class','fan-seg').style('fill',cols[quad]).style('fill-opacity',Math.max(.28,.82-(s.g-1)*.1))
+      .on('click',()=>{setFocus(p.id); ui.fanKey=null; select('person',p.id);}).append('title').text(personLabel(p)+(p.birthPlace?' · '+placeName(p.birthPlace):''));
+    const rm=(r0+r1)/2, mid=(a0+a1)/2, nm=fullName(p), yrs=lifespan(p).replace(/\s/g,'');
+    if(s.g<=3){
+      const L=rm*span, fs=s.g===1?13:s.g===2?12:11, maxc=Math.max(4,Math.floor(L/(fs*0.56)));
+      const lines=[[p.given||'',fs,600],[p.surname||'',fs,600],[yrs,fs-1.5,400]].filter(l=>l[0]);
+      const step=fs+3, start=rm+((lines.length-1)/2)*step;
+      lines.forEach(([t,f,w],li)=>{ const r=start-li*step-f/3; const id=`fa${s.g}_${s.j}_${li}`; const A=pt(a0,r),B=pt(a1,r);
+        defs.append('path').attr('id',id).attr('d',`M${A[0]},${A[1]}A${r},${r} 0 0 1 ${B[0]},${B[1]}`);
+        g.append('text').attr('class','fan-txt').style('font-size',f+'px').style('font-weight',w).append('textPath').attr('href','#'+id).attr('startOffset','50%').attr('text-anchor','middle').text(t.length>maxc?t.slice(0,maxc-1)+'…':t);});
+    } else {
+      const thick=rm*span, fs=s.g===4?10.5:s.g===5?9.5:s.g===6?8.5:7.5, maxc=Math.floor((W[s.g]-10)/(fs*0.56));
+      const deg=mid*180/Math.PI; const flip=mid<0;
+      const tg=g.append('g').attr('transform',`rotate(${deg-90}) translate(${rm},0)${flip?' rotate(180)':''}`);
+      const lines=thick>fs*3.4?[[nm,fs,600],[yrs,fs-1,400]]:thick>fs*1.8?[[nm,fs,600],[yrs,fs-1,400]]:[[nm,fs,600]];
+      const step=fs+1.5, off=-((lines.length-1)/2)*step;
+      lines.forEach(([t,f,w],li)=>tg.append('text').attr('class','fan-txt').attr('text-anchor','middle').attr('dy',(off+li*step+f/3).toFixed(1)).style('font-size',f+'px').style('font-weight',w).text(t.length>maxc?t.slice(0,maxc-1)+'…':t));
+    }
+  }
+  // centre
+  const cg=g.append('g').style('cursor','pointer').on('click',()=>select('person',F.id));
+  cg.append('circle').attr('r',R0-5).style('fill',cssv('--card')).style('stroke',cssv('--accent')).style('stroke-width',2.5);
+  const av=avatarUrl(F);
+  if(av){defs.append('clipPath').attr('id','fanclip').append('circle').attr('r',R0-9); cg.append('image').attr('href',av).attr('x',-(R0-9)).attr('y',-(R0-9)).attr('width',2*(R0-9)).attr('height',2*(R0-9)).attr('preserveAspectRatio','xMidYMid slice').attr('clip-path','url(#fanclip)').style('opacity',.28);}
+  const cn=[F.given||'',F.surname||'',lifespan(F).replace(/\s/g,'')].filter(Boolean);
+  cn.forEach((t,i)=>cg.append('text').attr('class','fan-txt').attr('text-anchor','middle').attr('y',(i-(cn.length-1)/2)*15+5).style('font-size',i<2?'13px':'11.5px').style('font-weight',i<2?600:400).text(t.length>14?t.slice(0,13)+'…':t));
+  // legend
+  let tot=0,kn=0; const rows=[]; for(let i=1;i<=N;i++){const t=2**i; tot+=t; kn+=known[i]; rows.push(`<div class="row"><span style="width:104px">${['','Föräldrar','Far-/morföräldrar','Gen. 3','Gen. 4','Gen. 5','Gen. 6','Gen. 7'][i]}</span><span class="bar"><i style="width:${100*known[i]/t}%"></i></span><span style="width:44px;text-align:right">${known[i]}/${t}</span></div>`);}
+  $('#fanLegend').innerHTML=`<b>Kända anor: ${kn} av ${tot} (${Math.round(100*kn/tot)}%)</b>${rows.join('')}<div class="muted" style="margin-top:6px">Klicka på en ana för att flytta mitten dit.</div>`;
+  // fit
+  const key=F.id+'|'+N;
+  if(ui.fanKey!==key){ui.fanKey=key; const Wd=$('#fanSvg').clientWidth,Hd=$('#fanSvg').clientHeight, R=rOut(N);
+    const k=Math.min(1.4,(Wd-40)/(2*R+20),(Hd-90)/(R+R0+20)); svg.call(fanZoom.transform,d3.zoomIdentity.translate(Wd/2,(Hd+R-R0)/2+30).scale(k));}
+}
+
+/* ============ PERSON CARD ============ */
+function storyOf(p){
+  const he=p.sex==='K'?'hon':p.sex==='M'?'han':'hen', He=he[0].toUpperCase()+he.slice(1);
+  const name=fullName(p), out=[];
+  const f=P(p.fatherId), m=P(p.motherId);
+  const child=p.sex==='K'?'dotter':p.sex==='M'?'son':'barn';
+  if(p.birthDate||p.birthPlace){
+    let t=`${name} föddes${p.birthDate?' '+whenText(p.birthDate):''}${p.birthPlace?' i '+placeName(p.birthPlace):''}`;
+    if(f||m) t+=`, ${f&&m?child+' till '+fullName(f)+' och '+fullName(m):child+' till '+fullName(f||m)}`;
+    out.push(t+'.');
+  } else if(f||m) out.push(`${name} var ${child} till ${f&&m?fullName(f)+' och '+fullName(m):fullName(f||m)}.`);
+  if(p.occupation) out.push(`${out.length?He:name} var ${/^[A-ZÅÄÖ][a-zåäö]/.test(p.occupation)?p.occupation[0].toLowerCase()+p.occupation.slice(1):p.occupation}.`);
+  const evs=(p.events||[]).filter(e=>e.type!=='Vigsel').sort((a,b)=>(dateKey(a.date)??9e9)-(dateKey(b.date)??9e9));
+  const pl=e=>e.placeId?' i '+placeName(e.placeId):'';
+  const verbs={Dop:'döptes',Konfirmation:'konfirmerades',Kröning:'kröntes',Begravning:'begravdes',Militärtjänst:'gjorde militärtjänst',Bosatt:'bodde'};
+  const parts=partners(p); const kids=children(p.id);
+  for(const sp of parts){
+    const vig=(p.events||[]).find(e=>e.type==='Vigsel'&&e.withId===sp.id)||(sp.events||[]).find(e=>e.type==='Vigsel'&&e.withId===p.id);
+    const married=(p.spouseIds||[]).includes(sp.id)||vig;
+    let t=married?`${He} gifte sig${vig&&vig.date?' '+whenText(vig.date):''}${vig&&vig.placeId?' i '+placeName(vig.placeId):''} med ${fullName(sp)}`:`${He} fick barn med ${fullName(sp)}`;
+    const ck=kids.filter(c=>c.fatherId===sp.id||c.motherId===sp.id);
+    const kl=listJoin(ck.map(c=>(c.given||fullName(c))+(yearOf(c.birthDate)?` (${yearOf(c.birthDate)})`:'')));
+    if(ck.length) t+=married?`, och tillsammans fick de ${numw(ck.length)} barn: ${kl}`:` – ${kl}`;
+    out.push(t+'.');
+  }
+  const solo=kids.filter(c=>!parts.some(sp=>c.fatherId===sp.id||c.motherId===sp.id));
+  if(solo.length) out.push(`${He} hade ${parts.length?'också ':''}${solo.length===1?'barnet':'barnen'} ${listJoin(solo.map(c=>fullName(c)))}.`);
+  for(const e of evs){
+    const w=e.date?whenText(e.date):'';
+    if(e.type==='Flytt') out.push(`${w?w[0].toUpperCase()+w.slice(1)+' flyttade '+he:He+' flyttade'}${e.placeId?' till '+placeName(e.placeId):''}${e.desc?' – '+e.desc.replace(/\.$/,''):''}.`);
+    else if(e.type==='Utvandring') out.push(`${w?w[0].toUpperCase()+w.slice(1)+' utvandrade '+he:He+' utvandrade'}${e.placeId?' via '+placeName(e.placeId):''}${e.desc?' – '+e.desc.replace(/\.$/,''):''}.`);
+    else if(verbs[e.type]) out.push(`${He} ${verbs[e.type]}${w?' '+w:''}${pl(e)}${e.desc&&!['Begravning','Kröning'].includes(e.type)?' ('+e.desc.replace(/\.$/,'')+')':''}.`);
+    else if(e.desc) out.push(`${w?w[0].toUpperCase()+w.slice(1)+' – ':''}${w?e.desc[0].toLowerCase()+e.desc.slice(1).replace(/\.$/,''):e.desc.replace(/\.$/,'')}${e.placeId&&!e.desc.includes(placeName(e.placeId))?pl(e):''}.`);
+  }
+  if(p.deathDate||p.deathPlace){const age=ageAt(p); out.push(`${He} dog${p.deathDate?' '+whenText(p.deathDate):''}${p.deathPlace?' i '+placeName(p.deathPlace):''}${age!=null&&age>0?`, ${age} år gammal`:''}.`);}
+  return out.join(' ');
+}
+function renderCard(){
+  const v=$('#view'); const p=P(ui.cardId)||(ui.sel&&ui.sel.type==='person'&&P(ui.sel.id))||P(ui.focus);
+  if(!p){v.innerHTML=emptyState();return;}
+  ui.cardId=p.id;
+  const av=avatarUrl(p), f=P(p.fatherId), m=P(p.motherId), parts=partners(p), kids=children(p.id), sibs=siblings(p);
+  const imgs=(p.media||[]);
+  const evs=lifeEvents(p); const by=yearOf(p.birthDate);
+  const story=storyOf(p);
+  v.innerHTML=`<div class="pc">
+    <div class="pc-head"><div class="pc-photo" style="box-shadow:0 0 0 2px ${sexColor(p)},var(--shadow)">${av?`<img src="${esc(av)}" alt="">`:esc(initials(p))}</div>
+      <div><h1>${esc(fullName(p))}</h1><div class="life">${esc([p.birthDate?'* '+fmtDate(p.birthDate):'',p.deathDate?'† '+fmtDate(p.deathDate):''].filter(Boolean).join('   '))}${p.occupation?`<br>${esc(p.occupation)}`:''}</div>
+      <div class="acts">${Store.canEdit?'<button class="btn" data-pc="edit">Redigera</button>':''}<button class="btn" data-pc="tree">Visa i trädet</button><button class="btn" data-pc="fan">Solfjäder</button><button class="btn" data-pc="rel">Hur är vi släkt?</button><button class="btn" data-pc="pdf">⎙ Skriv ut / PDF</button></div></div></div>
+    <div class="pc-grid"><div>
+      <h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>
+      ${imgs.length?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(mm.url)}" alt="${esc(mm.caption||'')}">`:'📄'}</div>`).join('')}</div>`:''}
+      <h3>Tidslinje</h3><div class="vtl">${evs.map(e=>{const y=yearOf(e.date); const age=by&&y&&e.fixed!=='birth'?y-by:null; return `<div class="it"><div class="d">${esc(fmtDate(e.date)||'okänt datum')}${age!=null&&age>=0?` · ${age} år`:''}</div><b>${esc(e.type==='Övrigt'&&e.desc?e.desc:e.type)}</b>${e.placeId?` · ${esc(placeName(e.placeId))}`:''}${e.withId&&P(e.withId)?` · med ${esc(fullName(P(e.withId)))}`:''}${e.desc&&e.type!=='Övrigt'?`<div class="muted small">${esc(e.desc)}</div>`:''}</div>`;}).join('')||'<p class="muted">Inga händelser.</p>'}</div>
+      ${p.notes?`<h3>Anteckningar</h3><p style="white-space:pre-wrap;line-height:1.6">${esc(p.notes)}</p>`:''}
+    </div><div>
+      <h3>Familj</h3>
+      ${f||m?`<div class="fam-group"><h5>Föräldrar</h5><div class="recent" style="grid-template-columns:1fr">${[f,m].filter(Boolean).map(x=>chipHTML(x)).join('')}</div></div>`:''}
+      ${parts.map(sp=>{const ck=kids.filter(c=>c.fatherId===sp.id||c.motherId===sp.id); return `<div class="fam-group"><h5>${(p.spouseIds||[]).includes(sp.id)?(sp.sex==='K'?'Hustru':sp.sex==='M'?'Make':'Partner'):'Partner'}</h5><div class="recent" style="grid-template-columns:1fr">${chipHTML(sp)}</div>${ck.length?`<h5 style="margin-top:8px">Barn (${ck.length})</h5><div class="recent" style="grid-template-columns:1fr">${ck.map(c=>chipHTML(c)).join('')}</div>`:''}</div>`;}).join('')}
+      ${(()=>{const solo=kids.filter(c=>!parts.some(sp=>c.fatherId===sp.id||c.motherId===sp.id)); return solo.length?`<div class="fam-group"><h5>Barn</h5><div class="recent" style="grid-template-columns:1fr">${solo.map(c=>chipHTML(c)).join('')}</div></div>`:'';})()}
+      ${sibs.length?`<div class="fam-group"><h5>Syskon (${sibs.length})</h5><div class="recent" style="grid-template-columns:1fr">${sibs.map(c=>chipHTML(c)).join('')}</div></div>`:''}
+      <h3 style="margin-top:22px">Källor</h3>
+      ${(p.citations||[]).map(c=>{const s=S.sources[c.sourceId]; return s?`<div class="cite"><b>${esc(s.title)}</b><div class="small muted">${esc([c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.ref].filter(Boolean).join(' · '))}</div></div>`:'';}).join('')||'<p class="muted small">Inga källor kopplade ännu.</p>'}
+    </div></div></div>`;
+  bindChips(v,openCard);
+  v.querySelectorAll('[data-img]').forEach(el=>el.onclick=()=>{ui.sel={type:'person',id:p.id}; openLightbox(p,+el.dataset.img);});
+  v.querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{const a=b.dataset.pc;
+    if(a==='edit') openPersonModal(p);
+    if(a==='tree'){setFocus(p.id); ui.treeKey=null; location.hash='trad';}
+    if(a==='fan'){setFocus(p.id); ui.fanKey=null; location.hash='solfjader';}
+    if(a==='rel'){ui.relB=p.id; const h=homePerson(); ui.relA=h&&h.id!==p.id?h.id:null; location.hash='slaktskap';}
+    if(a==='pdf') personPdf(p);
+  });
+}
+
+/* ============ DUPLICATES ============ */
+function nrm(s){return String(s||'').toLowerCase().normalize('NFC').replace(/[éè]/g,'e').replace(/w/g,'v').replace(/ph/g,'f').replace(/th/g,'t').replace(/ck/g,'k').replace(/c(?=[aou])/g,'k').replace(/q/g,'k').replace(/z/g,'s').replace(/dtr$/,'dotter').replace(/(.)\1+/g,'$1').trim();}
+function lev(a,b){if(a===b) return 0; if(!a||!b) return Math.max(a.length,b.length); const d=Array.from({length:b.length+1},(_,i)=>i); for(let i=1;i<=a.length;i++){let prev=d[0]; d[0]=i; for(let j=1;j<=b.length;j++){const t=d[j]; d[j]=Math.min(d[j]+1,d[j-1]+1,prev+(a[i-1]===b[j-1]?0:1)); prev=t;}} return d[b.length];}
+function dupScore(a,b){
+  if(a.sex&&b.sex&&a.sex!==b.sex) return 0;
+  if(a.fatherId===b.id||a.motherId===b.id||b.fatherId===a.id||b.motherId===a.id) return 0;
+  if((a.notDup||[]).includes(b.id)||(b.notDup||[]).includes(a.id)) return 0;
+  const ga=nrm((a.given||'').split(/\s+/)[0]), gb=nrm((b.given||'').split(/\s+/)[0]);
+  if(!ga||!gb) return 0;
+  let s=0; const gd=lev(ga,gb); if(gd===0) s+=30; else if(gd===1&&ga.length>3) s+=18; else return 0;
+  const sa=nrm(a.surname), sb=nrm(b.surname);
+  if(sa&&sb){const d=lev(sa,sb); if(d===0) s+=25; else if(d<=2) s+=15; else s-=25;} else s+=5;
+  const ya=yearOf(a.birthDate), yb=yearOf(b.birthDate);
+  if(ya&&yb){const d=Math.abs(ya-yb); if(d===0) s+=25; else if(d<=2) s+=14; else if(d>5) return 0; else s-=10;} else s+=4;
+  const da=yearOf(a.deathDate), db=yearOf(b.deathDate);
+  if(da&&db){const d=Math.abs(da-db); if(d===0) s+=10; else if(d>3) s-=30;}
+  if(a.fatherId&&a.fatherId===b.fatherId) s+=15; if(a.motherId&&a.motherId===b.motherId) s+=15;
+  if(a.birthPlace&&a.birthPlace===b.birthPlace) s+=10;
+  return Math.max(0,Math.min(100,s));
+}
+function findDups(){
+  const all=Object.values(S.persons); const buckets={};
+  for(const p of all){const k=nrm((p.given||'').split(/\s+/)[0]).slice(0,2); if(k) (buckets[k]=buckets[k]||[]).push(p);}
+  const out=[];
+  for(const list of Object.values(buckets)) for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++){const sc=dupScore(list[i],list[j]); if(sc>=60) out.push({a:list[i],b:list[j],sc});}
+  return out.sort((x,y)=>y.sc-x.sc);
+}
+function renderDups(){
+  const v=$('#view'); const dups=findDups();
+  const row=(lbl,fa,fb)=>{const x=fa||'–',y=fb||'–'; const diff=fa&&fb&&norm(fa)!==norm(fb); return `<span class="k">${lbl}</span><span class="${diff?'diff':''}">${esc(x)}</span><span class="${diff?'diff':''}">${esc(y)}</span>`;};
+  v.innerHTML=`<div class="view-pad"><div class="toolbar"><h2>Möjliga dubbletter</h2><a class="btn" href="#personer">← Personer</a></div>
+    <p class="muted" style="max-width:720px;line-height:1.55;margin-top:-6px">Personer med liknande namn, födelseår, föräldrar och födelseort. Vid sammanslagning fylls tomma uppgifter i från den andra posten, och händelser, källor, bilder och familjekopplingar flyttas över.</p>
+    ${dups.length?dups.map((d,i)=>`<div class="dup" data-i="${i}"><div style="display:flex;align-items:center;gap:10px"><span class="score">${d.sc}% lika</span><b>${esc(fullName(d.a))}</b><span class="muted">och</span><b>${esc(fullName(d.b))}</b></div>
+      <div class="dup-grid"><span></span><span class="h">A</span><span class="h">B</span>
+      ${row('Född',[d.a.birthDate,placeName(d.a.birthPlace)].filter(Boolean).join(', '),[d.b.birthDate,placeName(d.b.birthPlace)].filter(Boolean).join(', '))}
+      ${row('Död',[d.a.deathDate,placeName(d.a.deathPlace)].filter(Boolean).join(', '),[d.b.deathDate,placeName(d.b.deathPlace)].filter(Boolean).join(', '))}
+      ${row('Far',fullName(P(d.a.fatherId))==='Okänd'?'':fullName(P(d.a.fatherId)),fullName(P(d.b.fatherId))==='Okänd'?'':fullName(P(d.b.fatherId)))}
+      ${row('Mor',fullName(P(d.a.motherId))==='Okänd'?'':fullName(P(d.a.motherId)),fullName(P(d.b.motherId))==='Okänd'?'':fullName(P(d.b.motherId)))}
+      ${row('Partner',partners(d.a).map(fullName).join(', '),partners(d.b).map(fullName).join(', '))}
+      ${row('Barn / källor',children(d.a.id).length+' barn, '+(d.a.citations||[]).length+' källor',children(d.b.id).length+' barn, '+(d.b.citations||[]).length+' källor')}
+      </div>${Store.canEdit?`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm primary" data-merge="a">Slå ihop – behåll A</button><button class="btn sm" data-merge="b">Slå ihop – behåll B</button><button class="btn sm ghost" data-notdup>Inte samma person</button></div>`:''}</div>`).join('')
+    :`<div class="box"><h3>Inga misstänkta dubbletter</h3><p>Hittade inga personer som verkar vara samma person. Kör gärna sökningen igen efter en import.</p></div>`}</div>`;
+  v.querySelectorAll('.dup').forEach(el=>{const d=dups[+el.dataset.i];
+    el.querySelectorAll('[data-merge]').forEach(b=>b.onclick=()=>{const [k,x]=b.dataset.merge==='a'?[d.a,d.b]:[d.b,d.a]; confirmBox(`Slå ihop till ${fullName(k)}?`,`Uppgifterna från den andra posten läggs in där de saknas, och den andra posten tas bort.`,'Slå ihop',()=>mergePersons(k.id,x.id));});
+    const nd=el.querySelector('[data-notdup]'); if(nd) nd.onclick=()=>{const a=clone(d.a); a.notDup=[...new Set([...(a.notDup||[]),d.b.id])]; Store.put(a);};
+  });
+}
+async function mergePersons(keepId,dropId){
+  const k=clone(P(keepId)), d=P(dropId); if(!k||!d) return;
+  for(const f of ['given','surname','sex','birthDate','birthPlace','deathDate','deathPlace','occupation','fatherId','motherId']) if(!k[f]&&d[f]) k[f]=d[f];
+  if(d.notes&&d.notes!==k.notes) k.notes=[k.notes,d.notes].filter(Boolean).join('\n\n');
+  const evKey=e=>e.type+'|'+(e.date||'')+'|'+(e.placeId||'');
+  const evs=(k.events||[]).slice(); for(const e of d.events||[]) if(!evs.some(x=>evKey(x)===evKey(e))) evs.push(e); k.events=evs;
+  const cKey=c=>c.sourceId+'|'+(c.about||'')+'|'+(c.detail||'');
+  const cs=(k.citations||[]).slice(); for(const c of d.citations||[]) if(!cs.some(x=>cKey(x)===cKey(c))) cs.push(c); k.citations=cs;
+  k.media=(k.media||[]).concat((d.media||[]).map(m=>Object.assign({},m,{profile:(k.media||[]).some(x=>x.profile)?false:m.profile})));
+  k.spouseIds=[...new Set([...(k.spouseIds||[]),...(d.spouseIds||[])])].filter(x=>x!==keepId&&x!==dropId);
+  k.notDup=[...new Set([...(k.notDup||[]),...(d.notDup||[])])].filter(x=>x!==dropId);
+  if(d.home) k.home=true;
+  await Store.put(k,{silent:true});
+  for(const o of Object.values(S.persons)){ if(o.id===keepId||o.id===dropId) continue; let ch=false; const q=clone(o);
+    if(q.fatherId===dropId){q.fatherId=keepId;ch=true;} if(q.motherId===dropId){q.motherId=keepId;ch=true;}
+    if((q.spouseIds||[]).includes(dropId)){q.spouseIds=[...new Set(q.spouseIds.map(x=>x===dropId?keepId:x))];ch=true;}
+    (q.events||[]).forEach(e=>{if(e.withId===dropId){e.withId=keepId;ch=true;}});
+    if((q.notDup||[]).includes(dropId)){q.notDup=q.notDup.filter(x=>x!==dropId);ch=true;}
+    if(ch) Store.put(q,{silent:true}); }
+  if(ui.focus===dropId) setFocus(keepId);
+  if(ui.sel&&ui.sel.id===dropId) ui.sel={type:'person',id:keepId};
+  await Store.del('person',dropId);
+  toast('Sammanslaget till '+fullName(k));
+}
+
+/* ============ RELATIONSHIP ============ */
+function upMap(id){const m=new Map([[id,{d:0,path:[id]}]]); const q=[id]; while(q.length){const x=q.shift(); const p=P(x); if(!p) continue; for(const k of ['fatherId','motherId']){const y=p[k]; if(y&&P(y)&&!m.has(y)){const path=m.get(x).path.concat(y); m.set(y,{d:path.length-1,path}); q.push(y);}}} return m;}
+function blood(a,b){
+  const A=upMap(a),B=upMap(b); let best=null;
+  for(const [id,ia] of A){const ib=B.get(id); if(ib){const t=ia.d+ib.d; if(!best||t<best.t||(t===best.t&&Math.abs(ia.d-ib.d)<Math.abs(best.a-best.b))) best={id,a:ia.d,b:ib.d,pa:ia.path,pb:ib.path,t};}}
+  if(!best) return null;
+  best.commons=[...A].filter(([id,ia])=>{const ib=B.get(id); return ib&&ia.d===best.a&&ib.d===best.b;}).map(([id])=>id);
+  if(best.a>0&&best.b>0&&best.commons.length===1){const ca=P(best.pa[best.a-1]),cb=P(best.pb[best.b-1]); const oa=ca&&(ca.fatherId===best.id?ca.motherId:ca.fatherId), ob=cb&&(cb.fatherId===best.id?cb.motherId:cb.fatherId); best.half=!!(oa&&ob&&oa!==ob);}
+  return best;
+}
+const sx=(id,m,f,n)=>{const p=P(id); return p&&p.sex==='M'?m:p&&p.sex==='K'?f:n;};
+function chain(ids,mWord,fWord){ // ids: successive persons (excluding start)
+  const w=ids.map(id=>sx(id,mWord,fWord,null)); if(w.some(x=>!x)) return null;
+  const chunks=[]; for(let i=0;i<w.length;i+=2) chunks.push(w.slice(i,i+2).join('')); return chunks.join('s ');
+}
+function ancTerm(path){const ids=path.slice(1); const c=chain(ids,'far','mor'); if(c) return c; const k=ids.length; return k===1?'förälder':k===2?'mor- eller farförälder':`ana i ${k}:e led`;}
+function descTerm(ids){const c=chain(ids,'son','dotter'); if(c) return c; const k=ids.length; return k===1?'barn':k===2?'barnbarn':k===3?'barnbarnsbarn':`ättling i ${k}:e led`;}
+const cous=n=>n===2?'kusin':n===3?'tremänning':n===4?'fyrmänning':n===5?'femmänning':n===6?'sexmänning':`${n}-männing`;
+function bloodTerm(r,aId,bId){
+  const {a,b,pa,pb}=r;
+  if(a===0&&b===0) return 'samma person';
+  if(a===0) return descTerm(pb.slice(0,b).reverse());
+  if(b===0) return ancTerm(pa);
+  const h=r.half?'halv':'';
+  if(a===1&&b===1) return h+sx(bId,'bror','syster','syskon');
+  if(a===1){const sib=pb[b-1], sc=pb[b-2]; const base=sx(sib,'bror','syster',null)&&sx(sc,'son','dotter',null)?sx(sib,'bror','syster')+sx(sc,'son','dotter'):'syskonbarn'; const t=(h?'halv':'')+base; return b===2?t:`${t}s ${descTerm(pb.slice(0,b-2).reverse())}`;}
+  if(b===1){const anc=pa.slice(0,a); const last=ancTerm(anc); const sib=sx(bId,'bror','syster','syskon');
+    if(a===2){const pw=sx(pa[1],'far','mor',null); if(pw&&sib!=='syskon') return h+({far:{bror:'farbror',syster:'faster'},mor:{bror:'morbror',syster:'moster'}}[pw][sib]);}
+    return `${last}s ${h}${sib}`;}
+  const n=Math.min(a,b);
+  if(a===b) return h+cous(n);
+  if(a>b) return `${ancTerm(pa.slice(0,a-b+1))}s ${h}${cous(b)}`;
+  return `${h}${cous(a)}s ${descTerm(pb.slice(0,b-a).reverse())}`;
+}
+function relation(aId,bId){
+  if(aId===bId) return {text:'samma person'};
+  const r=blood(aId,bId);
+  if(r) return {text:bloodTerm(r,aId,bId),r,kind:'blood'};
+  const A=P(aId),B=P(bId);
+  if(partners(A).some(x=>x.id===bId)) return {text:(A.spouseIds||[]).includes(bId)?sx(bId,'make','maka','make/maka'):'partner',kind:'partner'};
+  for(const q of partners(B)){const r2=blood(aId,q.id); if(r2){ let t;
+    if(r2.a===0&&r2.b===1) t=sx(bId,'svärson','svärdotter','svärbarn');
+    else if(r2.a===1&&r2.b===1) t=sx(bId,'svåger','svägerska','svåger/svägerska');
+    else t=`${bloodTerm(r2,aId,q.id)}s ${sx(bId,'make','maka','partner')}`;
+    return {text:t,r:r2,kind:'inlaw',via:q.id,viaSide:'b'};}}
+  for(const q of partners(A)){const r2=blood(q.id,bId); if(r2){ let t;
+    if(r2.a===1&&r2.b===0) t=sx(bId,'svärfar','svärmor','svärförälder');
+    else if(r2.a===1&&r2.b===1) t=sx(bId,'svåger','svägerska','svåger/svägerska');
+    else t=`${sx(q.id,'makens','makans','partnerns')} ${bloodTerm(r2,q.id,bId)}`;
+    return {text:t,r:r2,kind:'inlaw',via:q.id,viaSide:'a'};}}
+  return {text:null};
+}
+function renderRel(){
+  const v=$('#view'); const all=Object.values(S.persons);
+  if(all.length<2){v.innerHTML=emptyState();return;}
+  if(!ui.relA||!P(ui.relA)){const h=homePerson(); ui.relA=h?h.id:ui.focus;}
+  if(!ui.relB||!P(ui.relB)||ui.relB===ui.relA){const s=ui.sel&&ui.sel.type==='person'&&ui.sel.id!==ui.relA?ui.sel.id:null; ui.relB=s||(all.find(p=>p.id!==ui.relA)||{}).id;}
+  const A=P(ui.relA),B=P(ui.relB);
+  const res=relation(A.id,B.id);
+  let pathHTML='';
+  if(res.r){const r=res.r; const top=r.commons.map(id=>P(id)).filter(Boolean);
+    const left=r.pa.slice(0,r.a).reverse(), right=r.pb.slice(0,r.b).reverse();
+    const col=(ids)=>ids.map(id=>`<div class="arrow"></div>${chipHTML(P(id))}`).join('');
+    pathHTML=`<div class="rel-path" style="flex-direction:column;align-items:center;gap:0"><div class="rel-top">${top.map(p=>chipHTML(p,'gemensam ana')).join('')}</div>
+      <div style="display:flex;gap:30px;justify-content:center;flex-wrap:wrap"><div class="rel-col">${col(left)}</div>${right.length?`<div class="rel-col">${col(right)}</div>`:''}</div></div>`;
+  }
+  const an=esc(A.given||fullName(A)), bn=esc(fullName(B));
+  v.innerHTML=`<div class="view-pad" style="max-width:980px"><div class="toolbar"><h2>Hur är vi släkt?</h2></div>
+    <div class="rel-pick"><label class="f" style="margin:0"><span>Person A</span>${personPicker('relA',A.id,'Välj person')}</label>
+      <button class="btn" id="relSwap" title="Byt plats">⇄</button>
+      <label class="f" style="margin:0"><span>Person B</span>${personPicker('relB',B.id,'Välj person')}</label>${allPersonsDatalist()}</div>
+    <div class="rel-answer">${res.text?`<div class="muted small" style="margin-bottom:6px">${res.kind==='blood'&&res.r?`${res.r.a+res.r.b} generationssteg via ${listJoin(res.r.commons.map(id=>esc(fullName(P(id)))))}`:res.kind==='inlaw'?'Släkt genom giftermål':res.kind==='partner'?'Partner':''}</div>
+      <div class="big"><b>${bn}</b> är ${genitive(an)} <b>${esc(res.text)}</b>.</div>
+      ${res.kind==='blood'&&res.r&&res.r.a!==res.r.b&&res.r.a>0&&res.r.b>0?`<div class="muted" style="margin-top:8px">Omvänt: ${an} är ${esc(genitive(B.given||fullName(B)))} ${esc(bloodTerm({...res.r,a:res.r.b,b:res.r.a,pa:res.r.pb,pb:res.r.pa},B.id,A.id))}.</div>`:''}
+      ${pathHTML}`
+    :`<div class="big">Ingen känd släktskap</div><p class="muted" style="margin:8px 0 0">Hittade ingen gemensam ana eller koppling via giftermål mellan ${an} och ${bn} i arkivet.</p>`}</div></div>`;
+  const pick=(inp,key)=>{inp.onchange=()=>{const p=personByLabel(inp.value); if(p){ui[key]=p.id; renderRel();} else toast('Välj en person i listan');};};
+  pick($('#relA'),'relA'); pick($('#relB'),'relB');
+  $('#relSwap').onclick=()=>{[ui.relA,ui.relB]=[ui.relB,ui.relA]; renderRel();};
+  bindChips(v,openCard);
+}
+
+/* ============ PRINT / PDF ============ */
+function loadJsPDF(){return new Promise((res,rej)=>{if(window.jspdf) return res(); const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload=res; s.onerror=()=>rej(new Error('Kunde inte ladda PDF-verktyget')); document.head.appendChild(s);});}
+async function toDataURL(url){if(!url||url.startsWith('data:')) return url; try{const r=await fetch(url); const b=await r.blob(); return await new Promise(res=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b);});}catch(e){return null;}}
+const PROPS=['fill','fill-opacity','stroke','stroke-width','stroke-dasharray','opacity','font-size','font-weight','font-style','text-anchor','dominant-baseline','paint-order','visibility','display'];
+async function svgSnapshot(svgEl,title){
+  const prev=currentTheme(); applyTheme('light');
+  const vp=svgEl.querySelector('g.vp'); const bb=vp.getBBox(); const M=30, TH=46;
+  const clone=svgEl.cloneNode(true);
+  const o=[svgEl,...svgEl.querySelectorAll('*')], c=[clone,...clone.querySelectorAll('*')];
+  o.forEach((el,i)=>{const cs=getComputedStyle(el); let st=''; for(const p of PROPS){const v=cs.getPropertyValue(p); if(v) st+=`${p}:${v};`;} st+='font-family:Helvetica,Arial,sans-serif;'; c[i].setAttribute('style',st); c[i].removeAttribute('class');});
+  o.forEach((el,i)=>{if(el.classList&&el.classList.contains('ghost')) c[i].setAttribute('data-drop','1');});
+  clone.querySelectorAll('[data-drop]').forEach(el=>el.remove());
+  const paper=cssv('--paper'), ink=cssv('--ink'), ink3=cssv('--ink3');
+  applyTheme(prev);
+  c[o.indexOf(vp)].removeAttribute('transform');
+  const w=bb.width+2*M, h=bb.height+2*M+TH;
+  clone.setAttribute('xmlns','http://www.w3.org/2000/svg'); clone.setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink');
+  clone.setAttribute('viewBox',`${bb.x-M} ${bb.y-M-TH} ${w} ${h}`); clone.setAttribute('width',w); clone.setAttribute('height',h); clone.style.cursor='';
+  const NS='http://www.w3.org/2000/svg';
+  const bg=document.createElementNS(NS,'rect'); bg.setAttribute('x',bb.x-M); bg.setAttribute('y',bb.y-M-TH); bg.setAttribute('width',w); bg.setAttribute('height',h); bg.setAttribute('fill',paper); clone.insertBefore(bg,clone.firstChild);
+  const t=document.createElementNS(NS,'text'); t.setAttribute('x',bb.x); t.setAttribute('y',bb.y-M-TH+30); t.setAttribute('style',`font-family:Georgia,serif;font-size:22px;font-weight:600;fill:${ink}`); t.textContent=title; clone.appendChild(t);
+  const t2=document.createElementNS(NS,'text'); t2.setAttribute('x',bb.x+bb.width); t2.setAttribute('y',bb.y-M-TH+30); t2.setAttribute('style',`font-family:Helvetica,Arial,sans-serif;font-size:11px;fill:${ink3};text-anchor:end`); t2.textContent='Släktarkivet · '+fmtDate(new Date().toISOString().slice(0,10)); clone.appendChild(t2);
+  for(const im of clone.querySelectorAll('image')){const href=im.getAttribute('href'); const d=await toDataURL(href); if(d) im.setAttribute('href',d); else im.remove();}
+  const xml=new XMLSerializer().serializeToString(clone);
+  const url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml;charset=utf-8'}));
+  const img=await new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('Kunde inte rita bilden')); i.src=url;});
+  const scale=Math.max(1,Math.min(3,7000/Math.max(w,h)));
+  const cv=document.createElement('canvas'); cv.width=Math.round(w*scale); cv.height=Math.round(h*scale);
+  const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,cv.width,cv.height); URL.revokeObjectURL(url);
+  return {canvas:cv,w,h};
+}
+function printChart(svgEl,title,slug){
+  modal(`<h3>Skriv ut eller spara</h3><p class="muted" style="line-height:1.5">Hela diagrammet sparas – inte bara det som syns på skärmen – i ljust tema och med titel. Öppna PDF:en och skriv ut, eller beställ en affisch från bilden.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px"><button class="btn primary" data-k="pdf">PDF för utskrift (A3)</button><button class="btn" data-k="pdf4">PDF (A4)</button><button class="btn" data-k="png">Bild (PNG)</button></div>
+    <div id="prProg" class="small muted" style="margin-top:10px"></div><div class="foot"><button class="btn" data-x>Stäng</button></div>`,(ov,close)=>{
+    ov.querySelector('[data-x]').onclick=close;
+    ov.querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{
+      const k=b.dataset.k; ov.querySelector('#prProg').textContent='Skapar fil…';
+      try{
+        const {canvas,w,h}=await svgSnapshot(svgEl,title);
+        const stamp=new Date().toISOString().slice(0,10);
+        if(k==='png'){const blob=await new Promise(r=>canvas.toBlob(r,'image/png')); close(); await saveFile(`${slug}-${stamp}.png`,blob); return;}
+        await loadJsPDF(); const {jsPDF}=window.jspdf; const land=w>=h; const fmt=k==='pdf'?'a3':'a4';
+        const doc=new jsPDF({orientation:land?'landscape':'portrait',unit:'mm',format:fmt});
+        const pw=doc.internal.pageSize.getWidth(), ph=doc.internal.pageSize.getHeight(), m=10;
+        const sc=Math.min((pw-2*m)/w,(ph-2*m)/h); const iw=w*sc, ih=h*sc;
+        doc.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',(pw-iw)/2,(ph-ih)/2,iw,ih);
+        close(); await saveFile(`${slug}-${stamp}.pdf`,doc.output('blob'));
+      }catch(e){ov.querySelector('#prProg').textContent='Det gick inte: '+(e.message||e);}
+    });
+  });
+}
+const pdfT=s=>String(s??'').replace(/Ł/g,'L').replace(/ł/g,'l').replace(/[^\u0000-ÿ–—‘’“”…†•]/g,c=>c.normalize('NFD').replace(/[̀-ͯ]/g,'')).replace(/[^\u0000-ÿ–—‘’“”…†•]/g,'?');
+async function personPdf(p){
+  try{
+    toast('Skapar PDF…'); await loadJsPDF(); const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4'}); const W=210, M=18; let y=M;
+    const need=h=>{if(y+h>297-M){doc.addPage(); y=M;}};
+    const para=(txt,size=10.5,style='normal',color=[42,37,32],lh=1.45)=>{doc.setFont('helvetica',style); doc.setFontSize(size); doc.setTextColor(...color); for(const line of doc.splitTextToSize(pdfT(txt),W-2*M)){need(size*0.36*lh); doc.text(line,M,y+size*0.3); y+=size*0.36*lh;}};
+    const head=t=>{y+=4; need(12); doc.setDrawColor(200,190,170); doc.line(M,y,W-M,y); y+=6; para(t.toUpperCase(),9,'bold',[120,110,95]); y+=1;};
+    const av=avatarUrl(p); let photo=null; if(av) photo=await toDataURL(av);
+    let tx=M; if(photo){try{doc.addImage(photo,photo.includes('image/png')?'PNG':'JPEG',M,y,32,40,undefined,'FAST'); tx=M+38;}catch(e){photo=null;}}
+    doc.setFont('times','bold'); doc.setFontSize(24); doc.setTextColor(42,37,32); doc.text(pdfT(fullName(p)),tx,y+9);
+    doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(93,85,75);
+    const life=[p.birthDate?'* '+fmtDate(p.birthDate)+(p.birthPlace?', '+placeName(p.birthPlace):''):'',p.deathDate?'† '+fmtDate(p.deathDate)+(p.deathPlace?', '+placeName(p.deathPlace):''):''].filter(Boolean);
+    life.forEach((l,i)=>doc.text(pdfT(l),tx,y+17+i*6)); if(p.occupation) doc.text(pdfT(p.occupation),tx,y+17+life.length*6);
+    y+=photo?44:26;
+    const st=storyOf(p); if(st){head('Livsberättelse'); para(st,11,'normal',[42,37,32],1.55);}
+    const f=P(p.fatherId),m=P(p.motherId),parts=partners(p),kids=children(p.id),sibs=siblings(p);
+    head('Familj');
+    if(f||m) para('Föräldrar: '+[f,m].filter(Boolean).map(personLabel).join(', '));
+    for(const sp of parts){const ck=kids.filter(c=>c.fatherId===sp.id||c.motherId===sp.id); para('Partner: '+personLabel(sp)+(ck.length?' — barn: '+ck.map(personLabel).join(', '):''));}
+    const solo=kids.filter(c=>!parts.some(sp=>c.fatherId===sp.id||c.motherId===sp.id)); if(solo.length) para('Barn: '+solo.map(personLabel).join(', '));
+    if(sibs.length) para('Syskon: '+sibs.map(personLabel).join(', '));
+    const evs=lifeEvents(p); if(evs.length){head('Händelser'); for(const e of evs) para(`${fmtDate(e.date)||'–'}  ${e.type}${e.placeId?', '+placeName(e.placeId):''}${e.withId&&P(e.withId)?', med '+fullName(P(e.withId)):''}${e.desc?' — '+e.desc:''}`);}
+    const cs=(p.citations||[]).filter(c=>S.sources[c.sourceId]); if(cs.length){head('Källor'); for(const c of cs){const s=S.sources[c.sourceId]; para(`• ${s.title}${[c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.archive,s.ref].filter(Boolean).length?' ('+[c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.archive,s.ref].filter(Boolean).join(', ')+')':''}`,9.5);}}
+    if(p.notes){head('Anteckningar'); para(p.notes,10);}
+    const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140,130,115); doc.text(pdfT(`Släktarkivet · ${fullName(p)} · sida ${i} av ${n}`),M,297-8);}
+    await saveFile(`personkort-${(fullName(p)).toLowerCase().replace(/[^a-z0-9åäö]+/g,'-')}.pdf`,doc.output('blob'));
+  }catch(e){toast('Kunde inte skapa PDF: '+(e.message||e));}
+}
+
 /* ============ Global search ============ */
 (function(){
   const q=$('#q'),res=$('#qres'); let hl=0,items=[];
@@ -1376,12 +1947,12 @@ function toGedcom(){
   q.onkeydown=e=>{if(!res.classList.contains('open')) return; if(e.key==='ArrowDown'){hl=Math.min(hl+1,items.length-1);draw();e.preventDefault();} if(e.key==='ArrowUp'){hl=Math.max(hl-1,0);draw();e.preventDefault();} if(e.key==='Enter'&&items[hl]) pick(items[hl].id); if(e.key==='Escape'){res.classList.remove('open');}};
   q.onblur=()=>setTimeout(()=>res.classList.remove('open'),120);
 })();
-$('#home').addEventListener('click',e=>{e.preventDefault(); goHome();});
+$('#home').addEventListener('click',e=>{e.preventDefault(); ui.sel=null; if(location.hash!=='#start') location.hash='start'; else renderAll(true);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.placing){ui.placing=null; if(ui.view==='karta') renderMap();}});
 window.addEventListener('resize',()=>{clearTimeout(window._rz); window._rz=setTimeout(()=>{ui.treeKey=null; mapState.drawn=false; renderAll();},200);});
 
 /* ============ Demo ============ */
-function loadDemo(){
+function demoData(){
   const now=new Date().toISOString();
   const pl=(id,name,lat,lon,county,country='Sverige',notes='')=>({kind:'place',id,name,lat,lon,county,country,notes});
   const places=[
@@ -1472,9 +2043,30 @@ function loadDemo(){
       events:[ev('Kröning','1650-10-20','pl_sthlm'),ev('Övrigt','1654-06-06','pl_uppsala','Abdikerade på Uppsala slott'),ev('Övrigt','1655-11-03','pl_innsbruck','Konverterade offentligt till katolicismen')],
       notes:'Den sista av Vasaätten på den svenska tronen. Begravd i Peterskyrkan i Rom.',citations:[c('s_sbl','','Kristina')]}),
   ];
-  setFocus(G); ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel={type:'person',id:G};
-  Store.putMany([...places,...sources,...persons]).then(()=>toast('Vasaätten är inläst – allt går att ändra eller tömma under Import & export.',4500));
+  return {places,sources,persons};
+}
+let _demoIds=null;
+const demoIds=()=>_demoIds||(_demoIds=(()=>{const d=demoData(); return new Set([...d.places,...d.sources,...d.persons].map(o=>o.id));})());
+const demoActive=()=>{const ids=demoIds(); return Object.keys(S.persons).some(id=>ids.has(id));};
+function updateDemoBar(){const b=$('#demoBar'); if(b) b.classList.toggle('on',Store.loaded&&demoActive());}
+function loadDemo(){
+  const {places,sources,persons}=demoData();
+  setFocus('p_gustav1'); ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel=null;
+  Store.putMany([...places,...sources,...persons]).then(()=>toast('Vasaätten är inläst. Avsluta exemplet när du vill via den gula raden högst upp.',5000));
   if(location.hash!=='#trad') location.hash='trad'; else renderAll();
+}
+function exitDemo(){
+  confirmBox('Avsluta exemplet Vasaätten?','Alla personer, platser och källor från exemplet tas bort. Sådant du själv har lagt till ligger kvar.','Avsluta exemplet',async()=>{
+    const ids=demoIds();
+    for(const p of Object.values(S.persons)){ if(ids.has(p.id)) continue; const q=clone(p); let ch=false;
+      for(const k of ['fatherId','motherId']) if(ids.has(q[k])){q[k]='';ch=true;}
+      const sp=(q.spouseIds||[]).filter(x=>!ids.has(x)); if(sp.length!==(q.spouseIds||[]).length){q.spouseIds=sp;ch=true;}
+      if(ch) Store.put(q,{silent:true}); }
+    for(const [kind,col] of [['person','persons'],['place','places'],['source','sources']]) for(const id of Object.keys(S[col])) if(ids.has(id)) Store.del(kind,id,{silent:true});
+    ui.sel=null; ui.focus=null; ui.treeKey=null; try{localStorage.removeItem('sa-focus');}catch(e){}
+    toast('Exemplet är borttaget');
+    if(location.hash!=='#start') location.hash='start'; else renderAll(true);
+  });
 }
 
 /* ============ Boot ============ */
