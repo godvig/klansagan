@@ -14,6 +14,10 @@ Allt är en enda HTML-sida utan byggsteg – ingen `npm install` behövs.
 - **Import** – Excel (.xlsx), CSV eller inklistrade celler, med automatisk kolumnmatchning.
 - **Export** – JSON-säkerhetskopia, GEDCOM 5.5.1 och CSV.
 
+## Exempeldata
+
+Tomt arkiv? Klicka **Visa Vasaätten som exempel** för att läsa in Vasaätten – från Gustav Vasa och hans tre hustrur till drottning Kristina, Karl X Gustav och de polska Vasakungarna – med kröningar, vigslar, platser på kartan och källor (SBL, SKBL, Kungliga slotten). Datum följer den julianska kalendern som gällde i Sverige till 1753. Exemplet kan tömmas under *Import & export*.
+
 ## Köra lokalt
 
 Sidan läser in kartdata med `fetch`, så den måste serveras över HTTP (att dubbelklicka på `index.html` fungerar inte för kartan).

@@ -276,9 +276,15 @@ function dateKey(s){
 const NOW_Y=new Date().getFullYear();
 function toast(msg,ms=2600){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
 
-const EVENT_TYPES=['Dop','Konfirmation','Vigsel','Skilsmässa','Flytt','Bosatt','Yrke','Militärtjänst','Utvandring','Invandring','Begravning','Bouppteckning','Fotografi','Övrigt'];
+const EVENT_TYPES=['Dop','Konfirmation','Vigsel','Kröning','Skilsmässa','Flytt','Bosatt','Yrke','Militärtjänst','Utvandring','Invandring','Begravning','Bouppteckning','Fotografi','Övrigt'];
 const SOURCE_TYPES=['Husförhörslängd','Församlingsbok','Födelse- och dopbok','Lysnings- och vigselbok','Död- och begravningsbok','Flyttlängd','Bouppteckning','Folkräkning','Mantalslängd','Generalmönsterrulla','Emigrantregister','Passagerarlista','Domstolsprotokoll','Fotografi','Brev','Muntlig uppgift','Webbplats','Övrigt'];
 const HIST=[
+  {a:1520,b:1520,t:'Stockholms blodbad'},
+  {a:1527,b:1527,t:'Reformationen inleds (Västerås riksdag)'},
+  {a:1542,b:1543,t:'Dackefejden'},
+  {a:1563,b:1570,t:'Nordiska sjuårskriget'},
+  {a:1618,b:1648,t:'Trettioåriga kriget'},
+  {a:1628,b:1628,t:'Regalskeppet Vasa sjunker'},
   {a:1686,b:1686,t:'Kyrkolagen – kyrkböcker krävs'},
   {a:1710,b:1711,t:'Pesten'},
   {a:1808,b:1809,t:'Finska kriget'},
@@ -380,7 +386,7 @@ function setStatus(cls,txt){const s=$('#status'); s.className='status '+cls; s.q
 /* ============ Domain helpers ============ */
 const P=id=>S.persons[id];
 const fullName=p=>p?([p.given,p.surname].filter(Boolean).join(' ')||'Namnlös'):'Okänd';
-const initials=p=>((p.given||'?')[0]+(p.surname||'')[0]||'').toUpperCase();
+const initials=p=>{const w=[p.given,p.surname].filter(Boolean).join(' ').split(/\s+/).filter(x=>/^[A-ZÅÄÖÉŁ]/i.test(x)&&!/^(av|von|de)$/i.test(x)); return ((w[0]||'?')[0]+(w.length>1&&!/^[IVX]+$/.test(w[1])?w[1][0]:'')).toUpperCase();};
 function lifespan(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(!b&&!d) return ''; return (b||'?')+' – '+(d||(b&&NOW_Y-b<105?'':'?'));}
 const sexColor=p=>p&&p.sex==='M'?'var(--male)':p&&p.sex==='K'?'var(--female)':'var(--unk)';
 const placeName=id=>id&&S.places[id]?S.places[id].name:'';
@@ -438,11 +444,11 @@ function emptyState(){
   return `<div class="empty">
     <svg width="64" height="64" viewBox="0 0 26 26" fill="none" stroke="var(--accent)" stroke-width="1.2"><path d="M13 24V13M13 13c0-4 -3-6-6-6M13 13c0-4 3-6 6-6M13 17c-2-1-5-1-7 1M13 17c2-1 5-1 7 1"/><circle cx="7" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="13" cy="3.6" r="2"/></svg>
     <h2>Börja ditt släktarkiv</h2>
-    <p>Lägg till dig själv eller den äldsta ana du känner till, eller läs in din befintliga släktlista från Excel. Du kan också titta runt i en påhittad exempelsläkt först.</p>
+    <p>Lägg till dig själv eller den äldsta ana du känner till, eller läs in din befintliga släktlista från Excel. Du kan också titta runt i Vasaätten som exempel först – från Gustav Vasa till drottning Kristina.</p>
     <div class="acts">
       ${Store.canEdit?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button>
       <a class="btn" href="#import">Importera från Excel</a>
-      <button class="btn" onclick="loadDemo()">Visa exempelsläkt</button>`:'<p class="muted">Arkivet är tomt.</p>'}
+      <button class="btn" onclick="loadDemo()">Visa Vasaätten som exempel</button>`:'<p class="muted">Arkivet är tomt.</p>'}
     </div></div>`;
 }
 
@@ -534,8 +540,10 @@ function renderTree(fresh){
     const W=$('#treeSvg').clientWidth,H=$('#treeSvg').clientHeight;
     const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y);
     const x0=Math.min(...xs)-CW/2-30,x1=Math.max(...xs)+CW/2+30,y0=Math.min(...ys)-CH/2-40,y1=Math.max(...ys)+CH/2+30;
-    const k=Math.min(1.05,Math.max(.2,Math.min(W/(x1-x0),(H-60)/(y1-y0))));
-    const t=d3.zoomIdentity.translate(W/2-k*(x0+x1)/2,(H+50)/2-k*(y0+y1)/2).scale(k);
+    let k=Math.min(1.05,Math.min(W/(x1-x0),(H-60)/(y1-y0)));
+    let cx=(x0+x1)/2, cy=(y0+y1)/2;
+    if(k<.6){k=.6; cx=Math.max(x0+W/(2*k),Math.min(x1-W/(2*k),CW)); cy=Math.max(y0+(H-60)/(2*k),Math.min(y1-(H-60)/(2*k),0));}
+    const t=d3.zoomIdentity.translate(W/2-k*cx,(H+50)/2-k*cy).scale(k);
     svg.transition().duration(fresh?0:450).call(treeZoom.transform,t);
   }
 }
@@ -1143,7 +1151,7 @@ function renderImport(){
       </div><div id="expOut"></div></div>
     ${E.canEdit?`<div class="box"><h3>Återställ från säkerhetskopia</h3><p>Läs in en .json-fil som du tidigare exporterat härifrån. Befintliga poster med samma id skrivs över, övriga behålls.</p>
       <label class="btn" style="cursor:pointer">Välj säkerhetskopia<input type="file" id="restore" accept=".json" hidden></label></div>
-    <div class="box"><h3>Övrigt</h3><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(S.persons).length?'':'<button class="btn" onclick="loadDemo()">Ladda exempelsläkt</button>'}<button class="btn danger" id="wipe">Töm hela arkivet…</button></div>
+    <div class="box"><h3>Övrigt</h3><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(S.persons).length?'':'<button class="btn" onclick="loadDemo()">Ladda Vasaätten som exempel</button>'}<button class="btn danger" id="wipe">Töm hela arkivet…</button></div>
       <p class="small muted" style="margin-top:10px">${Store.mode==='db'?'Ditt arkiv sparas i molnet och syns bara för dig tills du väljer att dela sidan. Delar du den kan andra läsa, men bara du och de du gör till redigerare kan ändra.':'Sidan körs utanför claude.ai, så allt sparas bara i den här webbläsaren. Exportera regelbundet!'}</p></div>`:''}
   </div>`;
   v.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>doExport(b.dataset.exp));
@@ -1353,28 +1361,97 @@ window.addEventListener('resize',()=>{clearTimeout(window._rz); window._rz=setTi
 /* ============ Demo ============ */
 function loadDemo(){
   const now=new Date().toISOString();
-  const pl=(id,name,lat,lon,parish,county,country='Sverige')=>({kind:'place',id,name,lat,lon,parish,county,country});
-  const places=[pl('pl_rattvik','Rättvik',60.886,15.118,'Rättvik','Kopparbergs län'),pl('pl_leksand','Leksand',60.731,14.999,'Leksand','Kopparbergs län'),pl('pl_mora','Mora',61.005,14.54,'Mora','Kopparbergs län'),pl('pl_sthlm','Stockholm, Klara',59.332,18.064,'Klara','Stockholms stad'),pl('pl_vaxjo','Växjö',56.879,14.806,'Växjö stadsförsamling','Kronobergs län'),pl('pl_gbg','Göteborg',57.708,11.974,'Göteborgs domkyrkoförsamling','Göteborgs och Bohus län'),pl('pl_chicago','Chicago',41.878,-87.63,'','Illinois','USA')];
-  const src=(id,title,type,archive,ref,date)=>({kind:'source',id,title,type,archive,ref,date,createdAt:now});
-  const sources=[src('s_ai15','Rättvik (W) AI:15 Husförhörslängd 1850–1855','Husförhörslängd','ArkivDigital','AI:15','1850–1855'),src('s_c9','Rättvik (W) C:9 Födelse- och dopbok 1820–1830','Födelse- och dopbok','Riksarkivet','C:9','1820–1830'),src('s_emig','Emigrantregister, Göteborgs poliskammare 1882','Emigrantregister','Regionarkivet Göteborg','','1882'),src('s_rote','Rotemansarkivet, Stockholm','Mantalslängd','Stockholms stadsarkiv','Rote 3','1878–1926'),src('s_fr1900','Folkräkning 1900, Stockholm','Folkräkning','Riksarkivet','','1900')];
-  const per=(id,given,surname,sex,bd,bp,dd,dp,occ,f,m,sp=[],extra={})=>Object.assign({kind:'person',id,given,surname,sex,birthDate:bd,birthPlace:bp,deathDate:dd,deathPlace:dp,occupation:occ,fatherId:f||'',motherId:m||'',spouseIds:sp,events:[],citations:[],media:[],notes:'',createdAt:now},extra);
-  const c=(sid,about,detail)=>({id:uid('c'),sourceId:sid,about,detail});
-  const persons=[
-    per('p_erik1','Erik','Larsson','M','1798-03-02','pl_rattvik','1861-11-20','pl_rattvik','Bonde','','',['p_kerstin'],{createdAt:'2000-01-01',notes:'Bonde i Born. Fadern ska enligt husförhöret heta Lars Ersson – leta i Rättvik C:7.',citations:[c('s_ai15','','sid 45')]}),
-    per('p_kerstin','Kerstin','Olsdotter','K','1801','pl_leksand','1870-02-11','pl_rattvik','','','',['p_erik1'],{events:[{id:'e_k1',type:'Flytt',date:'1824',placeId:'pl_rattvik',desc:'Inflyttad från Leksand vid giftermålet'}]}),
-    per('p_lars','Lars','Ersson','M','1826-05-14','pl_rattvik','1889-08-03','pl_rattvik','Bonde','p_erik1','p_kerstin',['p_anna'],{events:[{id:'e_l1',type:'Vigsel',date:'1853-06-24',placeId:'pl_rattvik',withId:'p_anna'}],citations:[c('s_c9','Födelse','sid 112'),c('s_ai15','','sid 45')]}),
-    per('p_karin','Karin','Ersdotter','K','1831-01-09','pl_rattvik','1832-03-30','pl_rattvik','','p_erik1','p_kerstin',[],{citations:[c('s_c9','Födelse','sid 201')]}),
-    per('p_anna','Anna','Persdotter','K','1829-11-02','pl_mora','1894-01-15','pl_rattvik','','','',['p_lars'],{events:[{id:'e_a1',type:'Flytt',date:'1852',placeId:'pl_rattvik',desc:'Piga, inflyttad från Mora'}]}),
-    per('p_per','Per','Larsson','M','1855-02-03','pl_rattvik','1921-10-12','pl_chicago','Snickare','p_lars','p_anna',[],{notes:'Kallade sig Peter Larson i Amerika.',events:[{id:'e_p1',type:'Utvandring',date:'1882-04-10',placeId:'pl_gbg',desc:'Med S/S Orlando till Hull, vidare till New York'},{id:'e_p2',type:'Bosatt',date:'1884',placeId:'pl_chicago',desc:'Swedish Town, North Side'}],citations:[c('s_emig','event:e_p1','nr 4411')]}),
-    per('p_erik2','Erik','Larsson','M','1858-07-21','pl_rattvik','1932-12-01','pl_sthlm','Snickare','p_lars','p_anna',['p_maria'],{events:[{id:'e_e1',type:'Militärtjänst',date:'1878',placeId:'pl_rattvik',desc:'Dalregementet'},{id:'e_e2',type:'Flytt',date:'1880-10-24',placeId:'pl_sthlm',desc:'Till Klara församling'}],citations:[c('s_rote','event:e_e2','Rote 3, vol 41')]}),
-    per('p_maria','Maria','Johansdotter','K','1862-04-30','pl_vaxjo','1940-05-06','pl_sthlm','Sömmerska','','',['p_erik2'],{events:[{id:'e_m1',type:'Flytt',date:'1883',placeId:'pl_sthlm'}]}),
-    per('p_gustaf','Gustaf','Eriksson','M','1889-09-15','pl_sthlm','1965-03-22','pl_gbg','Maskinist','p_erik2','p_maria',['p_hilda'],{events:[{id:'e_g1',type:'Flytt',date:'1912',placeId:'pl_gbg',desc:'Anställd vid Götaverken'}],citations:[c('s_fr1900','','Klara, hushåll 112')]}),
-    per('p_hilda','Hilda','Andersson','K','1893-06-08','pl_gbg','1978-11-30','pl_gbg','','','',['p_gustaf']),
-    per('p_elsa','Elsa','Gustafsson','K','1921-02-17','pl_gbg','2004-08-09','pl_gbg','Lärarinna','p_gustaf','p_hilda'),
-    per('p_john','John','Peterson','M','1886-12-05','pl_chicago','1950','pl_chicago','','p_per',''),
+  const pl=(id,name,lat,lon,county,country='Sverige',notes='')=>({kind:'place',id,name,lat,lon,county,country,notes});
+  const places=[
+    pl('pl_rydbo','Rydboholm',59.474,18.226,'Uppland','Sverige','Vasaättens sätesgård i Östra Ryd. Gustav Vasa föddes troligen här, möjligen på Lindholmen.'),
+    pl('pl_sthlm','Stockholm, Tre Kronor',59.327,18.071,'Uppland'),
+    pl('pl_uppsala','Uppsala',59.858,17.638,'Uppland','Sverige','Domkyrkan är kröningskyrka och gravkyrka för Gustav Vasa och Johan III.'),
+    pl('pl_strangnas','Strängnäs',59.377,17.032,'Södermanland'),
+    pl('pl_vadstena','Vadstena',58.448,14.890,'Östergötland'),
+    pl('pl_tynnelso','Tynnelsö',59.300,17.140,'Södermanland'),
+    pl('pl_stegeborg','Stegeborg',58.433,16.590,'Östergötland'),
+    pl('pl_gripsholm','Gripsholm',59.257,17.219,'Södermanland'),
+    pl('pl_nykoping','Nyköping',58.753,17.008,'Södermanland'),
+    pl('pl_orbyhus','Örbyhus',60.230,17.700,'Uppland'),
+    pl('pl_vasteras','Västerås',59.611,16.545,'Västmanland'),
+    pl('pl_stromsholm','Strömsholm',59.528,16.250,'Västmanland'),
+    pl('pl_gbg','Göteborg',57.708,11.974,'Västergötland'),
+    pl('pl_liuksiala','Liuksiala, Kangasala',61.460,24.070,'Tavastland','Finland'),
+    pl('pl_krakow','Kraków',50.062,19.937,'','Polen'),
+    pl('pl_warszawa','Warszawa',52.230,21.011,'','Polen'),
+    pl('pl_vilnius','Vilnius',54.687,25.280,'','Litauen'),
+    pl('pl_lutzen','Lützen',51.257,12.142,'Sachsen','Tyskland'),
+    pl('pl_konigsberg','Königsberg',54.710,20.510,'Preussen','Ryssland (Kaliningrad)'),
+    pl('pl_heidelberg','Heidelberg',49.398,8.672,'Pfalz','Tyskland'),
+    pl('pl_innsbruck','Innsbruck',47.269,11.404,'Tyrolen','Österrike'),
+    pl('pl_rom','Rom',41.902,12.454,'','Italien'),
+    pl('pl_nevers','Nevers',46.990,3.159,'','Frankrike'),
   ];
-  setFocus('p_gustaf'); ui.ancGen=3; ui.descGen=2; ui.treeKey=null;
-  Store.putMany([...places,...sources,...persons]).then(()=>toast('Exempelsläkten är inläst – allt går att ändra eller tömma under Import & export.',4500));
+  const src=(id,title,type,archive,ref,url,notes='')=>({kind:'source',id,title,type,archive,ref,url,notes,createdAt:now});
+  const sources=[
+    src('s_sbl','Svenskt biografiskt lexikon (SBL)','Webbplats','Riksarkivet','','https://sok.riksarkivet.se/sbl/','Biografiska artiklar om kungar och furstar.'),
+    src('s_skbl','Svenskt kvinnobiografiskt lexikon (SKBL)','Webbplats','Göteborgs universitet','','https://skbl.se/','Artiklar om drottningar och prinsessor, bl.a. Margareta Leijonhufvud och Karin Månsdotter.'),
+    src('s_kungl','Sveriges regenter – Kungliga slotten','Webbplats','Kungliga Hovstaterna','','https://www.kungligaslotten.se/','Översikt över regenter, gemåler och barn.'),
+  ];
+  const c=(sid,about,detail)=>({id:uid('c'),sourceId:sid,about,detail});
+  const per=(id,given,surname,sex,bd,bp,dd,dp,occ,f,m,sp=[],extra={})=>Object.assign({kind:'person',id,given,surname,sex,birthDate:bd,birthPlace:bp||'',deathDate:dd,deathPlace:dp||'',occupation:occ,fatherId:f||'',motherId:m||'',spouseIds:sp,events:[],citations:[],media:[],notes:'',createdAt:now},extra);
+  const ev=(type,date,placeId,desc,withId)=>({id:uid('e'),type,date,placeId:placeId||'',desc:desc||'',withId:withId||''});
+  const G='p_gustav1',KS='p_kat_sachsen',ML='p_margareta',KST='p_kat_stenbock';
+  const persons=[
+    // Gustav Vasa och hans tre hustrur
+    per(G,'Gustav','Vasa','M','1496-05-12','pl_rydbo','1560-09-29','pl_sthlm','Kung av Sverige 1523–1560','','',[KS,ML,KST],{createdAt:'1000',
+      notes:'Född Gustav Eriksson. Födelseorten är osäker – Rydboholm eller Lindholmen i Uppland.\n\nDatum i exemplet följer den julianska kalendern (”gamla stilen”) som gällde i Sverige till 1753.',
+      events:[ev('Övrigt','1521-08-23','pl_vadstena','Vald till riksföreståndare'),ev('Övrigt','1523-06-06','pl_strangnas','Vald till kung – Sveriges nationaldag'),ev('Vigsel','1531-09-24','pl_sthlm','',KS),ev('Vigsel','1536-10-01','','',ML),ev('Kröning','1528-01-12','pl_uppsala','Krönt i Uppsala domkyrka'),ev('Vigsel','1552-08-22','pl_vadstena','',KST),ev('Begravning','1560-12-21','pl_uppsala','Uppsala domkyrka')],
+      citations:[c('s_sbl','','Gustav I'),c('s_kungl','','Gustav I')]}),
+    per(KS,'Katarina','av Sachsen-Lauenburg','K','1513-09-24','','1535-09-23','pl_sthlm','Drottning','','',[G],{citations:[c('s_kungl','','Katarina av Sachsen-Lauenburg')]}),
+    per(ML,'Margareta','Leijonhufvud','K','1516-01-01','','1551-08-26','pl_tynnelso','Drottning','','',[G],{notes:'Född Margareta Eriksdotter. Födelsedagen 1 januari 1516 är traditionell; SKBL anger att datum och plats är osäkra.',citations:[c('s_skbl','','Margareta, drottning'),c('s_skbl','Död','dog på Tynnelsö')]}),
+    per(KST,'Katarina','Stenbock','K','1535-07-22','','1621-12-13','pl_stromsholm','Drottning','','',[G],{notes:'Systerdotter till Margareta Leijonhufvud. Inga barn med Gustav Vasa.'}),
+    // Barn med Katarina av Sachsen-Lauenburg
+    per('p_erik14','Erik XIV','','M','1533-12-13','pl_sthlm','1577-02-26','pl_orbyhus','Kung av Sverige 1560–1568',G,KS,['p_karin'],{
+      events:[ev('Kröning','1561-06-29','pl_uppsala'),ev('Vigsel','1568-07-04','pl_sthlm','',"p_karin"),ev('Övrigt','1568','pl_sthlm','Avsatt av sina bröder Johan och Karl')],citations:[c('s_sbl','','Erik XIV')]}),
+    per('p_karin','Karin','Månsdotter','K','1550-11-06','pl_sthlm','1612-09-13','pl_liuksiala','Drottning','','',['p_erik14'],{events:[ev('Kröning','1568-07-05','pl_sthlm')],notes:'Begravd i Åbo domkyrka.',citations:[c('s_skbl','','Karin Månsdotter, drottning')]}),
+    per('p_sigrid','Sigrid','Eriksdotter Vasa','K','1566','','1633','','','p_erik14','p_karin'),
+    per('p_gustav_e','Gustav','Eriksson Vasa','M','1568-01-28','pl_nykoping','1607','','Prins','p_erik14','p_karin',[],{notes:'Levde större delen av livet i landsflykt och dog i Ryssland.'}),
+    // Barn med Margareta Leijonhufvud
+    per('p_johan3','Johan III','','M','1537-12-20','pl_stegeborg','1592-11-17','pl_sthlm','Kung av Sverige 1568–1592',G,ML,['p_katjag','p_gunilla'],{
+      events:[ev('Vigsel','1562-10-04','pl_vilnius','','p_katjag'),ev('Kröning','1569-07-10','pl_uppsala')],citations:[c('s_sbl','','Johan III')]}),
+    per('p_katarina_g','Katarina','Gustavsdotter Vasa','K','1539','','1610','','Grevinna av Ostfriesland',G,ML),
+    per('p_cecilia','Cecilia','Gustavsdotter Vasa','K','1540','','1627','','Markgrevinna av Baden-Rodemachern',G,ML),
+    per('p_magnus','Magnus','Gustavsson Vasa','M','1542','','1595','','Hertig av Östergötland',G,ML),
+    per('p_karl_1544','Karl','Gustavsson Vasa','M','1544','','1544','','',G,ML,[],{notes:'Dog som spädbarn.'}),
+    per('p_anna_g','Anna','Gustavsdotter Vasa','K','1545','','1610','','Pfalzgrevinna av Veldenz',G,ML),
+    per('p_sten','Sten','Gustavsson Vasa','M','1546','','1547','','',G,ML,[],{notes:'Dog som spädbarn.'}),
+    per('p_sofia','Sofia','Gustavsdotter Vasa','K','1547','','1611','','Hertiginna av Sachsen-Lauenburg',G,ML),
+    per('p_elisabet','Elisabet','Gustavsdotter Vasa','K','1549','','1597','','Hertiginna av Mecklenburg-Gadebusch',G,ML),
+    per('p_karl9','Karl IX','','M','1550-10-04','pl_sthlm','1611-10-30','pl_nykoping','Kung av Sverige 1604–1611',G,ML,['p_maria_pf','p_kristina_hg'],{
+      events:[ev('Vigsel','1579-05-11','pl_heidelberg','','p_maria_pf'),ev('Vigsel','1592-08-27','pl_nykoping','','p_kristina_hg'),ev('Kröning','1607-03-15','pl_uppsala')],citations:[c('s_sbl','','Karl IX'),c('s_kungl','','Karl IX – barn')]}),
+    // Johan III:s familj
+    per('p_katjag','Katarina','Jagellonica','K','1526-11-01','pl_krakow','1583-09-16','pl_sthlm','Drottning','','',['p_johan3']),
+    per('p_gunilla','Gunilla','Bielke','K','1568','','1597','','Drottning','','',['p_johan3']),
+    per('p_sigismund','Sigismund','','M','1566-06-20','pl_gripsholm','1632-04-30','pl_warszawa','Kung av Sverige 1592–1599 och av Polen 1587–1632','p_johan3','p_katjag',['p_anna_o','p_konstantia'],{citations:[c('s_sbl','','Sigismund')]}),
+    per('p_anna_j','Anna','Johansdotter Vasa','K','1568','','1625','','Prinsessa','p_johan3','p_katjag'),
+    per('p_johan_og','Johan','Johansson Vasa','M','1589','','1618','','Hertig av Östergötland','p_johan3','p_gunilla'),
+    per('p_anna_o','Anna','av Österrike','K','1573','','1598','pl_warszawa','Drottning av Polen','','',['p_sigismund']),
+    per('p_konstantia','Konstantia','av Österrike','K','1588','','1631','pl_warszawa','Drottning av Polen','','',['p_sigismund']),
+    per('p_wladyslaw','Władysław IV','','M','1595-06-09','pl_krakow','1648-05-20','','Kung av Polen 1632–1648','p_sigismund','p_anna_o'),
+    per('p_jan2','Jan II Kazimierz','','M','1609-03-22','pl_krakow','1672-12-16','pl_nevers','Kung av Polen 1648–1668','p_sigismund','p_konstantia',[],{notes:'Den siste av Vasaätten på en kungatron.'}),
+    // Karl IX:s familj
+    per('p_maria_pf','Maria','av Pfalz','K','1561','','1589','pl_gripsholm','Hertiginna','','',['p_karl9']),
+    per('p_kristina_hg','Kristina','av Holstein-Gottorp','K','1573','','1625','pl_gripsholm','Drottning','','',['p_karl9']),
+    per('p_katarina_k','Katarina','Karlsdotter Vasa','K','1584-11-10','pl_nykoping','1638-12-13','pl_vasteras','Pfalzgrevinna','p_karl9','p_maria_pf',['p_johan_kasimir'],{notes:'Tog hand om den unga drottning Kristina efter Gustav II Adolfs död.'}),
+    per('p_johan_kasimir','Johan Kasimir','av Pfalz-Zweibrücken','M','1589','','1652','','Pfalzgreve','','',['p_katarina_k'],{events:[ev('Vigsel','1615','','','p_katarina_k')]}),
+    per('p_karl10','Karl X Gustav','','M','1622-11-08','pl_nykoping','1660-02-13','pl_gbg','Kung av Sverige 1654–1660','p_johan_kasimir','p_katarina_k',[],{events:[ev('Kröning','1654-06-06','pl_uppsala','Krönt samma dag som Kristina abdikerade')],notes:'Första kungen av den pfalziska ätten – Vasaätten på mödernet.'}),
+    per('p_ga2','Gustav II Adolf','','M','1594-12-09','pl_sthlm','1632-11-06','pl_lutzen','Kung av Sverige 1611–1632','p_karl9','p_kristina_hg',['p_maria_el'],{
+      events:[ev('Kröning','1617-10-12','pl_uppsala'),ev('Vigsel','1620-11-25','pl_sthlm','','p_maria_el'),ev('Övrigt','1632-11-06','pl_lutzen','Stupade i slaget vid Lützen')],citations:[c('s_sbl','','Gustav II Adolf')]}),
+    per('p_maria_elisabet','Maria Elisabet','Karlsdotter Vasa','K','1596','','1618','','Hertiginna av Östergötland','p_karl9','p_kristina_hg'),
+    per('p_karl_filip','Karl Filip','','M','1601','','1622','','Hertig av Södermanland','p_karl9','p_kristina_hg'),
+    per('p_maria_el','Maria Eleonora','av Brandenburg','K','1599-11-11','pl_konigsberg','1655-03-28','pl_sthlm','Drottning','','',['p_ga2']),
+    per('p_kristina','Kristina','','K','1626-12-08','pl_sthlm','1689-04-19','pl_rom','Drottning av Sverige 1632–1654','p_ga2','p_maria_el',[],{
+      events:[ev('Kröning','1650-10-20','pl_sthlm'),ev('Övrigt','1654-06-06','pl_uppsala','Abdikerade på Uppsala slott'),ev('Övrigt','1655-11-03','pl_innsbruck','Konverterade offentligt till katolicismen')],
+      notes:'Den sista av Vasaätten på den svenska tronen. Begravd i Peterskyrkan i Rom.',citations:[c('s_sbl','','Kristina')]}),
+  ];
+  setFocus(G); ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel={type:'person',id:G};
+  Store.putMany([...places,...sources,...persons]).then(()=>toast('Vasaätten är inläst – allt går att ändra eller tömma under Import & export.',4500));
   if(location.hash!=='#trad') location.hash='trad'; else renderAll();
 }
 
