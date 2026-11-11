@@ -411,3 +411,6 @@ body.simple .viewsel,body.simple #status,body.simple .card .eye,body.simple #tPr
 body.simple .start .tiles,body.simple .ph .sec.cites{display:none!important}
 body.simple #nav a{font-size:16px;padding:8px 16px}
 .callpick{margin-bottom:12px}
+
+.hero-links{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;font-size:14px}
+.hero-links a{color:var(--accent)}
