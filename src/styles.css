@@ -347,3 +347,38 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
   .map-side{width:auto;right:14px;max-height:40%}
   .row2{grid-template-columns:1fr}
 }
+
+/* ---- Start: three big choices ---- */
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:6px}
+.choice{font:inherit;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:22px 22px 18px;cursor:pointer;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:6px;transition:transform .12s,box-shadow .12s,border-color .12s}
+.choice:hover,.choice:focus-visible{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--accent);outline:none}
+.choice.primary{border-color:var(--accent);background:linear-gradient(180deg,var(--card),var(--paper2))}
+.choice .ic{font-size:30px}
+.choice b{font-family:var(--serif);font-size:21px;font-weight:600}
+.choice span{color:var(--ink2);font-size:14.5px;line-height:1.5}
+.choice .go{margin-top:auto;padding-top:10px;color:var(--accent);font-weight:600}
+/* ---- Separate trees ---- */
+.treecards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:22px}
+.treecard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.treecard.mine{border-color:var(--accent)}
+.treecard .tc-h{display:flex;align-items:center;gap:8px}
+.treecard .tc-h b{font-family:var(--serif);font-size:17px;font-weight:600}
+.treecard .tc-names{color:var(--ink2)}
+.treecard .tc-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.treecard .lone{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px}
+.lone-p{display:inline-flex;align-items:center;gap:2px}
+.suggest .sg-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.suggest .sg-acts{display:flex;gap:6px}
+/* ---- Link modal ---- */
+.relpick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
+.relpick .rp{display:flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:99px;padding:6px 12px;cursor:pointer;font-size:14px}
+.relpick .rp:has(input:checked){border-color:var(--accent);background:var(--paper2);font-weight:600}
+.relpick input{accent-color:var(--accent);margin:0}
+.lk-sum{background:var(--paper2);border-radius:10px;padding:10px 12px;line-height:1.55;font-size:14px;min-height:22px}
+.ok-t{color:var(--accent);font-weight:600}
+#tTrees select{max-width:240px}
+/* ---- Larger text ---- */
+.sizebtn{border:1px solid var(--line);background:var(--card);border-radius:8px;height:34px;padding:0 9px;cursor:pointer;color:var(--ink2);font-weight:600;font-size:12px;font-family:var(--serif)}
+.sizebtn span{font-size:16px;margin-left:1px}
+.sizebtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+html[data-size=lg] #panel,html[data-size=lg] .start,html[data-size=lg] .view-pad,html[data-size=lg] .ov .modal,html[data-size=lg] .tree-tools,html[data-size=lg] #demoBar,html[data-size=lg] .toast,html[data-size=lg] .empty{zoom:1.2}

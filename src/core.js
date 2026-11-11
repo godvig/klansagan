@@ -261,7 +261,32 @@
     return `${h}${cous(a)}s ${descTerm(pb.slice(0, b - a).reverse())}`;
   }
 
-  const api = { yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm };
+  /**
+   * Split people into separate family trees: groups that are not connected
+   * through any parent, child or partner link. Largest group first.
+   * @param {Record<string, Person>} persons
+   * @returns {string[][]}
+   */
+  function components(persons) {
+    /** @type {Record<string, string>} */
+    const parent = {};
+    /** @param {string} x @returns {string} */
+    const find = x => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+    /** @param {string} a @param {string} b */
+    const join = (a, b) => { if (!(b in parent)) return; const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; };
+    for (const id of Object.keys(persons)) parent[id] = id;
+    for (const p of Object.values(persons)) {
+      if (p.fatherId) join(p.id, p.fatherId);
+      if (p.motherId) join(p.id, p.motherId);
+      for (const s of p.spouseIds || []) join(p.id, s);
+    }
+    /** @type {Record<string, string[]>} */
+    const groups = {};
+    for (const id of Object.keys(persons)) (groups[find(id)] = groups[find(id)] || []).push(id);
+    return Object.values(groups).sort((a, b) => b.length - a.length);
+  }
+
+  const api = { yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;

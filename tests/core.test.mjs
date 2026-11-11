@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import core from '../src/core.js';
 
-const { yearOf, dateKey, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, dupScore, computeHidden, blood, bloodTerm } = core;
+const { yearOf, dateKey, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, dupScore, computeHidden, blood, bloodTerm, components } = core;
 
 /* A small synthetic family used across the relationship and view tests.
  *
@@ -134,5 +134,20 @@ describe('views (hide branches)', () => {
   });
   it('hides a single person', () => {
     expect([...computeHidden(fam, { hide: ['uncleF'] })]).toEqual(['uncleF']);
+  });
+});
+
+describe('components (separate trees)', () => {
+  it('finds one tree when everyone is linked', () => {
+    expect(components(fam).length).toBe(1);
+  });
+  it('splits unlinked families and ignores dangling ids', () => {
+    const ps = {
+      a: { id: 'a', spouseIds: ['b'] }, b: { id: 'b' }, c: { id: 'c', fatherId: 'a' },
+      x: { id: 'x', motherId: 'gone' }, y: { id: 'y', fatherId: 'x' },
+      z: { id: 'z' },
+    };
+    const cs = components(ps).map(c => c.sort().join(''));
+    expect(cs).toEqual(['abc', 'xy', 'z']);
   });
 });

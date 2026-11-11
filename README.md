@@ -20,7 +20,7 @@ The interface is in Swedish for now, and it understands Swedish sources (househo
 
 ## Live demo
 
-**[godvig.github.io/kinsaga](https://godvig.github.io/kinsaga/)**. Click **👑 Utforska Vasaätten** to load the example data. It's the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. Everything stays in your browser.
+**[Open the example](https://godvig.github.io/kinsaga/#exempel)**: the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. The example lives in memory only and is never saved. [Open an empty archive](https://godvig.github.io/kinsaga/) to start with your own family.
 
 ## Quick start
 
@@ -46,11 +46,12 @@ To import your own family, start from [`examples/kinsaga-import-example.xlsx`](e
 - **Timeline:** lifespans against historical events (plague, famine years, emigration, wars).
 - **Map:** places on a map, with a person's life route. Place a parish by clicking the map and merge spelling variants.
 - **Views:** hide a branch ("dad's side only"), single people or descendants. Each view has its own link, and nothing is deleted. One click undoes a change.
+- **Several trees in one archive:** families that aren't connected yet show up as separate trees. Link them with a plain-language sentence ("Anna *is the mother of* Ellen"), or accept a suggested match when the same person appears in both.
 - **Duplicate finder:** catches spelling variants (Gustaf/Gustav, Wasa/Vasa, Larsdtr/Larsdotter) and merges the records safely.
 - **Import:** Excel, CSV or cells pasted from Excel. Columns are mapped automatically, with Swedish and English headers.
 - **Export:** GEDCOM 5.5.1 (MyHeritage, Ancestry, Gramps, Disgen…), CSV and a JSON backup. The tree, fan chart and person cards print as PDF (A3/A4) or PNG.
 - **Collaboration:** when hosted as a Claude artifact, invited relatives edit the same tree live, and every change records who made it.
-- **Dark mode, photos and documents,** plus a start page that shows where your research stands.
+- **Easy to use:** a start page with three clear choices, larger text with one click, dark mode, photos and documents.
 
 <details>
 <summary><b>Swedish terms used in the interface</b></summary>

@@ -57,7 +57,7 @@ function viewCounts(v){return computeHidden(v).size;}
 
 /* ============ Store ============ */
 const Store={
-  mode:'loading',col:null,canEdit:true,isAdmin:true,myId:null,user:null,assets:null,downloads:null,chains:{},loaded:false,
+  mode:'loading',col:null,demo:null,canEdit:true,isAdmin:true,myId:null,user:null,assets:null,downloads:null,chains:{},loaded:false,
   async init(){
     let db=null,user=null;
     if(window.claude && typeof window.claude.use==='function'){
@@ -73,7 +73,7 @@ const Store={
       } else this.isAdmin=false;
       this.subscribe();
     }else{
-      this.mode='local'; this.loadLocal(); this.loaded=true; applyView();
+      this.mode='local'; this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
       setStatus('warn','Sparas bara i den här webbläsaren');
       renderAll();
     }
@@ -83,15 +83,18 @@ const Store={
     let timer=setTimeout(()=>setStatus('warn','Databasen svarar inte ännu'),10000);
     this.col.onSnapshot(snap=>{
       if(!snap.metadata.fromCache){clearTimeout(timer); setStatus('ok',this.canEdit?'Delas & sparas i molnet':'Endast läsning');}
-      ALL.persons={};ALL.places={};ALL.sources={};ALL.views={};
-      for(const d of snap.docs){const o=d.data(); if(o&&KIND[o.kind]) ALL[KIND[o.kind]][d.id]=o;}
-      this.loaded=true; applyView(); renderAll();
+      const T=this.demo?this.demo.saved:ALL;
+      T.persons={};T.places={};T.sources={};T.views={};
+      for(const d of snap.docs){const o=d.data(); if(o&&KIND[o.kind]) T[KIND[o.kind]][d.id]=o;}
+      if(this.demo) return;
+      this.loaded=true; if(!this._purged){this._purged=true; purgeLegacyDemo();} applyView(); renderAll();
     },err=>{clearTimeout(timer); setStatus('err','Kunde inte läsa data ('+err.code+')'); this.loaded=true; renderAll();});
   },
   loadLocal(){
     try{const raw=localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1'); if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
   },
   saveLocal(){
+    if(this.demo) return;
     clearTimeout(this._lt);
     this._lt=setTimeout(()=>{try{localStorage.setItem('kinsaga-v1',JSON.stringify(ALL));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
   },
@@ -113,6 +116,7 @@ const Store={
     obj=this.stamp(clone(obj));
     ALL[KIND[obj.kind]][obj.id]=obj; applyView();
     if(!silent) renderAll();
+    if(this.demo) return Promise.resolve();
     if(this.mode==='db'){
       return this.write(obj.id,()=>this.retry(()=>this.col.doc(obj.id).set(obj))).catch(e=>{
         if(e&&e.code==='quota_exceeded') toast('Databasen är full – ta bort något först.');
@@ -124,12 +128,14 @@ const Store={
   del(kind,id,{silent}={}){
     delete ALL[KIND[kind]][id]; applyView();
     if(!silent) renderAll();
+    if(this.demo) return Promise.resolve();
     if(this.mode==='db') return this.write(id,()=>this.retry(()=>this.col.doc(id).delete())).catch(e=>toast('Kunde inte ta bort: '+(e&&e.code||e)));
     this.saveLocal(); return Promise.resolve();
   },
   async putMany(objs,onProgress){
     let done=0; const queue=objs.slice();
     for(const o of queue){this.stamp(o); ALL[KIND[o.kind]][o.id]=clone(o);} applyView();
+    if(this.demo){onProgress&&onProgress(1); renderAll(); return;}
     if(this.mode!=='db'){this.saveLocal(); onProgress&&onProgress(1); renderAll(); return;}
     renderAll();
     const worker=async()=>{while(queue.length){const o=queue.shift(); await this.write(o.id,()=>this.retry(()=>this.col.doc(o.id).set(clone(o)))).catch(e=>{console.warn(e)}); done++; onProgress&&onProgress(done/objs.length);}};
@@ -181,11 +187,12 @@ function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.rep
 /* ============ Router ============ */
 const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
 const NAVMAP={personkort:'personer',dubbletter:'personer'};
-function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
+function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
 window.addEventListener('hashchange',route);
 let lastView=null;
 function renderAll(force){
   if(!Store.loaded){ $('#view').innerHTML='<div class="empty"><p class="muted">Laddar släktarkivet…</p></div>'; return; }
+  if(ui.pendingDemo){ui.pendingDemo=false; loadDemo(); return;}
   if(ui.pendingView){const pv=Object.values(ALL.views).find(x=>x.slug===ui.pendingView); ui.pendingView=null; if(pv){ui.viewId=pv.id; try{localStorage.setItem('sa-viewid',pv.id);}catch(e){} applyView(); ui.treeKey=null; setTimeout(()=>toast('Visar vyn '+pv.name),300);}}
   if(ui.viewId&&!ALL.views[ui.viewId]){ui.viewId=null; applyView();}
   if(ui.focus&&!P(ui.focus)) ui.focus=null;
@@ -207,11 +214,11 @@ function emptyState(){
   return `<div class="empty">
     <svg width="64" height="64" viewBox="0 0 26 26" fill="none" stroke="var(--accent)" stroke-width="1.2"><path d="M13 24V13M13 13c0-4 -3-6-6-6M13 13c0-4 3-6 6-6M13 17c-2-1-5-1-7 1M13 17c2-1 5-1 7 1"/><circle cx="7" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="13" cy="3.6" r="2"/></svg>
     <h2>Börja ditt släktarkiv</h2>
-    <p>Lägg till dig själv eller den äldsta ana du känner till, eller läs in din befintliga släktlista från Excel. Du kan också titta runt i Vasaätten som exempel först – från Gustav Vasa till drottning Kristina.</p>
+    <p>Lägg till dig själv eller den äldsta ana du känner till, eller läs in din släktlista från Excel. Du kan också titta på ett exempel först.</p>
     <div class="acts">
       ${Store.canEdit?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button>
       <a class="btn" href="#import">Importera från Excel</a>
-      ${Store.isAdmin?'<button class="btn" onclick="loadDemo()">Visa Vasaätten som exempel</button>':''}`:'<p class="muted">Arkivet är tomt.</p>'}
+      <button class="btn" onclick="loadDemo()">Titta på ett exempel</button>`:'<p class="muted">Arkivet är tomt.</p>'}
     </div></div>`;
 }
 
@@ -226,6 +233,7 @@ function renderTree(fresh){
     v.innerHTML=`<div id="treeWrap"><svg id="treeSvg"><defs><clipPath id="avclip"><circle cx="28" cy="34" r="20"/></clipPath></defs><g class="vp"></g></svg>
       <div class="tree-tools">
         <span class="fname" id="tfName"></span>
+        <span id="tTrees" class="ctl"></span>
         <span class="ctl">Anor <select id="tAnc">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.ancGen?'selected':''}>${n}</option>`).join('')}</select></span>
         <span class="ctl">Ättlingar <select id="tDesc">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.descGen?'selected':''}>${n}</option>`).join('')}</select></span>
         <button class="btn sm" id="tFit">Centrera</button>
@@ -243,6 +251,10 @@ function renderTree(fresh){
     ui.treeKey=null;
   }
   $('#tfName').textContent=fullName(F);
+  {const ts=trees(), cur=treeOf(F.id); const opts=ts.filter(t=>t.size>1||t===cur);
+   $('#tTrees').innerHTML=ts.length>1?`<select id="tTreeSel" title="Byt släktträd">${opts.map(t=>`<option value="${t.root.id}" ${t===cur?'selected':''}>${esc(t.name)} (${t.size})</option>`).join('')}</select>${Store.canEdit?'<button class="btn sm" id="tLink">🔗 Koppla ihop</button>':''}`:'';
+   const sel=$('#tTreeSel'); if(sel) sel.onchange=()=>{setFocus(sel.value); ui.treeKey=null; renderAll(true);};
+   const lk=$('#tLink'); if(lk) lk.onclick=()=>linkModal(ui.focus);}
   const av0=activeView(); $('#tView').innerHTML=av0?`<span class="vchip">Vy: <b>${esc(av0.name)}</b> · ${HIDDEN.size} dolda <button class="btn sm ghost" onclick="setActiveView(null)">Visa alla</button></span>`:'';
   const svg=d3.select('#treeSvg'), g=svg.select('g.vp');
   const nodes=[],links=[];
@@ -422,7 +434,7 @@ function personPanel(p){
     ${parts.map(sp=>relRow('Partner',sp,ed&&(p.spouseIds||[]).includes(sp.id)?`<button class="iconbtn" title="Koppla bort" data-unspouse="${sp.id}">×</button>`:'')).join('')}
     ${kids.map(c=>relRow('Barn',c)).join('')}
     ${sibs.map(s=>relRow('Syskon',s)).join('')}
-    ${ed?`<div class="acts" style="display:flex;gap:6px;margin-top:8px"><button class="btn sm" data-add="partner">+ Partner</button><button class="btn sm" data-add="child">+ Barn</button></div>`:''}
+    ${ed?`<div class="acts" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" data-add="partner">+ Partner</button><button class="btn sm" data-add="child">+ Barn</button><button class="btn sm" data-add="sibling">+ Syskon</button><button class="btn sm" data-act="link" title="Koppla till en person som redan finns i arkivet">🔗 Koppla till befintlig person</button></div>`:''}
   </div>
   <div class="sec"><h4>Händelser ${ed?'<button class="btn sm" data-act="addev">+ Händelse</button>':''}</h4>
     <div id="evform"></div>
@@ -471,8 +483,11 @@ function bindPersonPanel(p){
     if(act==='delp') confirmBox(`Ta bort ${fullName(p)}?`,'Personen tas bort och kopplingar till familjemedlemmar lossas. Det går inte att ångra.','Ta bort',()=>deletePerson(p.id));
     if(act==='addev') eventForm(p,null);
     if(act==='addcite') citeForm(p);
+    if(act==='link') linkModal(p.id);
   });
-  pn.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>openPersonModal(null,{rel:b.dataset.add,of:p.id}));
+  pn.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.add==='sibling'&&!p.fatherId&&!p.motherId){toast(`Syskon kopplas via föräldrarna. Lägg först till far eller mor till ${fullName(p)}.`,5000);return;}
+    openPersonModal(null,{rel:b.dataset.add,of:p.id});});
   pn.querySelectorAll('[data-unlink]').forEach(b=>b.onclick=()=>{const q=clone(p); q[b.dataset.unlink]=''; Store.put(q);});
   pn.querySelectorAll('[data-unspouse]').forEach(b=>b.onclick=()=>{const o=P(b.dataset.unspouse); const q=clone(p); q.spouseIds=(q.spouseIds||[]).filter(x=>x!==o.id); Store.put(q,{silent:true}); if(o){const r=clone(o); r.spouseIds=(r.spouseIds||[]).filter(x=>x!==p.id); Store.put(r,{silent:true});} renderAll();});
   pn.querySelectorAll('[data-editev]').forEach(b=>b.onclick=()=>eventForm(p,(p.events||[]).find(e=>e.id===b.dataset.editev)));
@@ -594,8 +609,9 @@ function openPersonModal(p,ctx){
   if(isNew&&base){
     if(ctx.rel==='child'){ if(base.sex==='K') p.motherId=base.id; else p.fatherId=base.id; const ps=partners(base); if(ps.length===1){const o=ps[0]; if(o.sex==='K'&&!p.motherId) p.motherId=o.id; else if(!p.fatherId) p.fatherId=o.id; else p.motherId=o.id;} p.surname=base.sex!=='K'?patronym(base):''; }
     if(ctx.rel==='partner'){p.sex=base.sex==='M'?'K':base.sex==='K'?'M':'';}
+    if(ctx.rel==='sibling'){p.fatherId=base.fatherId||''; p.motherId=base.motherId||''; p.surname=base.surname||'';}
   }
-  const relTitle={father:'far till',mother:'mor till',child:'barn till',partner:'partner till'}[ctx.rel];
+  const relTitle={father:'far till',mother:'mor till',child:'barn till',partner:'partner till',sibling:'syskon till'}[ctx.rel];
   const pl=id=>esc(id&&P(id)?personLabel(P(id)):'');
   modal(`<h3>${isNew?(base?'Lägg till '+relTitle+' '+esc(fullName(base)):'Ny person'):'Redigera '+esc(fullName(p))}</h3>
     ${isNew&&base?`<label class="f"><span>Välj en befintlig person istället (valfritt)</span><input class="t" id="mExisting" list="dlPersons" placeholder="Skriv för att söka…">${personOptions(base.id)}<div class="hint">Lämna tomt för att skapa en ny person.</div></label><hr style="border:none;border-top:1px solid var(--paper2);margin:14px 0">`:''}
@@ -641,6 +657,7 @@ function openPersonModal(p,ctx){
           // link parents of the other parent with existing children of base where missing
         }
         if(ctx.rel==='child'&&target!==p){ if(b.sex==='K') target.motherId=b.id; else target.fatherId=b.id; }
+        if(ctx.rel==='sibling'&&target!==p){ if(!target.fatherId) target.fatherId=b.fatherId||''; if(!target.motherId) target.motherId=b.motherId||''; }
         // if adding a parent and the other parent exists, make them partners
         if((ctx.rel==='father'||ctx.rel==='mother')){const other=P(ctx.rel==='father'?b.motherId:b.fatherId); if(other){target.spouseIds=[...new Set([...(target.spouseIds||[]),other.id])]; const o=clone(other); o.spouseIds=[...new Set([...(o.spouseIds||[]),target.id])]; Store.put(o,{silent:true});}}
         await Store.put(target,{silent:true}); Store.put(b,{silent:true});
@@ -1031,6 +1048,7 @@ function mapRow(r){
   return o;
 }
 async function runImport(){
+  if(Store.demo) exitDemo(true);
   const rows=imp.rows.map(mapRow).filter(r=>r.given||r.surname);
   const created=[],newPlaces={},newSources={};
   const byRef={},byName={};
@@ -1128,6 +1146,7 @@ function toGedcom(){
 /* ============ Theme ============ */
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function currentTheme(){return document.documentElement.dataset.theme==='dark'?'dark':'light';}
+function applySize(lg){document.documentElement.dataset.size=lg?'lg':''; try{localStorage.setItem('sa-size',lg?'lg':'');}catch(e){} const b=$('#sizeBtn'); if(b){b.classList.toggle('on',!!lg); b.title=lg?'Mindre text':'Större text';}}
 function applyTheme(t){
   document.documentElement.dataset.theme=t;
   const b=$('#themeBtn'); if(b) b.innerHTML=t==='dark'
@@ -1135,6 +1154,8 @@ function applyTheme(t){
     :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
 }
 (function(){let t=null; try{t=localStorage.getItem('sa-theme');}catch(e){} if(!t) t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'; applyTheme(t);})();
+$('#sizeBtn').onclick=()=>applySize(document.documentElement.dataset.size!=='lg');
+try{applySize(localStorage.getItem('sa-size')==='lg');}catch(e){}
 $('#themeBtn').onclick=()=>{const t=currentTheme()==='dark'?'light':'dark'; applyTheme(t); try{localStorage.setItem('sa-theme',t);}catch(e){} mapState.drawn=false; renderAll();};
 
 /* ============ Shared bits ============ */
@@ -1159,15 +1180,13 @@ function renderStart(){
   const ed=Store.canEdit;
   if(!all.length){
     v.innerHTML=`<div class="start"><div class="hero"><div>
-      <h1>Ditt släktarkiv</h1>
-      <p>Samla släkten på ett ställe – med träd, solfjäder, källor från kyrkböckerna, bilder, tidslinje och karta. Börja med dig själv eller den äldsta ana du känner till, eller läs in en lista du redan har i Excel.</p>
-      <div class="acts">${ed?`<button class="btn primary" onclick="openPersonModal()">+ Lägg till första personen</button><a class="btn" href="#import">Importera från Excel</a>`:''}${Store.isAdmin?'<button class="btn" onclick="loadDemo()">👑 Utforska Vasaätten</button>':''}</div>
+      <h1>Välkommen till Kinsaga</h1>
+      <p>Här samlar du släkten på ett ställe: släktträd, bilder, källor, tidslinje och karta. Allt sparas automatiskt. Välj hur du vill börja.</p>
     </div><div class="hero-art">${heroArt()}</div></div>
-    <h2 class="sec-t">Så kommer du igång</h2>
-    <div class="tiles">
-      <div class="tile"><span class="ic">1</span><b>Lägg in personer</b><span>En i taget, eller importera en hel lista från Excel eller CSV.</span></div>
-      <div class="tile"><span class="ic">2</span><b>Koppla källor</b><span>Husförhörslängder, dopböcker och bouppteckningar – med sida och bild-ID.</span></div>
-      <div class="tile"><span class="ic">3</span><b>Utforska</b><span>Träd, solfjäder, tidslinje, karta och släktskapsberäknare.</span></div>
+    <div class="choices">
+      ${ed?`<a class="choice primary" href="#import"><span class="ic">📄</span><b>Jag har en släktlista</b><span>Läs in en Excel- eller CSV-fil. Du ser allt innan något sparas.</span><span class="go">Läs in fil →</span></a>
+      <button class="choice" onclick="openPersonModal()"><span class="ic">✏️</span><b>Börja med mig själv</b><span>Skriv in dig själv och lägg sedan till föräldrar, mor- och farföräldrar.</span><span class="go">Lägg till första personen →</span></button>`:''}
+      <button class="choice" onclick="loadDemo()"><span class="ic">👑</span><b>Titta på ett exempel</b><span>Vasaätten, från Gustav Vasa till drottning Kristina. Exemplet sparas inte.</span><span class="go">Visa exemplet →</span></button>
     </div></div>`;
     return;
   }
@@ -1193,13 +1212,118 @@ function renderStart(){
   v.innerHTML=`<div class="start"><div class="hero"><div>
       <h1>${home?'Släkten kring '+esc(fullName(home)):'Ditt släktarkiv'}</h1>
       <p>${all.length} personer${years.length?`, från ${Math.min(...years)} till ${Math.max(...years)}`:''}. ${home&&anc?`Du har hittat ${anc} anor till ${esc(home.given||fullName(home))}, ${maxGen} generationer bakåt.`:''}${home&&!anc&&descendantsOf(home.id).size?`${descendantsOf(home.id).size} ättlingar till ${esc(home.given||fullName(home))}.`:''}</p>
-      <div class="acts"><button class="btn primary" onclick="goHome()">Öppna släktträdet</button>${home?`<button class="btn" onclick="openCard('${home.id}')">Personkort</button>`:''}${ed?'<button class="btn" onclick="openPersonModal()">+ Ny person</button>':''}<button class="btn" onclick="shareModal(activeView())">🔗 Dela med släkten</button>${demoActive()&&Store.isAdmin?'<button class="btn" onclick="exitDemo()">Avsluta exemplet</button>':''}</div>
+      <div class="acts"><button class="btn primary" onclick="goHome()">Öppna släktträdet</button>${home?`<button class="btn" onclick="openCard('${home.id}')">Personkort</button>`:''}${ed?'<button class="btn" onclick="openPersonModal()">+ Ny person</button>':''}<button class="btn" onclick="shareModal(activeView())">🔗 Dela med släkten</button>${demoActive()?'<button class="btn" onclick="exitDemo()">Stäng exemplet</button>':''}</div>
     </div><div class="hero-art">${heroArt()}</div></div>
+    ${treesSection()}
     <div class="tiles">${tiles.map(([h,ic,t,d])=>`<a class="tile" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>
     <h2 class="sec-t">Senast ändrade</h2>
     <div class="recent">${recent.map(p=>chipHTML(p,p.updatedBy&&Store.user?`av <span data-uid="${esc(p.updatedBy)}">…</span>`:'')).join('')}</div>
     ${activeView()?`<p class="small muted" style="margin-top:18px">Du tittar på vyn <b>${esc(activeView().name)}</b> – ${HIDDEN.size} personer är dolda. Byt vy uppe till höger.</p>`:''}</div>`;
-  bindChips(v,openCard); fillNames(v);
+  bindChips(v,openCard); fillNames(v); bindTrees(v);
+}
+
+/* ============ SEPARATE TREES ============ */
+let _treesKey=null,_trees=null;
+/** Groups of people not (yet) connected to each other, biggest first. */
+function trees(){
+  const ps0=Object.values(S.persons);
+  const key=ps0.length+'|'+ps0.reduce((m,p)=>(p.updatedAt||'')>m?p.updatedAt:m,'')+'|'+(Store.demo?'d':'');
+  if(key===_treesKey) return _trees;
+  const home=homePerson();
+  _trees=KinCore.components(S.persons).map((ids,i)=>{
+    const ps=ids.map(P);
+    const cnt={}; for(const p of ps){const sn=(p.surname||'').trim().split(/\s+/).pop(); if(sn) cnt[sn]=(cnt[sn]||0)+1;}
+    const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+    const hasHome=!!(home&&ids.includes(home.id));
+    let root=hasHome?home:null;
+    if(!root){ if(ids.length<=400){let best=-1; for(const p of ps){const n=ancestorsOf(p.id).size+descendantsOf(p.id).size; if(n>best){best=n;root=p;}}} else root=ps[0]; }
+    const ys=ps.map(p=>yearOf(p.birthDate)).filter(Boolean);
+    return {i,ids,set:new Set(ids),size:ids.length,root,home:hasHome,
+      name:top.length?'Släkten '+(top[1]&&cnt[top[1]]>=cnt[top[0]]/2?top[0]+' & '+top[1]:top[0]):fullName(root),
+      span:ys.length?[Math.min(...ys),Math.max(...ys)]:null};
+  });
+  _treesKey=key; return _trees;
+}
+const treeOf=id=>trees().find(t=>t.set.has(id))||null;
+function crossTreeDups(){return findDups().filter(d=>treeOf(d.a.id)!==treeOf(d.b.id));}
+function treesSection(){
+  const ts=trees(); if(ts.length<2) return '';
+  const big=ts.filter(t=>t.size>1), lone=ts.filter(t=>t.size===1);
+  const sugg=Store.canEdit?crossTreeDups().slice(0,4):[];
+  const card=t=>`<div class="treecard${t.home?' mine':''}">
+      <div class="tc-h"><b>${esc(t.name)}</b>${t.home?'<span class="tag">Din släkt</span>':''}</div>
+      <div class="muted small">${t.size} personer${t.span?` · ${t.span[0]}–${t.span[1]}`:''}</div>
+      <div class="small tc-names">${t.ids.slice(0,40).map(P).sort((a,b)=>(yearOf(a.birthDate)||9999)-(yearOf(b.birthDate)||9999)).slice(0,3).map(p=>esc(fullName(p))).join(', ')}${t.size>3?' …':''}</div>
+      <div class="tc-acts"><button class="btn sm primary" data-topen="${t.root.id}">Visa trädet</button>${Store.canEdit?`<button class="btn sm" data-tlink="${t.root.id}">🔗 Koppla ihop</button>`:''}</div></div>`;
+  return `<h2 class="sec-t">Dina släktträd <span class="muted" style="font-weight:400">· ${ts.length} st som inte hänger ihop än</span></h2>
+    <p class="muted small" style="margin:-4px 0 12px;max-width:720px">Varje kort är en grupp personer som inte är kopplade till de andra. När du vet hur de är släkt klickar du på <b>Koppla ihop</b>, så blir de ett träd.</p>
+    ${sugg.length?`<div class="box suggest"><h3>Kanske samma person?</h3><p>De här personerna finns i olika träd men liknar varandra. Är det samma person blir träden ett när du slår ihop dem.</p>
+      ${sugg.map((d,i)=>`<div class="sg-row"><span><b>${esc(personLabel(d.a))}</b> <span class="muted small">i ${esc(treeOf(d.a.id).name)}</span><br><b>${esc(personLabel(d.b))}</b> <span class="muted small">i ${esc(treeOf(d.b.id).name)}</span></span><span class="sg-acts"><button class="btn sm primary" data-sgyes="${i}">Ja, samma person</button><button class="btn sm ghost" data-sgno="${i}">Nej</button></span></div>`).join('')}</div>`:''}
+    <div class="treecards">${big.map(card).join('')}
+    ${lone.length?`<div class="treecard"><div class="tc-h"><b>Ensamma personer</b></div><div class="muted small">${lone.length} personer utan kopplingar</div>
+      <div class="lone">${lone.slice(0,12).map(t=>`<span class="lone-p"><a href="#" data-topen="${t.root.id}">${esc(fullName(t.root))}</a>${Store.canEdit?` <button class="iconbtn" title="Koppla ihop" data-tlink="${t.root.id}">🔗</button>`:''}</span>`).join('')}${lone.length>12?` <span class="muted small">+${lone.length-12} till</span>`:''}</div></div>`:''}</div>`;
+}
+function bindTrees(root){
+  root.querySelectorAll('[data-topen]').forEach(b=>b.onclick=e=>{e.preventDefault(); setFocus(b.dataset.topen); ui.treeKey=null; if(location.hash!=='#trad') location.hash='trad'; else renderAll(true);});
+  root.querySelectorAll('[data-tlink]').forEach(b=>b.onclick=()=>linkModal(b.dataset.tlink));
+  const sugg=crossTreeDups().slice(0,4);
+  root.querySelectorAll('[data-sgyes]').forEach(b=>b.onclick=()=>{const d=sugg[+b.dataset.sgyes]; const score=p=>Object.values(p).filter(Boolean).length+(p.citations||[]).length; const [k,x]=score(d.a)>=score(d.b)?[d.a,d.b]:[d.b,d.a];
+    confirmBox(`Slå ihop till en person?`,`${fullName(k)} och ${fullName(x)} blir en och samma person. Uppgifter som saknas fylls i från den andra, och deras släktträd blir ett.`,'Slå ihop',()=>mergePersons(k.id,x.id));});
+  root.querySelectorAll('[data-sgno]').forEach(b=>b.onclick=()=>{const d=sugg[+b.dataset.sgno]; const a=clone(d.a); a.notDup=[...new Set([...(a.notDup||[]),d.b.id])]; Store.put(a);});
+}
+const LINK_REL=[['parent','är förälder till'],['child','är barn till'],['partner','är gift eller sambo med'],['sibling','är syskon till'],['same','är samma person som']];
+function linkModal(aId,bId){
+  modal(`<h3>Koppla ihop två personer</h3>
+    <p class="muted" style="margin-top:-4px;line-height:1.5">Välj två personer och hur de hör ihop. Ligger de i olika släktträd blir träden ett.</p>
+    <label class="f"><span>Den här personen …</span>${personPicker('lkA',aId,'Skriv ett namn')}</label>
+    <div class="relpick">${LINK_REL.map(([k,t],i)=>`<label class="rp"><input type="radio" name="lkR" value="${k}" ${i===0?'checked':''}><span>${t}</span></label>`).join('')}</div>
+    <label class="f"><span>… den här personen</span>${personPicker('lkB',bId,'Skriv ett namn')}</label>
+    <div class="lk-sum" id="lkSum"></div>
+    ${allPersonsDatalist()}
+    <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>Koppla ihop</button></div>`,
+  (ov,close)=>{
+    const q=x=>ov.querySelector(x);
+    const read=()=>({a:personByLabel(q('#lkA').value),b:personByLabel(q('#lkB').value),rel:(ov.querySelector('[name=lkR]:checked')||{}).value});
+    const upd=()=>{const {a,b}=read(); const el=q('#lkSum');
+      ov.querySelectorAll('.rp span').forEach((sp,i)=>{const k=LINK_REL[i][0]; sp.textContent=k==='parent'&&a&&a.sex?(a.sex==='M'?'är far till':'är mor till'):k==='child'&&a&&a.sex?(a.sex==='M'?'är son till':'är dotter till'):k==='sibling'&&a&&a.sex?(a.sex==='M'?'är bror till':'är syster till'):LINK_REL[i][1];});
+      if(!a||!b){el.innerHTML='<span class="muted">Välj båda personerna i listorna som kommer upp när du skriver.</span>'; return;}
+      const ta=treeOf(a.id),tb=treeOf(b.id); const lbl=ov.querySelector('[name=lkR]:checked+span').textContent;
+      el.innerHTML=`<b>${esc(fullName(a))}</b> ${esc(lbl)} <b>${esc(fullName(b))}</b>.${ta&&tb&&ta!==tb?`<br><span class="ok-t">✓ ${esc(ta.name)} (${ta.size}) och ${esc(tb.name)} (${tb.size}) blir ett släktträd.</span>`:''}`;};
+    ov.querySelectorAll('input').forEach(i=>{i.oninput=upd; i.onchange=upd;}); upd();
+    (aId?q('#lkB'):q('#lkA')).focus();
+    q('[data-x]').onclick=close;
+    q('[data-ok]').onclick=()=>{const {a,b,rel}=read();
+      if(!a||!b){toast('Välj båda personerna i listan.');return;}
+      if(a.id===b.id){toast('Välj två olika personer.');return;}
+      const ta=treeOf(a.id),tb=treeOf(b.id), joined=ta&&tb&&ta!==tb, total=joined?ta.size+tb.size:0;
+      const done=()=>{ui.treeKey=null; setFocus(rel==='same'?a.id:b.id); toast(joined?`Klart! Två släktträd blev ett – ${total} personer.`:'Klart! Kopplingen är sparad.',4000); renderAll(true);};
+      if(rel==='same'){close(); confirmBox('Slå ihop till en person?',`${fullName(a)} och ${fullName(b)} blir en och samma person. Uppgifter som saknas fylls i från den andra.`,'Slå ihop',async()=>{await mergePersons(a.id,b.id); done();}); return;}
+      const err=linkPersons(a,rel,b); if(err){toast(err,6000);return;}
+      close(); done();
+    };
+  });
+}
+/** Wire two existing people together. Returns an error message or ''. */
+function linkPersons(a,rel,b){
+  if(rel==='child') return linkPersons(b,'parent',a);
+  const A=clone(a),B=clone(b);
+  if(rel==='partner'){A.spouseIds=[...new Set([...(A.spouseIds||[]),B.id])]; B.spouseIds=[...new Set([...(B.spouseIds||[]),A.id])]; Store.put(A,{silent:true}); Store.put(B,{silent:true}); return '';}
+  if(rel==='parent'){
+    if(ancestorsOf(A.id).has(B.id)) return `${fullName(b)} står redan som ana till ${fullName(a)} – det kan inte vara tvärtom också.`;
+    const slot=A.sex==='M'?'fatherId':A.sex==='K'?'motherId':(!B.fatherId?'fatherId':'motherId');
+    if(B[slot]&&B[slot]!==A.id){const o=P(B[slot]); return `${fullName(b)} har redan ${slot==='fatherId'?'en far':'en mor'}${o?' ('+fullName(o)+')':''}. Är det samma person? Välj då ”är samma person som”.`;}
+    B[slot]=A.id; if(!A.sex){A.sex=slot==='fatherId'?'M':'K'; Store.put(A,{silent:true});}
+    const other=P(B[slot==='fatherId'?'motherId':'fatherId']);
+    if(other&&!(A.spouseIds||[]).includes(other.id)){const a2=clone(P(A.id)||A); a2.sex=a2.sex||A.sex; a2.spouseIds=[...new Set([...(a2.spouseIds||[]),other.id])]; Store.put(a2,{silent:true}); const o2=clone(other); o2.spouseIds=[...new Set([...(o2.spouseIds||[]),A.id])]; Store.put(o2,{silent:true});}
+    Store.put(B,{silent:true}); return '';
+  }
+  if(rel==='sibling'){
+    if(!A.fatherId&&!A.motherId&&!B.fatherId&&!B.motherId) return `Syskon kopplas ihop via föräldrarna. Lägg först till far eller mor för ${fullName(a)} eller ${fullName(b)}.`;
+    for(const k of ['fatherId','motherId']){ if(A[k]&&B[k]&&A[k]!==B[k]) return `${fullName(a)} och ${fullName(b)} har olika ${k==='fatherId'?'fäder':'mödrar'} inlagda. Halvsyskon kopplar du genom att ge dem samma ${k==='fatherId'?'mor':'far'}.`; }
+    for(const k of ['fatherId','motherId']){ if(A[k]&&!B[k]) B[k]=A[k]; if(B[k]&&!A[k]) A[k]=B[k]; }
+    Store.put(A,{silent:true}); Store.put(B,{silent:true}); return '';
+  }
+  return 'Okänd koppling';
 }
 
 /* ============ FAN CHART ============ */
@@ -1773,29 +1897,41 @@ function demoData(){
 }
 let _demoIds=null;
 const demoIds=()=>_demoIds||(_demoIds=(()=>{const d=demoData(); return new Set([...d.places,...d.sources,...d.persons].map(o=>o.id));})());
-const demoActive=()=>{const ids=demoIds(); return Object.keys(ALL.persons).some(id=>ids.has(id));};
-function updateDemoBar(){const b=$('#demoBar'); if(b) b.classList.toggle('on',Store.loaded&&demoActive()); const x=$('#demoExitBtn'); if(x) x.style.display=Store.isAdmin?'':'none';}
+const demoActive=()=>!!Store.demo;
+function updateDemoBar(){const b=$('#demoBar'); if(b) b.classList.toggle('on',Store.loaded&&demoActive()); document.body.classList.toggle('demo',demoActive());}
+/* The example family lives only in memory: it is never saved, so it can't
+   end up in someone's own archive or in a shared tree. */
 function loadDemo(){
+  if(Store.demo){ if(location.hash!=='#trad') location.hash='trad'; return; }
   const {places,sources,persons}=demoData();
-  ui.viewId=null; try{localStorage.removeItem('sa-viewid');}catch(e){}
-  setFocus('p_gustav1'); ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel=null;
-  Store.putMany([...places,...sources,...persons]).then(()=>toast('Vasaätten är inläst. Avsluta exemplet när du vill via den gula raden högst upp.',5000));
-  if(location.hash!=='#trad') location.hash='trad'; else renderAll();
+  Store.demo={saved:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},focus:ui.focus,viewId:ui.viewId};
+  const m=a=>Object.fromEntries(a.map(o=>[o.id,clone(o)]));
+  ALL.persons=m(persons); ALL.places=m(places); ALL.sources=m(sources); ALL.views={};
+  ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel=null;
+  applyView();
+  toast('Det här är ett exempel. Inget sparas – dina egna uppgifter ligger kvar orörda.',5000);
+  if(location.hash!=='#trad') location.hash='trad'; else renderAll(true);
 }
-function exitDemo(){
-  confirmBox('Avsluta exemplet Vasaätten?','Alla personer, platser och källor från exemplet tas bort. Sådant du själv har lagt till ligger kvar.','Avsluta exemplet',async()=>{
-    const ids=demoIds();
-    for(const p of Object.values(ALL.persons)){ if(ids.has(p.id)) continue; const q=clone(p); let ch=false;
-      for(const k of ['fatherId','motherId']) if(ids.has(q[k])){q[k]='';ch=true;}
-      const sp=(q.spouseIds||[]).filter(x=>!ids.has(x)); if(sp.length!==(q.spouseIds||[]).length){q.spouseIds=sp;ch=true;}
-      if(ch) Store.put(q,{silent:true}); }
-    for(const v of Object.values(ALL.views)){const refs=[...(v.hide||[]),...(v.hideUp||[]),...(v.hideDown||[])]; if(refs.every(id=>ids.has(id))) Store.del('view',v.id,{silent:true});}
-    ui.viewId=null; try{localStorage.removeItem('sa-viewid');}catch(e){}
-    for(const [kind,col] of [['person','persons'],['place','places'],['source','sources']]) for(const id of Object.keys(ALL[col])) if(ids.has(id)) Store.del(kind,id,{silent:true});
-    ui.sel=null; ui.focus=null; ui.treeKey=null; try{localStorage.removeItem('sa-focus');}catch(e){}
-    toast('Exemplet är borttaget');
-    if(location.hash!=='#start') location.hash='start'; else renderAll(true);
-  });
+function exitDemo(quiet){
+  const d=Store.demo; if(!d) return;
+  Store.demo=null; Object.assign(ALL,d.saved);
+  ui.viewId=d.viewId&&ALL.views[d.viewId]?d.viewId:null; ui.focus=d.focus; ui.sel=null; ui.treeKey=null;
+  applyView();
+  if(quiet) return;
+  toast('Exemplet är stängt');
+  if(location.hash!=='#start') location.hash='start'; else renderAll(true);
+}
+/* Older versions saved the example into the archive. Remove it quietly. */
+function purgeLegacyDemo(){
+  if(!Store.canEdit||!Store.isAdmin) return;
+  const ids=demoIds(); if(!Object.keys(ALL.persons).some(id=>ids.has(id))) return;
+  for(const p of Object.values(ALL.persons)){ if(ids.has(p.id)) continue; const q=clone(p); let ch=false;
+    for(const k of ['fatherId','motherId']) if(ids.has(q[k])){q[k]='';ch=true;}
+    const sp=(q.spouseIds||[]).filter(x=>!ids.has(x)); if(sp.length!==(q.spouseIds||[]).length){q.spouseIds=sp;ch=true;}
+    if(ch) Store.put(q,{silent:true}); }
+  for(const v of Object.values(ALL.views)){const refs=[...(v.hide||[]),...(v.hideUp||[]),...(v.hideDown||[])]; if(refs.length&&refs.every(id=>ids.has(id))) Store.del('view',v.id,{silent:true});}
+  for(const [kind,col] of [['person','persons'],['place','places'],['source','sources']]) for(const id of Object.keys(ALL[col])) if(ids.has(id)) Store.del(kind,id,{silent:true});
+  if(ui.focus&&ids.has(ui.focus)) ui.focus=null;
 }
 
 /* ============ Boot ============ */
