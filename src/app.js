@@ -223,14 +223,15 @@ function emptyState(){
 }
 
 /* ============ TREE ============ */
-const CW=196,CH=68;
+const CW=224,CH=100; // card size; the left part holds a 3:4 portrait (PW×PH)
+const PX=12,PY=10,PW=60,PH=80;
 let treeZoom=null;
 function renderTree(fresh){
   const v=$('#view');
   if(!Object.keys(S.persons).length){v.innerHTML=emptyState();ui.treeKey=null;return;}
   const F=P(ui.focus);
   if(!$('#treeSvg')||fresh){
-    v.innerHTML=`<div id="treeWrap"><svg id="treeSvg"><defs><clipPath id="avclip"><circle cx="28" cy="34" r="20"/></clipPath></defs><g class="vp"></g></svg>
+    v.innerHTML=`<div id="treeWrap"><svg id="treeSvg"><defs><clipPath id="avclip"><rect x="12" y="10" width="60" height="80" rx="6"/></clipPath></defs><g class="vp"></g></svg>
       <div class="tree-tools">
         <span class="fname" id="tfName"></span>
         <span id="tTrees" class="ctl"></span>
@@ -306,12 +307,20 @@ function renderTree(fresh){
     el.attr('class','card'+(n.focus?' focus':'')+(sel===p.id?' sel':''));
     el.append('rect').attr('class','bg').attr('width',CW).attr('height',CH).attr('rx',9);
     el.append('rect').attr('width',5).attr('height',CH-16).attr('x',0).attr('y',8).attr('rx',2).style('fill',sexColor(p));
-    const av=avatarUrl(p); let tx=14;
-    if(av){el.append('image').attr('href',av).attr('x',8).attr('y',CH/2-20).attr('width',40).attr('height',40).attr('preserveAspectRatio','xMidYMid slice').attr('clip-path','url(#avclip)'); tx=56;}
-    const maxc=av?18:23;
-    const nm=fullName(p); el.append('text').attr('class','nm').attr('x',tx).attr('y',23).text(nm.length>maxc?nm.slice(0,maxc-1)+'…':nm).append('title').text(nm);
-    el.append('text').attr('class','yr').attr('x',tx).attr('y',40).text(lifespan(p)||'år okänt');
-    const pl=placeName(p.birthPlace)||p.occupation||''; el.append('text').attr('class','pl').attr('x',tx).attr('y',56).text(pl.length>maxc+2?pl.slice(0,maxc+1)+'…':pl);
+    const av=avatarUrl(p), tx=PX+PW+12, maxc=17;
+    if(av){el.append('image').attr('href',av).attr('x',PX).attr('y',PY).attr('width',PW).attr('height',PH).attr('preserveAspectRatio','xMidYMid slice').attr('clip-path','url(#avclip)');}
+    else{const ph=el.append('g').attr('class','ph-slot'+(Store.canEdit?' can':''));
+      ph.append('rect').attr('x',PX).attr('y',PY).attr('width',PW).attr('height',PH).attr('rx',6);
+      ph.append('text').attr('class','ini').attr('x',PX+PW/2).attr('y',PY+PH/2+2).attr('text-anchor','middle').text(initials(p));
+      if(Store.canEdit){ph.append('text').attr('class','add').attr('x',PX+PW/2).attr('y',PY+PH-9).attr('text-anchor','middle').text('+ bild');
+        ph.append('title').text('Lägg till en bild');
+        ph.on('click',ev=>{ev.stopPropagation(); select('person',p.id); setTimeout(()=>{const i=$('#uplAv'); if(i) i.click();},30);});}}
+    const nm=fullName(p), words=nm.split(' '), lines=['']; for(const w of words){const cur=lines[lines.length-1]; if(cur&&(cur+' '+w).length>maxc){if(lines.length===2){lines[1]+=' '+w; continue;} lines.push(w);} else lines[lines.length-1]=cur?cur+' '+w:w;}
+    const L=lines.map(l=>l.length>maxc+1?l.slice(0,maxc)+'…':l);
+    const t0=el.append('text').attr('class','nm').attr('x',tx).attr('y',28); L.forEach((l,i)=>t0.append('tspan').attr('x',tx).attr('dy',i?16:0).text(l)); t0.append('title').text(nm);
+    const yy=28+(L.length-1)*16;
+    el.append('text').attr('class','yr').attr('x',tx).attr('y',yy+20).text(lifespan(p)||'år okänt');
+    const pl=placeName(p.birthPlace)||p.occupation||''; el.append('text').attr('class','pl').attr('x',tx).attr('y',yy+37).text(pl.length>maxc+3?pl.slice(0,maxc+2)+'…':pl);
     const nc=(p.citations||[]).length; if(!nc){el.append('circle').attr('cx',CW-11).attr('cy',11).attr('r',3.5).style('fill','var(--warn)').append('title').text('Ingen källa ännu');}
     if(Store.canEdit){const eg=el.append('g').attr('class','eye').attr('transform',`translate(${CW-30},${CH-26})`); eg.append('rect').attr('width',22).attr('height',20).attr('rx',5);
       eg.append('path').attr('d','M4 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5zM4 4l14 12').attr('transform','translate(0,0)');
@@ -1907,7 +1916,7 @@ function loadDemo(){
   Store.demo={saved:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},focus:ui.focus,viewId:ui.viewId};
   const m=a=>Object.fromEntries(a.map(o=>[o.id,clone(o)]));
   ALL.persons=m(persons); ALL.places=m(places); ALL.sources=m(sources); ALL.views={};
-  ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=1; ui.descGen=2; ui.treeKey=null; ui.sel=null;
+  ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=3; ui.descGen=2; ui.treeKey=null; ui.sel=null;
   applyView();
   toast('Det här är ett exempel. Inget sparas – dina egna uppgifter ligger kvar orörda.',5000);
   if(location.hash!=='#trad') location.hash='trad'; else renderAll(true);

@@ -382,3 +382,10 @@ table.list{width:100%;border-collapse:collapse;background:var(--card);border:1px
 .sizebtn span{font-size:16px;margin-left:1px}
 .sizebtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 html[data-size=lg] #panel,html[data-size=lg] .start,html[data-size=lg] .view-pad,html[data-size=lg] .ov .modal,html[data-size=lg] .tree-tools,html[data-size=lg] #demoBar,html[data-size=lg] .toast,html[data-size=lg] .empty{zoom:1.2}
+
+/* ---- Portrait slot on tree cards ---- */
+.ph-slot rect{fill:var(--paper2);stroke:var(--line);stroke-width:1}
+.ph-slot .ini{font-family:var(--serif);font-size:20px;font-weight:600;fill:var(--ink3)}
+.ph-slot .add{font-size:10px;fill:var(--accent);opacity:0;transition:opacity .15s}
+.card:hover .ph-slot.can .add{opacity:1}
+.ph-slot.can:hover rect{stroke:var(--accent);stroke-dasharray:3 2}
