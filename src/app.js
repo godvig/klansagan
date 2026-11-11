@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-11.5';
+const APP_VERSION='2026-11-11.6';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -149,7 +149,7 @@ function setStatus(cls,txt){const s=$('#status'); s.className='status '+cls; con
 const P=id=>S.persons[id];
 /* Call name (tilltalsnamn): p.callName is normally one of the given names. */
 const givenName=p=>ui.nameMode==='call'&&p.callName?p.callName:(p.given||'');
-const shortName=p=>p?(p.callName||shortName(p)):'Okänd';
+const shortName=p=>p?(p.callName||p.given||fullName(p)):'Okänd';
 const fullName=p=>p?([givenName(p),p.surname].filter(Boolean).join(' ')||'Namnlös'):'Okänd';
 /** Given names with the call name underlined, Swedish style. */
 const givenHtml=p=>{const g=p.given||''; if(!p.callName) return esc(g); const ws=g.split(/\s+/); const i=ws.findIndex(w=>w.replace(/[()]/g,'')===p.callName);
@@ -210,7 +210,9 @@ function renderAll(force){
   if(ui.sel&&ui.sel.type==='place'&&!S.places[ui.sel.id]) ui.sel=null;
   if(ui.sel&&ui.sel.type==='source'&&!S.sources[ui.sel.id]) ui.sel=null;
   renderPanel(); updateDemoBar(); updateViewBtn();
-  VIEWS[ui.view](force||lastView!==ui.view); lastView=ui.view;
+  try{ VIEWS[ui.view](force||lastView!==ui.view); lastView=ui.view; }
+  catch(e){ console.error(e); lastView=null;
+    $('#view').innerHTML=`<div class="empty"><h2>Något gick fel på den här sidan</h2><p>Dina uppgifter är orörda. Prova att ladda om sidan. Om felet kommer tillbaka: skicka texten här nedanför till den som sköter sidan.</p><p class="muted small" style="font-family:monospace">${esc(APP_VERSION)} · ${esc(ui.view)} · ${esc(String(e&&e.message||e))}</p><p><button class="btn primary" onclick="location.reload()">Ladda om</button></p></div>`; }
 }
 function setFocus(id){ui.focus=id; try{localStorage.setItem('sa-focus',id)}catch(e){} }
 function select(type,id){ui.sel=id?{type,id}:null; renderAll();}
