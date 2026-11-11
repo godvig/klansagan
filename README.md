@@ -1,63 +1,116 @@
-# Släktarkivet
+# Kinsaga
 
-Ett webbverktyg för att visualisera och dokumentera släktforskning: släktträd, personer, källor, tidslinje, karta, bilder och import från Excel.
+[![CI](https://github.com/godvig/kinsaga/actions/workflows/ci.yml/badge.svg)](https://github.com/godvig/kinsaga/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-2f5d50.svg)](LICENSE)
+![No build step](https://img.shields.io/badge/build-none-8b8174.svg)
 
-Allt är en enda HTML-sida utan byggsteg – ingen `npm install` behövs.
+**Build your family history together.** Kinsaga is a browser-based genealogy workbench: family tree, fan chart, sources, timeline, map and auto-written life stories. It runs from a single static page, needs no account and keeps your data in your own hands.
 
-## Funktioner
+Most genealogy tools are either subscription platforms that own your tree, or desktop programs that look like 2005 and can't be shared. Kinsaga is for the person who does the research for the whole family. You document every fact with its source, then share **the part of the tree each relative cares about**. Cousins on dad's side don't have to scroll through mum's side.
 
-- **Släktträd** – anor uppåt och ättlingar nedåt från vald person, med snabbknappar för att lägga till föräldrar.
-- **Personer** – lista med filter för det som saknas (källa, födelsedatum, födelseort, föräldrar).
-- **Källor** – registrera husförhörslängder, dopböcker m.m. med arkivreferens och koppla dem till personer.
-- **Tidslinje** – livslinjer med historiska händelser i bakgrunden.
-- **Karta** – platser och en persons livsväg. Placera orter genom att klicka på kartan.
-- **Import** – Excel (.xlsx), CSV eller inklistrade celler, med automatisk kolumnmatchning.
-- **Export** – JSON-säkerhetskopia, GEDCOM 5.5.1 och CSV.
-- **Startsida** – översikt, senast ändrade personer och genvägar. Loggan tar dig alltid hit.
-- **Solfjäder** – anorna i en halvcirkel med hur fullständig varje generation är.
-- **Personkort** – egen sida per person med automatisk livsberättelse, familj, tidslinje, bilder och källor.
-- **Släktskapsberäknare** – svenska termer som farbror, moster, brorson, kusin, tremänning, halvkusin, svåger och svärmor, med vägen via gemensam ana.
-- **Dubblettsökning** – hittar troliga dubbletter (även stavningsvarianter som Gustaf/Gustav, Wasa/Vasa) och slår ihop dem.
-- **Utskrift** – träd och solfjäder som PDF (A3/A4) eller PNG, personkort som PDF.
-- **Mörkt läge** – växla med knappen uppe till höger.
-- **Vyer** – dölj personer, en hel gren bakåt (t.ex. mammas sida) eller ättlingar. Varje vy har en egen länk (`#vy-namn`). Vyer döljer bara i visningen; uppgifterna finns kvar i *Hela släkten*.
-- **Samarbete** (claude.ai-versionen) – bjud in släktingar som redigerare så bygger ni trädet tillsammans; ändringar syns för alla direkt och märks med vem som gjorde dem.
+The interface is in Swedish for now, and it understands Swedish sources (household examination rolls, parishes, patronymics). An English UI is next on the [roadmap](#roadmap).
 
-## Exempeldata
+![Kinsaga family tree view with the House of Vasa example](docs/screenshots/tree.png)
 
-Tomt arkiv? Klicka **Visa Vasaätten som exempel** för att läsa in Vasaätten – från Gustav Vasa och hans tre hustrur till drottning Kristina, Karl X Gustav och de polska Vasakungarna – med kröningar, vigslar, platser på kartan och källor (SBL, SKBL, Kungliga slotten). Datum följer den julianska kalendern som gällde i Sverige till 1753. Exemplet kan tömmas under *Import & export*.
+| Fan chart | Relationship calculator | Person card |
+|---|---|---|
+| ![Fan chart](docs/screenshots/fan.png) | ![Relationship calculator](docs/screenshots/relationship.png) | ![Person card](docs/screenshots/person-card.png) |
+| **Timeline** | **Map with life route** | **Dark mode** |
+| ![Timeline](docs/screenshots/timeline.png) | ![Map](docs/screenshots/map.png) | ![Dark mode](docs/screenshots/tree-dark.png) |
 
-## Köra lokalt
+## Live demo
 
-Sidan läser in kartdata med `fetch`, så den måste serveras över HTTP (att dubbelklicka på `index.html` fungerar inte för kartan).
+**[godvig.github.io/kinsaga](https://godvig.github.io/kinsaga/)**. Click **👑 Utforska Vasaätten** to load the example data. It's the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. Everything stays in your browser.
+
+## Quick start
+
+There is no build step. Serve the folder with any static web server:
 
 ```bash
-git clone https://github.com/godvig/slaktarkivet.git
-cd slaktarkivet
-python3 -m http.server 8000
+git clone https://github.com/godvig/kinsaga.git
+cd kinsaga
+python3 -m http.server 8000      # or: npx serve .
 ```
 
-Öppna sedan <http://localhost:8000>.
+Open <http://localhost:8000>. Opening `index.html` directly from disk won't work, because the map data is loaded with `fetch`.
 
-Alternativ utan Python: `npx serve .`
+To import your own family, start from [`examples/kinsaga-import-example.xlsx`](examples/kinsaga-import-example.xlsx). It has one row per person, and parents are referenced by id or by name.
 
-## Publicera med GitHub Pages
+## Features
 
-1. Gå till repots **Settings → Pages**.
-2. Under *Build and deployment*, välj **Deploy from a branch**, gren `main` och mapp `/ (root)`.
-3. Efter en minut finns sidan på `https://godvig.github.io/slaktarkivet/`.
+- **Family tree:** ancestors and descendants around any person, up to 10 generations each way. Couples follow genealogical convention (man left, woman right), and cards stay put when you move between partners.
+- **Fan chart:** ancestors in a half circle, coloured by grandparent line, with completeness per generation.
+- **Person cards:** an automatically written life story ("…was born on 12 May 1496 at Rydboholm… married… died aged 64"), plus family, a vertical timeline with age at each event, photos and sources.
+- **Relationship calculator:** precise Swedish kinship terms (farbror, moster, brorsdotter, kusin, tremänning, halvkusin, svåger…) with the path drawn through the common ancestor.
+- **Sources:** register each register volume once (archive, reference, image id) and cite it per fact.
+- **Timeline:** lifespans against historical events (plague, famine years, emigration, wars).
+- **Map:** places on a map, with a person's life route. Place a parish by clicking the map and merge spelling variants.
+- **Views:** hide a branch ("dad's side only"), single people or descendants. Each view has its own link, and nothing is deleted. One click undoes a change.
+- **Duplicate finder:** catches spelling variants (Gustaf/Gustav, Wasa/Vasa, Larsdtr/Larsdotter) and merges the records safely.
+- **Import:** Excel, CSV or cells pasted from Excel. Columns are mapped automatically, with Swedish and English headers.
+- **Export:** GEDCOM 5.5.1 (MyHeritage, Ancestry, Gramps, Disgen…), CSV and a JSON backup. The tree, fan chart and person cards print as PDF (A3/A4) or PNG.
+- **Collaboration:** when hosted as a Claude artifact, invited relatives edit the same tree live, and every change records who made it.
+- **Dark mode, photos and documents,** plus a start page that shows where your research stands.
 
-## Var sparas datan?
+<details>
+<summary><b>Swedish terms used in the interface</b></summary>
 
-| Var sidan körs | Lagring |
+| Swedish | English |
 |---|---|
-| Lokalt eller på GitHub Pages | I webbläsarens `localStorage` – bara på den datorn och i den webbläsaren. **Exportera en säkerhetskopia regelbundet.** |
-| Som artefakt på claude.ai | I molnet, med stöd för bilduppladdning och delning. |
+| Träd / Solfjäder | Tree / Fan chart |
+| Släktskap | Relationship |
+| Källa, husförhörslängd | Source, household examination roll |
+| Församling / socken | Parish |
+| Far, mor, farfar, mormor | Father, mother, paternal grandfather, maternal grandmother |
+| Farbror, faster, morbror, moster | Paternal uncle/aunt, maternal uncle/aunt |
+| Kusin, tremänning, halv- | First cousin, second cousin, half- |
+| Vy, dölj | View, hide |
+| Startperson | Home person |
 
-Uppladdning av bilder och dokument kräver claude.ai-versionen; övriga funktioner fungerar överallt.
+</details>
 
-## Teknik
+## Architecture
 
-- [D3](https://d3js.org/) för träd, tidslinje och karta
-- [topojson-client](https://github.com/topojson/topojson-client) + [world-atlas](https://github.com/topojson/world-atlas) (Natural Earth, public domain) för kartan
-- [SheetJS](https://sheetjs.com/) för Excel-import (laddas först när den behövs)
+```
+index.html          markup shell, loads D3 + topojson from CDN
+src/core.js         pure logic: dates, GEDCOM dates, kinship terms, views, duplicate scoring
+src/app.js          UI: views, panels, import/export, storage adapters
+src/styles.css      design tokens (light + dark), layout
+data/world-50m.json Natural Earth countries (via world-atlas) for the map
+examples/           fictional import files
+tests/              Vitest suite for src/core.js
+```
+
+- **No framework, no bundler.** The app is vanilla JavaScript with [D3](https://d3js.org) for the tree, fan chart, timeline and map. [SheetJS](https://sheetjs.com) and [jsPDF](https://github.com/parallax/jsPDF) load lazily, only when you import or print.
+- **Data model:** four document kinds (`person`, `place`, `source`, `view`) stored as flat JSON documents. Relationships live on the person (`fatherId`, `motherId`, `spouseIds`), and events and citations are embedded.
+- **Storage adapters:**
+  - `localStorage` when the app runs standalone, such as on GitHub Pages.
+  - A realtime document store with per-user attribution when it runs as a Claude artifact.
+  
+  The rest of the app only sees an in-memory store.
+- **Views** filter the store before rendering. All writes, exports and merges always operate on the full, unfiltered data, so hiding something can never orphan or overwrite it.
+- **Pure core:** everything that has a right answer (kinship terms, date handling, duplicate scoring, view filtering) lives in `src/core.js` and is unit tested.
+
+## Tests
+
+```bash
+npm ci
+npm run check     # eslint + tsc (JSDoc types on core.js) + vitest
+```
+
+CI runs the same checks on every push and pull request. The test suite covers Swedish kinship terms (including half and removed relationships), date parsing and GEDCOM conversion, CSV/Excel paste parsing, duplicate scoring and branch hiding, all on synthetic families.
+
+## Roadmap
+
+- [ ] **English UI** with a language switcher and English kinship terms ("first cousin once removed")
+- [ ] **Hosted collaboration without Claude:** invite links and magic-link login on a managed backend
+- [ ] GEDCOM import
+- [ ] Research log and to-do per person ("searched Hanebo AI:20, nothing found")
+- [ ] Change history with restore
+- [ ] Installable offline app (PWA)
+
+## License
+
+[AGPL-3.0](LICENSE) © Adam Englund. You can use, study and modify Kinsaga freely. If you run a modified version as a network service, you must share your source code too.
+
+Map data: [Natural Earth](https://www.naturalearthdata.com) (public domain) via [world-atlas](https://github.com/topojson/world-atlas). The House of Vasa example is compiled from public historical sources (Svenskt biografiskt lexikon, Svenskt kvinnobiografiskt lexikon, the Royal Court). Dates follow the Julian calendar that Sweden used until 1753.
