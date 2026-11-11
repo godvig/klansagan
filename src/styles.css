@@ -389,3 +389,25 @@ html[data-size=lg] #panel,html[data-size=lg] .start,html[data-size=lg] .view-pad
 .ph-slot .add{font-size:10px;fill:var(--accent);opacity:0;transition:opacity .15s}
 .card:hover .ph-slot.can .add{opacity:1}
 .ph-slot.can:hover rect{stroke:var(--accent);stroke-dasharray:3 2}
+
+/* ---- Call name, settings, simple mode ---- */
+u.tn{text-decoration-thickness:1.5px;text-underline-offset:3px}
+.callpick .lab{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+#mCallChips{display:flex;flex-wrap:wrap;gap:6px;min-height:30px;align-items:center}
+.cchip{font:inherit;font-size:13.5px;border:1px solid var(--line2);background:var(--card);border-radius:99px;padding:4px 12px;cursor:pointer;color:var(--ink)}
+.cchip.on{background:var(--accent);border-color:var(--accent);color:#fff;text-decoration:underline;text-underline-offset:3px}
+.setbtn{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:8px;height:34px;padding:0 11px;cursor:pointer;color:var(--ink2);font:inherit;font-size:13.5px}
+.setbtn:hover{color:var(--ink);border-color:var(--ink3)}
+.sgroup{border-top:1px solid var(--line);padding:12px 0 6px}
+.sgroup .slab{font-weight:600;font-size:13px;margin-bottom:6px;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
+.sopt{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}
+.sopt input{margin-top:3px;accent-color:var(--accent);width:17px;height:17px}
+.sopt b{font-weight:600}.sopt small{display:block;color:var(--ink3);font-size:12.5px;line-height:1.45;margin-top:2px}
+.row-inline{display:flex;gap:8px}.row-inline input{flex:1}
+.simplepill{display:none;border:1px solid var(--accent);background:var(--paper2);color:var(--accent);border-radius:99px;height:34px;padding:0 14px;cursor:pointer;font:inherit;font-size:13.5px}
+body.simple .simplepill{display:block}
+body.simple #nav a:not([data-v=start]):not([data-v=trad]):not([data-v=personer]),
+body.simple .viewsel,body.simple #status,body.simple .card .eye,body.simple #tPrint,body.simple [data-act=hide],body.simple [data-act=delp],
+body.simple .start .tiles,body.simple .ph .sec.cites{display:none!important}
+body.simple #nav a{font-size:16px;padding:8px 16px}
+.callpick{margin-bottom:12px}

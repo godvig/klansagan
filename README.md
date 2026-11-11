@@ -51,7 +51,8 @@ To import your own family, start from [`examples/kinsaga-import-example.xlsx`](e
 - **Import:** Excel, CSV or cells pasted from Excel. Columns are mapped automatically, with Swedish and English headers.
 - **Export:** GEDCOM 5.5.1 (MyHeritage, Ancestry, Gramps, Disgen…), CSV and a JSON backup. The tree, fan chart and person cards print as PDF (A3/A4) or PNG.
 - **Collaboration:** when hosted as a Claude artifact, invited relatives edit the same tree live, and every change records who made it.
-- **Easy to use:** a start page with three clear choices, larger text with one click, dark mode, photos and documents.
+- **Easy to use:** a start page with three clear choices and a *simple mode* (big text, only Start, Tree and People) that a link can switch on with `?enkelt`. Mark yourself as "me" and kinship is counted from you. Light by default, dark mode on request.
+- **Call names (tilltalsnamn):** mark the name a person went by. It is underlined Swedish-style, and you can show only call names. On import, use a *Tilltalsnamn* column or an asterisk (`Lars* Anders`).
 
 <details>
 <summary><b>Swedish terms used in the interface</b></summary>
