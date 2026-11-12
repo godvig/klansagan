@@ -1,16 +1,16 @@
-# Kinsaga
+# Klansagan
 
-[![CI](https://github.com/godvig/kinsaga/actions/workflows/ci.yml/badge.svg)](https://github.com/godvig/kinsaga/actions/workflows/ci.yml)
+[![CI](https://github.com/godvig/klansagan/actions/workflows/ci.yml/badge.svg)](https://github.com/godvig/klansagan/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-2f5d50.svg)](LICENSE)
 ![No build step](https://img.shields.io/badge/build-none-8b8174.svg)
 
-**Build your family history together.** Kinsaga is a browser-based genealogy workbench: family tree, fan chart, sources, timeline, map and auto-written life stories. It runs from a single static page, needs no account and keeps your data in your own hands.
+**Build your family history together.** Klansagan is a browser-based genealogy workbench: family tree, fan chart, sources, timeline, map and auto-written life stories. It runs from a single static page, needs no account and keeps your data in your own hands.
 
-Most genealogy tools are either subscription platforms that own your tree, or desktop programs that look like 2005 and can't be shared. Kinsaga is for the person who does the research for the whole family. You document every fact with its source, then share **the part of the tree each relative cares about**. Cousins on dad's side don't have to scroll through mum's side.
+Most genealogy tools are either subscription platforms that own your tree, or desktop programs that look like 2005 and can't be shared. Klansagan is for the person who does the research for the whole family. You document every fact with its source, then share **the part of the tree each relative cares about**. Cousins on dad's side don't have to scroll through mum's side.
 
 The interface is in Swedish for now, and it understands Swedish sources (household examination rolls, parishes, patronymics). An English UI is next on the [roadmap](#roadmap).
 
-![Kinsaga family tree view with the House of Vasa example](docs/screenshots/tree.png)
+![Klansagan family tree view with the House of Vasa example](docs/screenshots/tree.png)
 
 | Fan chart | Relationship calculator | Person card |
 |---|---|---|
@@ -20,21 +20,21 @@ The interface is in Swedish for now, and it understands Swedish sources (househo
 
 ## Live demo
 
-**[Open the example](https://godvig.github.io/kinsaga/#exempel)**: the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. The example lives in memory only and is never saved. [Open an empty archive](https://godvig.github.io/kinsaga/) to start with your own family.
+**[Open the example](https://godvig.github.io/klansagan/#exempel)**: the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. The example lives in memory only and is never saved. [Open an empty archive](https://godvig.github.io/klansagan/) to start with your own family.
 
 ## Quick start
 
 There is no build step. Serve the folder with any static web server:
 
 ```bash
-git clone https://github.com/godvig/kinsaga.git
-cd kinsaga
+git clone https://github.com/godvig/klansagan.git
+cd klansagan
 python3 -m http.server 8000      # or: npx serve .
 ```
 
 Open <http://localhost:8000>. Opening `index.html` directly from disk won't work, because the map data is loaded with `fetch`.
 
-To import your own family, start from [`examples/kinsaga-import-example.xlsx`](examples/kinsaga-import-example.xlsx). It has one row per person, and parents are referenced by id or by name.
+To import your own family, start from [`examples/klansagan-import-example.xlsx`](examples/klansagan-import-example.xlsx). It has one row per person, and parents are referenced by id or by name.
 
 ## Features
 
@@ -113,6 +113,6 @@ CI runs the same checks on every push and pull request. The test suite covers Sw
 
 ## License
 
-[AGPL-3.0](LICENSE) © Adam Englund. You can use, study and modify Kinsaga freely. If you run a modified version as a network service, you must share your source code too.
+[AGPL-3.0](LICENSE) © Adam Englund. You can use, study and modify Klansagan freely. If you run a modified version as a network service, you must share your source code too.
 
 Map data: [Natural Earth](https://www.naturalearthdata.com) (public domain) via [world-atlas](https://github.com/topojson/world-atlas). The House of Vasa example is compiled from public historical sources (Svenskt biografiskt lexikon, Svenskt kvinnobiografiskt lexikon, the Royal Court). Dates follow the Julian calendar that Sweden used until 1753.

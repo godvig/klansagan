@@ -414,3 +414,43 @@ body.simple #nav a{font-size:16px;padding:8px 16px}
 
 .hero-links{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:14px;font-size:14px}
 .hero-links a{color:var(--accent)}
+
+/* ---- Wood theme (default): warm oak page, walnut header ---- */
+[data-theme=wood]{
+  --paper:#dccaa9; --paper2:#cdb78f; --card:#f8f0de; --ink:#2b1e14; --ink2:#55412f; --ink3:#77624b;
+  --line:#bda57c; --line2:#a58a60;
+  --accent:#28533f; --accent2:#d3dfcb; --warn:#8a5410; --err:#8f2f22;
+  --male:#476a92; --female:#9c4f5f; --unk:#77624b;
+  --shadow:0 1px 2px rgba(60,35,10,.10),0 4px 16px rgba(60,35,10,.12);
+  --input:#fffaf0; --hover:#efe3c9; --glass:rgba(248,240,222,.95); --sea:#c3d0cf; --land:#eadcbf; --land2:#f4ead3; --landline:#ad966f;
+  --grid:#cbb48b; --warnbg:#efd9ad; --warnfg:#6b450f; --dot:rgba(80,50,20,.17); --accentH:#1f4332; --dangerline:#c79a8c; --citebg:#f3e8d0;
+  --hdr:#4a3324; --hdrink:#f5ead6; --hdrink2:#dcc9ab; --hdrline:#38261a;
+  color-scheme:light;
+}
+[data-theme=wood] header{background:linear-gradient(180deg,#523a29,#463022);border-bottom-color:var(--hdrline);color:var(--hdrink)}
+[data-theme=wood] nav a,[data-theme=wood] .morebtn{color:var(--hdrink2)}
+[data-theme=wood] nav a:hover,[data-theme=wood] .morebtn:hover{background:rgba(255,240,215,.12);color:var(--hdrink)}
+[data-theme=wood] nav a.on,[data-theme=wood] .morebtn.on{background:var(--hdrink);color:#3a271b}
+[data-theme=wood] header .setbtn,[data-theme=wood] header .viewbtn{background:rgba(255,240,215,.1);border-color:rgba(255,240,215,.28);color:var(--hdrink)}
+[data-theme=wood] header .viewbtn .vlabel{color:var(--hdrink2)}
+[data-theme=wood] header .setbtn:hover,[data-theme=wood] header .viewbtn:hover{background:rgba(255,240,215,.2);color:#fff}
+[data-theme=wood] header .viewbtn.active{background:var(--hdrink);color:var(--accent);border-color:var(--hdrink)}
+[data-theme=wood] header #status{color:var(--hdrink2)}
+[data-theme=wood] .morepop a{color:var(--ink)}
+[data-theme=wood] .morepop a:hover{background:var(--hover);color:var(--ink)}
+[data-theme=wood] .morepop a.on{background:var(--ink);color:var(--card)}
+
+/* ---- "Mer" menu ---- */
+.morebtn{font:inherit;font-weight:500;border:0;background:none;padding:7px 10px;border-radius:8px;cursor:pointer;color:var(--ink2);white-space:nowrap}
+.morebtn:hover{background:var(--paper2)}
+.morebtn.on{background:var(--ink);color:var(--paper)}
+.morepop{display:none;position:fixed;z-index:60;min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px}
+.morepop.open{display:block}
+.morepop a{display:block;padding:9px 12px;border-radius:8px;white-space:normal}
+.morepop a b{display:block;font-weight:600}
+.morepop a small{display:block;font-size:12.5px;opacity:.75;font-weight:400;margin-top:1px}
+body.simple .morebtn{display:none}
+
+/* ---- Locked tree ---- */
+#treeWrap.locked::after{content:'🔒 Trädet är låst – klicka på en person för att läsa om den';position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--glass);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:13px;color:var(--ink2);box-shadow:var(--shadow);pointer-events:none}
+#treeWrap.locked .card.sel rect.bg{stroke:var(--warn);stroke-width:2.5}

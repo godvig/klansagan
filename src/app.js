@@ -1,5 +1,5 @@
 "use strict";
-/* Kinsaga — app shell. Pure logic lives in src/core.js (window.KinCore). */
+/* Klansagan — app shell. Pure logic lives in src/core.js (window.KinCore). */
 const {yearOf,dateKey,MONTHS,fmtDate,whenText,gedDate,genitive,slugify,parseDelimited,nrm,lev,dupScore}=window.KinCore;
 const computeHidden=v=>KinCore.computeHidden(ALL.persons,v);
 const blood=(a,b)=>KinCore.blood(a,b,P);
@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-11.6';
+const APP_VERSION='2026-11-12.1';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -92,12 +92,12 @@ const Store={
     },err=>{clearTimeout(timer); setStatus('err','Kunde inte läsa data ('+err.code+')'); this.loaded=true; renderAll();});
   },
   loadLocal(){
-    try{const raw=localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1'); if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
+    try{const raw=localStorage.getItem('klansagan-v1')||localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1'); if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
   },
   saveLocal(){
     if(this.demo) return;
     clearTimeout(this._lt);
-    this._lt=setTimeout(()=>{try{localStorage.setItem('kinsaga-v1',JSON.stringify(ALL));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
+    this._lt=setTimeout(()=>{try{localStorage.setItem('klansagan-v1',JSON.stringify(ALL));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
   },
   async write(id,fn){
     const prev=this.chains[id]||Promise.resolve();
@@ -195,7 +195,7 @@ function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.rep
 /* ============ Router ============ */
 const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
 const NAVMAP={personkort:'personer',dubbletter:'personer'};
-function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
+function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); {const mb=$('#moreBtn'); if(mb){const inMore=!!document.querySelector('#morePop a.on'); mb.classList.toggle('on',inMore); mb.firstChild.textContent=inMore?document.querySelector('#morePop a.on b').textContent+' ':'Mer '; $('#morePop').classList.remove('open');}} $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
 window.addEventListener('hashchange',route);
 let lastView=null;
 function renderAll(force){
@@ -219,6 +219,9 @@ function select(type,id){ui.sel=id?{type,id}:null; renderAll();}
 function showPerson(id,{focus}={}){if(focus) setFocus(id); select('person',id);}
 /* Clicking a name in the side panel moves the current view to that person. */
 function followPerson(id){
+  if(ui.view==='trad'&&ui.treeLock){
+    if(ui.treeShown&&ui.treeShown.has(id)) ui.treePan=id; else toast(`${fullName(P(id))} syns inte i det låsta trädet. Lås upp trädet för att gå dit.`,4500);
+    select('person',id); return; }
   if(ui.view==='trad'||ui.view==='solfjader'){setFocus(id); ui.treeKey=null;}
   if(ui.view==='personkort') setFocus(id);
   if(ui.view==='slaktskap'){ui.relB=id; const h=homePerson(); if(!ui.relA||ui.relA===id) ui.relA=h&&h.id!==id?h.id:null;}
@@ -254,6 +257,7 @@ function renderTree(fresh){
         <span id="tTrees" class="ctl"></span>
         <span class="ctl">Anor <select id="tAnc">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.ancGen?'selected':''}>${n}</option>`).join('')}</select></span>
         <span class="ctl">Ättlingar <select id="tDesc">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.descGen?'selected':''}>${n}</option>`).join('')}</select></span>
+        <button class="btn sm" id="tLock"></button>
         <button class="btn sm" id="tFit">Centrera</button>
         <button class="btn sm" id="tPrint">⎙ Skriv ut / spara</button>
         ${Store.canEdit?'<button class="btn sm primary" onclick="openPersonModal()">+ Person</button>':''}
@@ -262,13 +266,16 @@ function renderTree(fresh){
     $('#tAnc').onchange=e=>{ui.ancGen=+e.target.value;ui.treeKey=null;renderTree();};
     $('#tDesc').onchange=e=>{ui.descGen=+e.target.value;ui.treeKey=null;renderTree();};
     $('#tFit').onclick=()=>{ui.treeKey=null;renderTree();};
-    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'kinsaga-tree');
+    $('#tLock').onclick=()=>{ui.treeLock=!ui.treeLock; toast(ui.treeLock?'Trädet är låst. Klicka på vem du vill och läs – trädet står kvar.':'Trädet är upplåst. Ett klick på en person bygger om trädet kring den personen.',4500); renderTree();};
+    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'klansagan-tree');
     const svg=d3.select('#treeSvg');
     treeZoom=d3.zoom().scaleExtent([.15,2.5]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform));
     svg.call(treeZoom).on('dblclick.zoom',null);
     ui.treeKey=null;
   }
   $('#tfName').textContent=fullName(F);
+  {const lb=$('#tLock'); lb.textContent=ui.treeLock?'🔒 Låst':'🔓 Lås trädet'; lb.classList.toggle('primary',!!ui.treeLock); lb.title=ui.treeLock?'Trädet står kvar när du klickar på en person. Klicka för att låsa upp.':'Lås trädet så att det står kvar när du klickar på andra personer';
+   $('#treeWrap').classList.toggle('locked',!!ui.treeLock);}
   {const ts=trees(), cur=treeOf(F.id); const opts=ts.filter(t=>t.size>1||t===cur);
    $('#tTrees').innerHTML=ts.length>1?`<select id="tTreeSel" title="Byt släktträd">${opts.map(t=>`<option value="${t.root.id}" ${t===cur?'selected':''}>${esc(t.name)} (${t.size})</option>`).join('')}</select>${Store.canEdit?'<button class="btn sm" id="tLink">🔗 Koppla ihop</button>':''}`:'';
    const sel=$('#tTreeSel'); if(sel) sel.onchange=()=>{setFocus(sel.value); ui.treeKey=null; renderAll(true);};
@@ -342,8 +349,13 @@ function renderTree(fresh){
     if(Store.canEdit){const eg=el.append('g').attr('class','eye').attr('transform',`translate(${CW-30},${CH-26})`); eg.append('rect').attr('width',22).attr('height',20).attr('rx',5);
       eg.append('path').attr('d','M4 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5zM4 4l14 12').attr('transform','translate(0,0)');
       eg.append('title').text('Dölj i vyn…'); eg.on('click',ev=>{ev.stopPropagation(); hideModal(p);});}
-    el.on('click',()=>{ if(n.focus){select('person',p.id);} else { const t=d3.zoomTransform($('#treeSvg')); ui.treeAnchor={x:t.applyX(n.x),y:t.applyY(n.y),k:t.k}; setFocus(p.id); ui.treeKey=null; select('person',p.id);} });
+    el.on('click',()=>{ if(n.focus){select('person',p.id);} else if(ui.treeLock){ui.treePan=p.id; select('person',p.id);} else { const t=d3.zoomTransform($('#treeSvg')); ui.treeAnchor={x:t.applyX(n.x),y:t.applyY(n.y),k:t.k}; setFocus(p.id); ui.treeKey=null; select('person',p.id);} });
   });
+  // locked tree: only the camera moves, to the person that was clicked
+  ui.treeShown=new Set(nodes.filter(n=>n.data&&n.data.p).map(n=>n.data.p.id));
+  if(ui.treePan){const n=nodes.find(x=>x.data&&x.data.p&&x.data.p.id===ui.treePan); ui.treePan=null;
+    if(n){const el0=$('#treeSvg'), t=d3.zoomTransform(el0), W=el0.clientWidth, H=el0.clientHeight;
+      svg.transition().duration(400).call(treeZoom.transform,d3.zoomIdentity.translate(W/2-n.x*t.k,H/2-n.y*t.k).scale(t.k));}}
   // fit
   const key=F.id+'|'+ui.ancGen+'|'+ui.descGen;
   if(ui.treeKey!==key&&ui.treeAnchor){
@@ -1012,7 +1024,7 @@ function renderImport(){
   drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over'); if(e.dataTransfer.files[0]) readImportFile(e.dataTransfer.files[0]);};
   fi.onchange=()=>fi.files[0]&&readImportFile(fi.files[0]);
   $('#impPasteBtn').onclick=()=>{const t=$('#impPaste').value; if(!t.trim()) return; setImportRows(parseDelimited(t));};
-  $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('kinsaga-import-template.csv','\ufeff'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
+  $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('klansagan-import-template.csv','\ufeff'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
   if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{}),...Object.values(o.views||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>Store.putMany(objs).then(()=>toast('Återställt ✓')));});};
   if($('#wipe')) $('#wipe').onclick=()=>modal(`<h3>Töm hela arkivet?</h3><p>Alla ${Object.keys(ALL.persons).length} personer, ${Object.keys(S.sources).length} källor och ${Object.keys(S.places).length} platser tas bort. Exportera en säkerhetskopia först! Skriv <b>TÖM</b> för att bekräfta.</p><input class="t" id="wipeIn"><div class="foot" style="margin-top:12px"><button class="btn" data-x>Avbryt</button><button class="btn primary" style="background:var(--err);border-color:var(--err)" data-ok>Töm arkivet</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{if(ov.querySelector('#wipeIn').value.trim().toUpperCase()!=='TÖM')return; close(); ui.sel=null; ui.focus=null; const all=[...Object.values(ALL.persons),...Object.values(ALL.places),...Object.values(ALL.sources),...Object.values(ALL.views)]; for(const o of all) Store.del(o.kind,o.id,{silent:true}); renderAll(); toast('Arkivet är tömt');};});
   if(imp.rows.length) renderImportStep2();
@@ -1138,15 +1150,15 @@ async function saveFile(name,data){
 function doExport(kind){ return withAll(()=>doExport0(kind)); }
 function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
-  if(kind==='json') saveFile(`kinsaga-${stamp}.json`,JSON.stringify({app:'Kinsaga',version:1,exported:new Date().toISOString(),persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},null,1));
+  if(kind==='json') saveFile(`klansagan-${stamp}.json`,JSON.stringify({app:'Klansagan',version:1,exported:new Date().toISOString(),persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},null,1));
   if(kind==='csv'){
     const ids={}; Object.values(S.persons).forEach((p,i)=>ids[p.id]=i+1);
     const c=v=>{v=String(v??''); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
     const lines=['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar'];
     for(const p of Object.values(S.persons)) lines.push([ids[p.id],p.given,p.surname,p.sex,p.birthDate,placeName(p.birthPlace),p.deathDate,placeName(p.deathPlace),p.occupation,ids[p.fatherId]||'',ids[p.motherId]||'',(p.spouseIds||[]).map(x=>ids[x]).filter(Boolean).join(','),(p.citations||[]).map(x=>S.sources[x.sourceId]?.title).filter(Boolean).join(' | '),p.notes].map(c).join(';'));
-    saveFile(`kinsaga-people-${stamp}.csv`,'\ufeff'+lines.join('\r\n'));
+    saveFile(`klansagan-people-${stamp}.csv`,'\ufeff'+lines.join('\r\n'));
   }
-  if(kind==='ged'){ saveFile(`kinsaga-${stamp}.ged.txt`,toGedcom()); toast('Ta bort ”.txt” i filnamnet innan du läser in den i ett släktprogram.',5000); }
+  if(kind==='ged'){ saveFile(`klansagan-${stamp}.ged.txt`,toGedcom()); toast('Ta bort ”.txt” i filnamnet innan du läser in den i ett släktprogram.',5000); }
 }
 function toGedcom(){
   const L=[]; const add=(lvl,tag,val)=>{val=val==null?'':String(val).replace(/\r?\n/g,' '); L.push(lvl+' '+tag+(val?' '+val:''));};
@@ -1156,7 +1168,7 @@ function toGedcom(){
   const getFam=(h,w)=>{const k=famKey(h,w); return fams[k]=fams[k]||{id:'@F'+(Object.keys(fams).length+1)+'@',h,w,c:[]};};
   for(const p of Object.values(S.persons)){ if(p.fatherId||p.motherId) getFam(P(p.fatherId)?p.fatherId:'',P(p.motherId)?p.motherId:'').c.push(p.id); }
   for(const p of Object.values(S.persons)) for(const s of partners(p)){ const [h,w]=p.sex==='K'?[s.id,p.id]:[p.id,s.id]; if(!fams[famKey(h,w)]&&!fams[famKey(w,h)]) getFam(h,w); }
-  add(0,'HEAD'); add(1,'SOUR','KINSAGA'); add(2,'NAME','Kinsaga'); add(1,'GEDC'); add(2,'VERS','5.5.1'); add(2,'FORM','LINEAGE-LINKED'); add(1,'CHAR','UTF-8'); add(1,'DATE',gedDate(new Date().toISOString().slice(0,10)));
+  add(0,'HEAD'); add(1,'SOUR','KLANSAGAN'); add(2,'NAME','Klansagan'); add(1,'GEDC'); add(2,'VERS','5.5.1'); add(2,'FORM','LINEAGE-LINKED'); add(1,'CHAR','UTF-8'); add(1,'DATE',gedDate(new Date().toISOString().slice(0,10)));
   const TAG={Dop:'BAPM',Konfirmation:'CONF',Begravning:'BURI',Utvandring:'EMIG',Invandring:'IMMI',Bosatt:'RESI',Yrke:'OCCU',Bouppteckning:'PROB',Militärtjänst:'_MILT'};
   const cites=(p,lvl,about)=>{for(const c of (p.citations||[]).filter(c=>c.about===about)) if(sid[c.sourceId]){add(lvl,'SOUR',sid[c.sourceId]); if(c.detail) add(lvl+1,'PAGE',c.detail);}};
   for(const p of Object.values(S.persons)){
@@ -1179,6 +1191,7 @@ function toGedcom(){
 /* ============ Theme ============ */
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function currentTheme(){return document.documentElement.dataset.theme==='dark'?'dark':'light';}
+const themeName=()=>document.documentElement.dataset.theme||'wood';
 function applySize(lg){document.documentElement.dataset.size=lg?'lg':''; try{localStorage.setItem('sa-size',lg?'lg':'');}catch(e){} const b=$('#sizeBtn'); if(b){b.classList.toggle('on',!!lg); b.title=lg?'Mindre text':'Större text';}}
 function applyTheme(t){
   document.documentElement.dataset.theme=t;
@@ -1186,7 +1199,7 @@ function applyTheme(t){
     ?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>'
     :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></svg>';
 }
-(function(){let t=null; try{t=localStorage.getItem('sa-theme');}catch(e){} applyTheme(t==='dark'?'dark':'light');})();
+(function(){let t=null; try{t=localStorage.getItem('sa-tema');}catch(e){} applyTheme(['wood','light','dark'].includes(t)?t:'wood');})();
 try{applySize(localStorage.getItem('sa-size')==='lg');}catch(e){}
 /* Simple mode ("farmorsläge"): big text, only Start, Träd and Personer. ?enkelt turns it on. */
 function applySimple(on,save=true){ui.simple=!!on; document.body.classList.toggle('simple',ui.simple); if(save) try{localStorage.setItem('sa-enkelt',on?'1':'');}catch(e){}
@@ -1194,6 +1207,7 @@ function applySimple(on,save=true){ui.simple=!!on; document.body.classList.toggl
 try{const q=new URLSearchParams(location.search); if(q.has('enkelt')){applySimple(true,false); document.documentElement.dataset.size='lg';} else applySimple(localStorage.getItem('sa-enkelt')==='1',false);}catch(e){}
 {const b=$('#simpleExit'); if(b) b.onclick=()=>{applySimple(false); ui.treeKey=null; renderAll(true); toast('Alla funktioner visas igen. Enkelt läge hittar du under Inställningar.',4500);};}
 {const b=$('#settingsBtn'); if(b) b.onclick=settingsModal;}
+{const mb=$('#moreBtn'), mp=$('#morePop'); if(mb&&mp){mb.onclick=e=>{e.stopPropagation(); mp.classList.toggle('open'); const r=mb.getBoundingClientRect(); mp.style.left=r.left+'px'; mp.style.top=(r.bottom+6)+'px';}; document.addEventListener('click',()=>mp.classList.remove('open'));}}
 function settingsModal(){
   const h=homePerson(), lg=document.documentElement.dataset.size==='lg';
   const opt=(name,val,cur,label,hint)=>`<label class="sopt"><input type="radio" name="${name}" value="${val}" ${val===cur?'checked':''}><span><b>${label}</b>${hint?`<small>${hint}</small>`:''}</span></label>`;
@@ -1205,7 +1219,7 @@ function settingsModal(){
       ${opt('nm','full',ui.nameMode,'Fullständigt namn','Lars Anders Godvig Englund')}
       ${opt('nm','call',ui.nameMode,'Bara tilltalsnamn','Lars Englund – om tilltalsnamnet är markerat')}</div>
     <div class="sgroup"><div class="slab">Utseende</div>
-      ${opt('th','light',currentTheme(),'Ljust','')}${opt('th','dark',currentTheme(),'Mörkt','')}
+      ${opt('th','wood',themeName(),'Trä','Varm träbrun – standard')}${opt('th','light',themeName(),'Ljust','')}${opt('th','dark',themeName(),'Mörkt','')}
       <label class="sopt"><input type="checkbox" id="setLg" ${lg?'checked':''}><span><b>Större text</b></span></label></div>
     <div class="sgroup"><div class="slab">Enkelt läge</div>
       <label class="sopt"><input type="checkbox" id="setSimple" ${ui.simple?'checked':''}><span><b>Visa bara det viktigaste</b><small>Stor text och bara Start, Träd och Personer. Bra för den som inte vill krångla – till exempel farmor. Länk som öppnar i enkelt läge: lägg till <code>?enkelt</code> i adressen.</small></span></label></div>
@@ -1216,7 +1230,7 @@ function settingsModal(){
     q('[data-x]').onclick=close;
     q('#setMeOk').onclick=async()=>{const p=personByLabel(q('#setMe').value); if(!p){toast('Välj ditt namn i listan som kommer upp när du skriver.');return;} await setHome(p.id); setFocus(p.id); ui.treeKey=null; renderAll(true);};
     ov.querySelectorAll('[name=nm]').forEach(i=>i.onchange=()=>{ui.nameMode=i.value; try{localStorage.setItem('sa-names',i.value);}catch(e){} ui.treeKey=null; renderAll(true);});
-    ov.querySelectorAll('[name=th]').forEach(i=>i.onchange=()=>{applyTheme(i.value); try{localStorage.setItem('sa-theme',i.value);}catch(e){} mapState.drawn=false; renderAll();});
+    ov.querySelectorAll('[name=th]').forEach(i=>i.onchange=()=>{applyTheme(i.value); try{localStorage.setItem('sa-tema',i.value);}catch(e){} mapState.drawn=false; renderAll();});
     q('#setLg').onchange=e=>applySize(e.target.checked);
     q('#setSimple').onchange=e=>{applySimple(e.target.checked); if(e.target.checked){applySize(true); q('#setLg').checked=true;} ui.treeKey=null; renderAll(true);};
   });
@@ -1244,7 +1258,7 @@ function renderStart(){
   const ed=Store.canEdit;
   if(!all.length){
     v.innerHTML=`<div class="start"><div class="hero"><div>
-      <h1>Välkommen till Kinsaga</h1>
+      <h1>Välkommen till Klansagan</h1>
       <p>Här samlar du släkten på ett ställe: släktträd, bilder, källor, tidslinje och karta. Allt sparas automatiskt. Välj hur du vill börja.</p>
     </div><div class="hero-art">${heroArt()}</div></div>
     <div class="choices">
@@ -1406,7 +1420,7 @@ function renderFan(fresh){
       <div class="fan-legend" id="fanLegend"></div><div id="fanNote" class="banner" style="top:auto;bottom:70px;display:none;font-size:13px;max-width:80%"></div></div>`;
     $('#fanGen').onchange=e=>{ui.fanGen=+e.target.value; ui.fanKey=null; renderFan();};
     $('#fanFit').onclick=()=>{ui.fanKey=null; renderFan();};
-    $('#fanPrint').onclick=()=>printChart($('#fanSvg'),'Solfjäder för '+$('#fanName').textContent,'kinsaga-fan');
+    $('#fanPrint').onclick=()=>printChart($('#fanSvg'),'Solfjäder för '+$('#fanName').textContent,'klansagan-fan');
     const svg=d3.select('#fanSvg'); fanZoom=d3.zoom().scaleExtent([.2,4]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform)); svg.call(fanZoom).on('dblclick.zoom',null);
     ui.fanKey=null;
   }
@@ -1647,7 +1661,7 @@ function loadJsPDF(){return new Promise((res,rej)=>{if(window.jspdf) return res(
 async function toDataURL(url){if(!url||url.startsWith('data:')) return url; try{const r=await fetch(url); const b=await r.blob(); return await new Promise(res=>{const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.readAsDataURL(b);});}catch(e){return null;}}
 const PROPS=['fill','fill-opacity','stroke','stroke-width','stroke-dasharray','opacity','font-size','font-weight','font-style','text-anchor','dominant-baseline','paint-order','visibility','display'];
 async function svgSnapshot(svgEl,title){
-  const prev=currentTheme(); applyTheme('light');
+  const prev=themeName(); applyTheme('light');
   const vp=svgEl.querySelector('g.vp'); const bb=vp.getBBox(); const M=30, TH=46;
   const clone=svgEl.cloneNode(true);
   const o=[svgEl,...svgEl.querySelectorAll('*')], c=[clone,...clone.querySelectorAll('*')];
@@ -1663,7 +1677,7 @@ async function svgSnapshot(svgEl,title){
   const NS='http://www.w3.org/2000/svg';
   const bg=document.createElementNS(NS,'rect'); bg.setAttribute('x',bb.x-M); bg.setAttribute('y',bb.y-M-TH); bg.setAttribute('width',w); bg.setAttribute('height',h); bg.setAttribute('fill',paper); clone.insertBefore(bg,clone.firstChild);
   const t=document.createElementNS(NS,'text'); t.setAttribute('x',bb.x); t.setAttribute('y',bb.y-M-TH+30); t.setAttribute('style',`font-family:Georgia,serif;font-size:22px;font-weight:600;fill:${ink}`); t.textContent=title; clone.appendChild(t);
-  const t2=document.createElementNS(NS,'text'); t2.setAttribute('x',bb.x+bb.width); t2.setAttribute('y',bb.y-M-TH+30); t2.setAttribute('style',`font-family:Helvetica,Arial,sans-serif;font-size:11px;fill:${ink3};text-anchor:end`); t2.textContent='Kinsaga · '+fmtDate(new Date().toISOString().slice(0,10)); clone.appendChild(t2);
+  const t2=document.createElementNS(NS,'text'); t2.setAttribute('x',bb.x+bb.width); t2.setAttribute('y',bb.y-M-TH+30); t2.setAttribute('style',`font-family:Helvetica,Arial,sans-serif;font-size:11px;fill:${ink3};text-anchor:end`); t2.textContent='Klansagan · '+fmtDate(new Date().toISOString().slice(0,10)); clone.appendChild(t2);
   for(const im of clone.querySelectorAll('image')){const href=im.getAttribute('href'); const d=await toDataURL(href); if(d) im.setAttribute('href',d); else im.remove();}
   const xml=new XMLSerializer().serializeToString(clone);
   const url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml;charset=utf-8'}));
@@ -1720,8 +1734,8 @@ async function personPdf(p){
     const evs=lifeEvents(p); if(evs.length){head('Händelser'); for(const e of evs) para(`${fmtDate(e.date)||'–'}  ${e.type}${e.placeId?', '+placeName(e.placeId):''}${e.withId&&P(e.withId)?', med '+fullName(P(e.withId)):''}${e.desc?' — '+e.desc:''}`);}
     const cs=(p.citations||[]).filter(c=>S.sources[c.sourceId]); if(cs.length){head('Källor'); for(const c of cs){const s=S.sources[c.sourceId]; para(`• ${s.title}${[c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.archive,s.ref].filter(Boolean).length?' ('+[c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.archive,s.ref].filter(Boolean).join(', ')+')':''}`,9.5);}}
     if(p.notes){head('Anteckningar'); para(p.notes,10);}
-    const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140,130,115); doc.text(pdfT(`Kinsaga · ${fullName(p)} · sida ${i} av ${n}`),M,297-8);}
-    await saveFile(`kinsaga-${(fullName(p)).toLowerCase().replace(/[^a-z0-9åäö]+/g,'-')}.pdf`,doc.output('blob'));
+    const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140,130,115); doc.text(pdfT(`Klansagan · ${fullName(p)} · sida ${i} av ${n}`),M,297-8);}
+    await saveFile(`klansagan-${(fullName(p)).toLowerCase().replace(/[^a-z0-9åäö]+/g,'-')}.pdf`,doc.output('blob'));
   }catch(e){toast('Kunde inte skapa PDF: '+(e.message||e));}
 }
 

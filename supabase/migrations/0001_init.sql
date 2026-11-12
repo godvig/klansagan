@@ -1,4 +1,4 @@
--- Kinsaga · Supabase schema v1
+-- Klansagan · Supabase schema v1
 --
 -- One family tree = one row in `trees`. All people, places, sources and views
 -- of a tree are JSON documents in `docs` (same document model as the app).

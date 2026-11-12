@@ -1,36 +1,39 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="sv" data-theme="wood">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kinsaga</title>
-<meta name="description" content="Kinsaga – build your family history together: family tree, fan chart, sources, timeline, map and life stories. Runs in the browser, no account needed.">
-<meta name="theme-color" content="#2f5d50">
+<title>Klansagan</title>
+<meta name="description" content="Klansagan – build your family history together: family tree, fan chart, sources, timeline, map and life stories. Runs in the browser, no account needed.">
+<meta name="theme-color" content="#4a3324">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26' fill='none' stroke='%232f5d50' stroke-width='1.8'%3E%3Cpath d='M13 24V13M13 13c0-4-3-6-6-6M13 13c0-4 3-6 6-6M13 17c-2-1-5-1-7 1M13 17c2-1 5-1 7 1'/%3E%3Ccircle cx='7' cy='6' r='2.4'/%3E%3Ccircle cx='19' cy='6' r='2.4'/%3E%3Ccircle cx='13' cy='3.6' r='2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <meta http-equiv="Cache-Control" content="no-cache">
-<link rel="stylesheet" href="src/styles.css?v=6">
+<link rel="stylesheet" href="src/styles.css?v=7">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
-<script src="src/core.js?v=6"></script>
+<script src="src/core.js?v=7"></script>
 </head>
 <body>
 <header>
   <a class="brand" href="#trad" id="home" title="Till startsidan">
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 24V13M13 13c0-4 -3-6-6-6M13 13c0-4 3-6 6-6M13 17c-2-1-5-1-7 1M13 17c2-1 5-1 7 1"/><circle cx="7" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="13" cy="3.6" r="2"/></svg>
-    <span>Kinsaga</span>
+    <span>Klansagan</span>
   </a>
   <nav id="nav">
     <a href="#start" data-v="start">Start</a>
     <a href="#trad" data-v="trad">Träd</a>
     <a href="#solfjader" data-v="solfjader">Solfjäder</a>
     <a href="#personer" data-v="personer">Personer</a>
-    <a href="#slaktskap" data-v="slaktskap">Släktskap</a>
-    <a href="#tidslinje" data-v="tidslinje">Tidslinje</a>
-    <a href="#karta" data-v="karta">Karta</a>
-    <a href="#kallor" data-v="kallor">Källor</a>
     <a href="#import" data-v="import">Läs in &amp; spara</a>
+    <button class="morebtn" id="moreBtn" aria-haspopup="true"><span>Mer </span>▾</button>
+    <div class="morepop" id="morePop">
+      <a href="#slaktskap" data-v="slaktskap"><b>Släktskap</b><small>Hur är två personer släkt?</small></a>
+      <a href="#tidslinje" data-v="tidslinje"><b>Tidslinje</b><small>Händelser i tidsordning</small></a>
+      <a href="#karta" data-v="karta"><b>Karta</b><small>Var släkten har bott</small></a>
+      <a href="#kallor" data-v="kallor"><b>Källor</b><small>Kyrkböcker och dokument</small></a>
+    </div>
   </nav>
   <div class="hdr-right">
     <div class="viewsel"><button class="viewbtn" id="viewBtn" title="Välj vad som ska synas"></button><div class="pop" id="viewPop"></div></div>
@@ -50,6 +53,6 @@
   <aside id="panel"></aside>
 </main>
 
-<script src="src/app.js?v=6"></script>
+<script src="src/app.js?v=7"></script>
 </body>
 </html>
