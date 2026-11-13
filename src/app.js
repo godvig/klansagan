@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.11';
+const APP_VERSION='2026-11-13.12';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -2263,7 +2263,9 @@ function updateDemoBar(){const b=$('#demoBar'); if(b) b.classList.toggle('on',St
 /* The example family lives only in memory: it is never saved, so it can't
    end up in someone's own archive or in a shared tree. */
 function loadDemo(){
-  if(Store.demo){ if(location.hash!=='#trad') location.hash='trad'; return; }
+  /* stay on the page you're on; from the start or import page, go to the tree */
+  const stay=!['start','import'].includes(ui.view)&&VIEWS[ui.view];
+  if(Store.demo){ if(!stay&&location.hash!=='#trad') location.hash='trad'; return; }
   const {places,sources,persons}=demoData();
   Store.demo={saved:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},focus:ui.focus,viewId:ui.viewId};
   const m=a=>Object.fromEntries(a.map(o=>[o.id,clone(o)]));
@@ -2271,7 +2273,8 @@ function loadDemo(){
   ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=2; ui.descGen=3; ui.treeKey=null; ui.sel=null;
   applyView();
   toast('Det här är ett exempel. Inget sparas – dina egna uppgifter ligger kvar orörda.',5000);
-  if(location.hash!=='#trad') location.hash='trad'; else renderAll(true);
+  ui.fanKey=null; mapState.drawn=false;
+  if(stay||location.hash==='#trad') renderAll(true); else location.hash='trad';
 }
 function exitDemo(quiet){
   const d=Store.demo; if(!d) return;
