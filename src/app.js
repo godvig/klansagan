@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.21';
+const APP_VERSION='2026-11-13.22';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -731,7 +731,7 @@ function renderTree(fresh){
       ph.append('text').attr('class','ini').attr('x',PX+PW/2).attr('y',PY+PH/2+2).attr('text-anchor','middle').text(initials(p));
       if(Store.canEdit){ph.append('text').attr('class','add').attr('x',PX+PW/2).attr('y',PY+PH-9).attr('text-anchor','middle').text('+ bild');
         ph.append('title').text('Lägg till en bild');
-        ph.on('click',ev=>{ev.stopPropagation(); select('person',p.id); setTimeout(()=>{const i=$('#uplAv'); if(i) i.click();},30);});}}
+        ph.on('click',ev=>{ev.stopPropagation(); pickImageFor(p.id);});}}
     const nm=fullName(p), words=nm.split(' '), lines=['']; for(const w of words){const cur=lines[lines.length-1]; if(cur&&(cur+' '+w).length>maxc){if(lines.length===2){lines[1]+=' '+w; continue;} lines.push(w);} else lines[lines.length-1]=cur?cur+' '+w:w;}
     const L=lines.map(l=>l.length>maxc+1?l.slice(0,maxc)+'…':l);
     const t0=el.append('text').attr('class','nm').attr('x',tx).attr('y',Y0); L.forEach((l,i)=>t0.append('tspan').attr('x',tx).attr('dy',i?LH:0).text(l)); t0.append('title').text(nm);
@@ -1100,6 +1100,42 @@ function shrinkImage(file,max=900,q=.8){
   return new Promise((res,rej)=>{const img=new Image(); const url=URL.createObjectURL(file);
     img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg',q));};
     img.onerror=()=>{URL.revokeObjectURL(url); rej(new Error('Kunde inte läsa bilden'));}; img.src=url;});
+}
+/* ============ Photos straight onto a person ============
+   Click the empty photo on a card (on a phone: take a picture or pick one), drop image
+   files on a card or the person panel, or paste an image while a person is selected. */
+function pickImageFor(pid){
+  // created and clicked inside the click handler itself, so phones allow it and offer the camera
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{ if(inp.files&&inp.files.length) photoTo(pid,inp.files); };
+  inp.click();
+}
+async function photoTo(pid,files){
+  const imgs=[...files].filter(f=>/^image\//.test(f.type)); const p=P(pid);
+  if(!p||!Store.canEdit) return;
+  if(!imgs.length){toast('Det där var ingen bild. Släpp en bildfil (jpg, png, heic…).'); return;}
+  select('person',pid); const had=!!avatarUrl(p);
+  await uploadMedia(imgs,{profile:!had});
+  if(had) toast(`Bilden lades till bland ${genitive(shortName(p))} bilder.`,4000); // a new profile photo shows itself (and its framing toast)
+}
+{ let dragDepth=0;
+  const hasFiles=e=>e.dataTransfer&&[...(e.dataTransfer.types||[])].includes('Files');
+  const target=e=>{const t=/** @type {Element} */(e.target); if(!t||!t.closest) return null;
+    const c=t.closest('g.card[data-k]'); if(c&&!c.getAttribute('data-k').startsWith('g:')) return {pid:c.getAttribute('data-k'),el:c};
+    if(t.closest('#panel')&&ui.sel&&ui.sel.type==='person') return {pid:ui.sel.id,el:$('#panel')};
+    const pc=t.closest('.pc'); if(pc&&ui.view==='personkort'&&ui.focus) return {pid:ui.focus,el:pc};
+    return null;};
+  let lit=null; const light=el=>{ if(lit===el) return; if(lit) lit.classList.remove('drop-on'); lit=el; if(el) el.classList.add('drop-on'); };
+  document.addEventListener('dragenter',e=>{ if(!hasFiles(e)||!Store.canEdit) return; dragDepth++; document.body.classList.add('dragging-files'); });
+  document.addEventListener('dragleave',()=>{ if(--dragDepth<=0){dragDepth=0; document.body.classList.remove('dragging-files'); light(null);} });
+  document.addEventListener('dragover',e=>{ if(!hasFiles(e)) return; e.preventDefault(); const t=Store.canEdit?target(e):null; e.dataTransfer.dropEffect=t?'copy':'none'; light(t&&t.el); });
+  document.addEventListener('drop',e=>{ if(!hasFiles(e)) return; e.preventDefault(); dragDepth=0; document.body.classList.remove('dragging-files');
+    const t=Store.canEdit?target(e):null; light(null);
+    if(t) photoTo(t.pid,e.dataTransfer.files); else if(Store.canEdit) toast('Släpp bilden på en person i trädet, eller i personens panel.'); });
+  document.addEventListener('paste',e=>{ const tg=/** @type {HTMLElement} */(e.target); if(tg&&/^(INPUT|TEXTAREA)$/.test(tg.tagName)) return;
+    if(!Store.canEdit||!ui.sel||ui.sel.type!=='person') return;
+    const files=[...(e.clipboardData&&e.clipboardData.files||[])].filter(f=>/^image\//.test(f.type)); if(!files.length) return;
+    e.preventDefault(); photoTo(ui.sel.id,files); });
 }
 async function uploadMedia(files,{profile}={}){
   Hist.label(files.length>1?`Uppladdning av ${files.length} filer`:'Uppladdning av '+(files[0]&&files[0].name||'bild'),6000);

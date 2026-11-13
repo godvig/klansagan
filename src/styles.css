@@ -647,3 +647,9 @@ button.status:hover{background:rgba(127,110,80,.12)}
 [data-theme=wood] header .undo .iconbtn{color:var(--hdrink)}
 [data-theme=wood] header .undo .iconbtn:disabled{color:var(--hdrink2)}
 [data-theme=wood] header .undo .iconbtn:not(:disabled):hover{background:rgba(255,240,215,.16);color:#fff}
+
+/* Dropping photos on people */
+body.dragging-files #treeSvg g.card:not(.ghost) rect.bg{stroke-dasharray:6 4}
+body.dragging-files #treeSvg g.card.drop-on rect.bg,#treeSvg g.card.drop-on rect.bg{stroke:var(--accent);stroke-width:3.5;stroke-dasharray:none;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--accent) 50%,transparent))}
+#panel.drop-on,.pc.drop-on{outline:3px dashed var(--accent);outline-offset:-6px}
+body.dragging-files #view::after{content:'Släpp bilden på en person';position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:99px;font-size:14px;pointer-events:none;z-index:50}
