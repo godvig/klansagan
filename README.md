@@ -120,7 +120,7 @@ CI runs the same checks on every push and pull request. The test suite covers Sw
 
 **Dela** creates a link you send to relatives. The tree is encrypted in the browser with AES-256-GCM; the key sits in the link's `#fragment`, which browsers never send to a server. Supabase stores only ciphertext and checks a write secret derived from the key, so neither the host nor the site owner can read a shared tree.
 
-Everyone with the link can edit a local working copy and **publish** when ready. If two people publish in parallel, the second publish merges document by document (three-way merge); when both changed the same person, the newer edit wins. The server keeps the last 30 versions.
+Everyone with the link can edit a local working copy and **publish** when ready. If two people publish in parallel, the second publish merges document by document (three-way merge); when both changed the same person, the newer edit wins. The server keeps the last 30 versions. Leaving the page with unpublished edits asks first, coming back to them shows a reminder with a Publish button, and so does sitting on them for ten minutes.
 
 Photos are kept in IndexedDB on each device and, in a shared tree, uploaded once each as separate encrypted blobs, so publishing never re-sends them.
 
@@ -128,19 +128,18 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: undo/redo for every change, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
+Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Warning before leaving with unpublished changes
-2. Drop or take a photo straight onto a tree card
-3. Backup reminder and one-click backup file
-4. GEDCOM import
-5. Swedish source templates (Riksarkivet, ArkivDigital)
-6. Landing page for new visitors
-7. Comment threads per person
-8. Browser tests in CI; split `app.js` into modules
-9. Locked tree, step 2: add a branch by clicking someone outside it
-10. "On this day" on the start page; family book as PDF
+1. Drop or take a photo straight onto a tree card
+2. Backup reminder and one-click backup file
+3. GEDCOM import
+4. Swedish source templates (Riksarkivet, ArkivDigital)
+5. Landing page for new visitors
+6. Comment threads per person
+7. Browser tests in CI; split `app.js` into modules
+8. Locked tree, step 2: add a branch by clicking someone outside it
+9. "On this day" on the start page; family book as PDF
 
 **Later:** life path on the map, photo gallery on the person card, read-only share links with protection for living people, "what's new since your last visit", English UI.
 

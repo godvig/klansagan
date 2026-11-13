@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.20';
+const APP_VERSION='2026-11-13.21';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -137,6 +137,7 @@ const Store={
       const flush=()=>{ if(!this._dirty) return; try{localStorage.setItem('klansagan-unsaved',JSON.stringify({k:Share.lsKey(),data:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}}));}catch(e){} this.saveNow(); };
       addEventListener('pagehide',flush); document.addEventListener('visibilitychange',()=>{ if(document.hidden) flush(); });
       Share.updateStatus(); Share.startPolling();
+      setTimeout(()=>Unpub.nudge((n,pl)=>`Välkommen tillbaka! Du har ${n} från förra gången som inte är publicerad${pl} än.`),1500);
       renderAll();
       migrateInline().then(ch=>{ if(ch){ Share.updateStatus(); renderAll(); } return backfillThumbs(); });
     }
@@ -2671,7 +2672,7 @@ const Share={
   changedNames(){const t=this.cur(); if(!t) return []; const b=(t.base&&t.base.persons)||{}, out=[];
     for(const p of Object.values(ALL.persons)) if(KinCore.docHash(p)!==b[p.id]) out.push((b[p.id]?'':'Ny: ')+fullName(p));
     for(const id in b) if(!ALL.persons[id]) out.push('Borttagen person'); return out;},
-  changed(){if(!this.cur()) return; clearTimeout(this._ct); this._ct=setTimeout(()=>{this.recount(); this.updateStatus();},500);},
+  changed(){if(!this.cur()) return; clearTimeout(this._ct); this._ct=setTimeout(()=>{this.recount(); this.updateStatus();},500); Unpub.arm();},
   updateStatus(){
     const b=$('#shareBtn'); if(b) b.hidden=!this.enabled()||Store.demo;
     if(Store.mode==='db') return;
@@ -2819,6 +2820,15 @@ function shareTreeModal(){
       catch(e){cr.disabled=false; cr.textContent='Skapa delningslänk'; toast('Kunde inte skapa delningen: '+(e.message||e),7000);} };
   });
 }
+/* ============ Unpublished changes ============
+   In a shared tree your edits stay on this device until you publish them. Leaving with
+   unpublished edits asks first; coming back to them, and sitting on them for a while, gets a nudge. */
+const Unpub={
+  count(){ if(!Share.cur()||Store.demo||Store.mode==='db') return 0; try{return Share.recount();}catch(e){return 0;} },
+  nudge(msg){ const n=this.count(); if(!n) return; toast(msg(n===1?'1 ändring':n+' ändringar',n===1?'':'a'),9000,{label:'Publicera',fn:()=>Share.publish()}); },
+  arm(){ clearTimeout(this._t); if(this._done) return; this._t=setTimeout(()=>{ if(this.count()&&!document.hidden){ this._done=true; this.nudge(n=>`Du har ${n} som släkten inte ser ännu.`); } },10*60*1000); },
+};
+addEventListener('beforeunload',e=>{ if(Unpub.count()){ e.preventDefault(); e.returnValue=''; } });
 {const sb=$('#shareBtn'); if(sb) sb.onclick=shareTreeModal; const st=$('#status'); if(st) st.onclick=()=>{ if(Share.newer) Share.pull(); else if(Share.enabled()) shareTreeModal(); };}
 /* ============ Install as an app (PWA) ============ */
 const PWA={prompt:null,
