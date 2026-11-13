@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.7';
+const APP_VERSION='2026-11-13.8';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -323,8 +323,19 @@ function treeLayout(F,showSp){
   // ancestors
   const anc=(p,depth)=>{const n={p,children:[]}; if(depth<ui.ancGen){for(const rel of ['father','mother']){const q=P(p[rel+'Id']); if(q) n.children.push(anc(q,depth+1)); else if(Store.canEdit&&!p[rel+'Id']&&depth<2) n.children.push({ghost:rel,of:p.id,children:[]});}} return n;};
   const aRoot=d3.hierarchy(anc(F,0));
-  d3.tree().nodeSize([1,ROW]).separation((a,b)=>(CW+18)*(a.parent===b.parent?1:1.12))(aRoot);
-  aRoot.each(n=>{n.y=-n.depth*ROW; if(n.depth>0) nodes.push(n);});
+  // an ancestor's other partners (e.g. a father's later wife) sit on the outer side of the couple
+  const ancIds=new Set(); aRoot.each(n=>{if(n.data.p) ancIds.add(n.data.p.id);});
+  const taken=new Set([...ancIds,...(showSp?partners(F).map(q=>q.id):[])]);
+  aRoot.each(n=>{n.data.sps=[]; if(!showSp||n.depth===0||!n.data.p) return;
+    n.data.sps=partners(n.data.p).filter(q=>!taken.has(q.id)); n.data.sps.forEach(q=>taken.add(q.id));});
+  d3.tree().nodeSize([1,ROW]).separation((a,b)=>(W(a.data)+W(b.data))/2+(a.parent===b.parent?18:40))(aRoot);
+  const extraPos={};
+  aRoot.each(n=>{n.y=-n.depth*ROW; if(n.depth===0) return; nodes.push(n);
+    const sps=n.data.sps||[]; if(!sps.length) return;
+    const side=n.parent.children[0]===n&&n.parent.children.length>1?-1:1, w=W(n.data);
+    n.x=n.x-side*(w-CW)/2;
+    sps.forEach((q,i)=>{const x=n.x+side*(i+1)*(CW+CG); const pn={data:{p:q,partner:true},x,y:n.y}; nodes.push(pn); extraPos[q.id]=pn;
+      const inner=n.x+side*i*(CW+CG); links.push({type:'cp',x1:inner+side*CW/2,x2:x-side*CW/2,y:n.y,dash:i>0});});});
   // parents are drawn as a couple: a line between them, a dot in the middle, one line down to the child
   aRoot.each(n=>{ const ps=n.children||[]; if(!ps.length) return; const tgt=n.depth===0?{x:0,y:0}:n;
     if(ps.length===2){const [a,b]=ps[0].x<ps[1].x?ps:[ps[1],ps[0]]; const ghost=!a.data.p||!b.data.p;
@@ -341,7 +352,7 @@ function treeLayout(F,showSp){
     const n={data:{p:sp,partner:true},x,y:0}; nodes.push(n); pPos[sp.id]=n;
     const inner=x-side*PG; links.push({type:'cp',x1:inner+side*CW/2,x2:x-side*CW/2,y:0,dash:k>1});
     junc[sp.id]=x-side*PG/2;});
-  const shown=new Set([F.id]); aRoot.each(n=>{if(n.data.p) shown.add(n.data.p.id);}); parts.forEach(q=>shown.add(q.id));
+  const shown=new Set([F.id]); aRoot.each(n=>{if(n.data.p) shown.add(n.data.p.id);}); parts.forEach(q=>shown.add(q.id)); Object.keys(extraPos).forEach(id=>shown.add(id));
   // a person with partners and (step)children, down to depth maxD
   const mk=(p,dd,maxD)=>{shown.add(p.id);
     const sps=showSp?partners(p).filter(q=>!shown.has(q.id)):[]; sps.forEach(q=>shown.add(q.id));
@@ -398,10 +409,16 @@ function treeLayout(F,showSp){
      const pos={}; for(const n of g0.par) pos[n.data.p.id]=n;
      const kids=[]; for(const n of g0.par) for(const c of children(n.data.p.id)) if(!shown.has(c.id)&&!kids.includes(c)) kids.push(c);
      if(!kids.length) continue; kids.forEach(c=>shown.add(c.id));
-     const xs=g0.par.map(n=>n.x), mx=xs.reduce((a,b)=>a+b,0)/xs.length, py=g0.par[0].y;
-     const dir=mx<-1?-1:mx>1?1:sideDefault;
+     const xs=g0.par.map(n=>n.x), mxAll=xs.reduce((a,b)=>a+b,0)/xs.length, py=g0.par[0].y;
      const maxD=g0.d===1?1+ui.descGen:g0.d;
-     const block=d3.hierarchy({root:true,sps:[],children:kids.map(k=>mk(k,1,maxD))});
+     // one block per parent couple (full siblings, half-siblings via each partner …), each next to its own junction
+     const jOf=c=>{const fa=pos[c.fatherId]||extraPos[c.fatherId], mo=pos[c.motherId]||extraPos[c.motherId]; return fa&&mo?(fa.x+mo.x)/2:(fa||mo).x;};
+     const parts2=new Map(); for(const c of kids){const k=(c.fatherId||'')+'|'+(c.motherId||''); if(!parts2.has(k)) parts2.set(k,[]); parts2.get(k).push(c);}
+     const blocks=[...parts2.values()].sort((a,b)=>Math.abs(jOf(a[0]))-Math.abs(jOf(b[0])));
+     for(const bk of blocks){
+     const mx=jOf(bk[0]);
+     const dir=g0.d===1?(mx<-CW/2?-1:mx>CW/2?1:(mxAll<-1?-1:mxAll>1?1:sideDefault)):(mxAll<-1?-1:mxAll>1?1:sideDefault);
+     const block=d3.hierarchy({root:true,sps:[],children:bk.map(k=>mk(k,1,maxD))});
      d3.tree().nodeSize([1,ROW]).separation(sepF)(block);
      const bn=block.descendants().filter(n=>n.depth>0);
      const ext={}; for(const n of bn){const r=Math.round(py/ROW)+n.depth, w=W(n.data); const e=ext[r]||(ext[r]=[n.x-w/2,n.x+w/2]); if(n.x-w/2<e[0]) e[0]=n.x-w/2; if(n.x+w/2>e[1]) e[1]=n.x+w/2;}
@@ -409,8 +426,10 @@ function treeLayout(F,showSp){
      for(const [r,e] of Object.entries(ext)){const o=occ[r]; if(!o) continue;
        if(dir<0) sh=Math.min(sh,o[0]-GAPX-e[1]); else sh=Math.max(sh,o[1]+GAPX-e[0]);}
      for(const n of bn){ expand(n,n.x+sh,py+n.depth*ROW); const w=W(n.data); occAdd(Math.round(n.y/ROW),n.x-CW/2,n.x-CW/2+w);
-       if(n.depth===1){const fa=pos[n.data.p.fatherId], mo=pos[n.data.p.motherId]; const q=fa&&mo?{x:(fa.x+mo.x)/2,y:py}:(fa||mo); links.push({type:'desc',s:{x:q.x,y:q.y},t:n});}
+       if(n.depth===1){const fa=pos[n.data.p.fatherId]||extraPos[n.data.p.fatherId], mo=pos[n.data.p.motherId]||extraPos[n.data.p.motherId];
+         const q=fa&&mo?{x:(fa.x+mo.x)/2,y:py,mid:true}:{x:(fa||mo).x,y:py}; links.push({type:'desc',s:q,t:n});}
        else links.push({type:'desc',s:srcOf(n),t:n}); }
+     }
    }}
   nodes.push({data:{p:F},x:0,y:0,focus:true});
   // give each family its own lane in the gap between two rows, so lines never merge
