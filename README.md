@@ -54,6 +54,7 @@ To import your own family, start from [`examples/klansagan-import-example.xlsx`]
 - **Works on phones:** a bottom tab bar, a compact tree toolbar, person details as a sheet, touch zoom and pan.
 - **Easy to use:** a start page with three clear choices and a *simple mode* (big text, only Start, Tree and People) that a link can switch on with `?enkelt`. Mark yourself as "me" and kinship is counted from you. Light by default, dark mode on request.
 - **Call names (tilltalsnamn):** mark the name a person went by. It is underlined Swedish-style, and you can show short names everywhere (call name, or the first given name).
+- **Animated tree:** when you click someone, they stay put under your cursor while the rest of the family glides into its new places; relatives who leave the view fade out and new ones fade in. Respects *reduce motion*.
 - **Voice memories:** record grandma telling a story straight from the browser (or upload an audio file) and attach it to a person, or to one of their photos. Recordings are small (Opus, about 180 KB a minute), kept on the device and, in shared trees, uploaded end-to-end encrypted like photos.
 - **Thumbnails:** photos get a small thumbnail when uploaded, so the tree and lists load only a few kilobytes per person; the full image is fetched when you open it.
 - **Photos framed on the face:** profile photos are centred on the face automatically (MediaPipe face detection, loaded on demand) and can be dragged and zoomed by hand.
@@ -122,9 +123,8 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 Done recently: encrypted sharing with publish and merge, version history, photo storage, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Animated tree: cards glide to their new places when you change focus
-2. Kinship calculator highlights the path in the tree
-3. Performance: whole archive in IndexedDB, partial re-rendering, self-hosted fonts
+1. Kinship calculator highlights the path in the tree
+2. Performance: whole archive in IndexedDB, partial re-rendering, self-hosted fonts
 
 **Later**
 - Undo/redo everywhere; warning before leaving with unpublished changes

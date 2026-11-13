@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.16';
+const APP_VERSION='2026-11-13.17';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -562,12 +562,29 @@ function renderTree(fresh){
     if(l.type==='anc') return `M${l.s.x},${l.s.y-CH/2}V${l.my}H${l.t.x}V${l.t.y+CH/2}`;
     return `M${l.s.x},${l.s.mid?l.s.y:l.s.y+CH/2}V${l.my}H${l.t.x}V${l.t.y-CH/2}`;
   };
+  // Animation (FLIP): remember where every card is drawn right now, mid-glide included,
+  // so the new layout can start each card there and let it slide to its new place.
+  const nodeKey=n=>n.data.ghost?'g:'+n.data.ghost+':'+n.data.of:n.data.p.id;
+  const ANIM=!fresh&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches), DUR=650;
+  const was=new Map(), keys=new Set(nodes.map(nodeKey));
+  g.selectAll('g[data-k]').each(function(){const k=this.getAttribute('data-k'); const m=/translate\(([-\d.e]+),\s*([-\d.e]+)\)/.exec(this.getAttribute('transform')||''); if(k&&m&&!was.has(k)) was.set(k,{x:+m[1]+CW/2,y:+m[2]+CH/2});});
+  const exitEls=ANIM?g.selectAll('g[data-k]').interrupt('glide').filter(function(){return !keys.has(this.getAttribute('data-k'));}).nodes():[];
+  const t0=d3.zoomTransform(svg.node());
+  // Focus moved to someone already on screen (search, side panel): keep them where they are and let the tree rearrange around them.
+  if(ANIM&&!ui.treeAnchor&&ui.treeFocusWas&&ui.treeFocusWas!==F.id&&was.has(F.id)){const o=was.get(F.id), sx=t0.applyX(o.x), sy=t0.applyY(o.y), el0=svg.node();
+    if(sx>40&&sy>60&&sx<el0.clientWidth-40&&sy<el0.clientHeight-40){ui.treeAnchor={x:sx,y:sy,k:t0.k}; ui.treeKey=null;}}
+  ui.treeFocusWas=F.id;
+  // Shift between old and new coordinates: the focus person stays put on screen.
+  const fNew=nodes.find(n=>n.focus), fOld=fNew&&was.get(nodeKey(fNew));
+  const anchored=ANIM&&!!ui.treeAnchor&&!!fOld;
+  const dx=fOld&&anchored?fNew.x-fOld.x:0, dy=fOld&&anchored?fNew.y-fOld.y:0;
+  const moving=ANIM&&was.size>0&&(anchored||!ui.treeAnchor);
   g.selectAll('*').remove();
   // generation labels
   for(let d=1; d<=ui.ancGen; d++){ if(aRoot.descendants().some(n=>n.depth===d&&n.data.p)){ const xs=aRoot.descendants().filter(n=>n.depth===d).map(n=>n.x); g.append('text').attr('class','gen-label').attr('x',Math.min(...xs)-CW/2).attr('y',-d*(CH+56)-CH/2-8).text(['','Föräldrar','Farföräldrar & morföräldrar','Farfars- och morfarsföräldrar','Generation 4','Generation 5','Generation 6'][d]||('Generation '+d)); } }
-  g.selectAll('path.link').data(links).join('path').attr('class',l=>'link'+(l.type==='cp'?' sp'+(l.dash?' far':''):'')+(l.type==='dot'?' dot':'')+(l.fam?' fam'+l.fam:'')).attr('d',lp);
+  const linkSel=g.selectAll('path.link').data(links).join('path').attr('class',l=>'link'+(l.type==='cp'?' sp'+(l.dash?' far':''):'')+(l.type==='dot'?' dot':'')+(l.fam?' fam'+l.fam:'')).attr('d',lp);
   const sel=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
-  const cards=g.selectAll('g.node').data(nodes).join('g').attr('transform',n=>`translate(${n.x-CW/2},${n.y-CH/2})`);
+  const cards=g.selectAll('g.node').data(nodes).join('g').attr('data-k',nodeKey).attr('transform',n=>`translate(${n.x-CW/2},${n.y-CH/2})`);
   cards.each(function(n){
     const el=d3.select(this), d=n.data;
     if(d.ghost){
@@ -603,6 +620,21 @@ function renderTree(fresh){
       eg.append('title').text('Dölj i vyn…'); eg.on('click',ev=>{ev.stopPropagation(); hideModal(p);});}
     el.on('click',()=>{ if(n.focus){select('person',p.id);} else if(ui.treeLock){ui.treePan=p.id; select('person',p.id);} else { const t=d3.zoomTransform($('#treeSvg')); ui.treeAnchor={x:t.applyX(n.x),y:t.applyY(n.y),k:t.k}; setFocus(p.id); ui.treeKey=null; select('person',p.id);} });
   });
+  if(moving){
+    const ease=d3.easeCubicInOut, labels=g.selectAll('text.gen-label'); let changed=exitEls.length>0;
+    cards.each(function(n){const o=was.get(nodeKey(n)), el=d3.select(this);
+      if(o){const sx=o.x+dx, sy=o.y+dy; if(Math.abs(sx-n.x)+Math.abs(sy-n.y)<1) return; changed=true;
+        el.attr('transform',`translate(${sx-CW/2},${sy-CH/2})`).transition('glide').duration(DUR).ease(ease).attr('transform',`translate(${n.x-CW/2},${n.y-CH/2})`);}
+      else {changed=true; el.style('opacity',0).transition('glide').delay(DUR*.55).duration(DUR*.6).style('opacity',1);}});
+    if(changed){ linkSel.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null);
+    labels.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null);
+    // cards that leave the view fade out where they were
+    const ex=g.insert('g',':first-child').attr('class','exiting').attr('pointer-events','none');
+    for(const el of exitEls){const m=/translate\(([-\d.e]+),\s*([-\d.e]+)\)/.exec(el.getAttribute('transform')||''); if(!m) continue;
+      el.setAttribute('transform',`translate(${+m[1]+dx},${+m[2]+dy})`); ex.node().appendChild(el);}
+    ex.transition('glide').duration(DUR*.45).style('opacity',0).remove();
+    }
+  }
   // locked tree: only the camera moves, to the person that was clicked
   ui.treeShown=new Set(nodes.filter(n=>n.data&&n.data.p).map(n=>n.data.p.id));
   ui.treePos=new Map(nodes.filter(n=>n.data&&n.data.p).map(n=>[n.data.p.id,{x:n.x,y:n.y}]));
@@ -613,7 +645,8 @@ function renderTree(fresh){
   const key=[F.id,ui.ancGen,ui.descGen,ui.kinDeg,showSp,SMALL].join('|');
   if(ui.treeKey!==key&&ui.treeAnchor){
     ui.treeKey=key; const a=ui.treeAnchor; ui.treeAnchor=null;
-    svg.transition().duration(350).call(treeZoom.transform,d3.zoomIdentity.translate(a.x,a.y).scale(a.k));
+    const at=d3.zoomIdentity.translate(a.x-(fNew?fNew.x*a.k:0),a.y-(fNew?fNew.y*a.k:0)).scale(a.k);
+    if(anchored) svg.interrupt().call(treeZoom.transform,at); else svg.transition().duration(350).call(treeZoom.transform,at);
   }
   if(ui.treeKey!==key){
     ui.treeKey=key;
