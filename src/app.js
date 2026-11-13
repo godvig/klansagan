@@ -46,7 +46,7 @@ const COLS=KinCore.COLS;
 /** Every collection of an archive-shaped object, missing ones as {} (older files and versions have no comments). */
 const cols=o=>Object.fromEntries(COLS.map(c=>[c,(o&&o[c])||{}]));
 const archiveData=()=>Object.fromEntries(COLS.map(c=>[c,ALL[c]]));
-const APP_VERSION='2026-11-14.1';
+const APP_VERSION='2026-11-14.2';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -2019,7 +2019,7 @@ function landingMore(){
     ['↶','Ångra allt','Råkade du ta bort fel person eller läsa in fel fil? Ett klick, så är allt som förut.'],
   ];
   return `<section class="land-sec land-video"><div class="lv-text"><h2>Se den i rörelse</h2><p>Gustav Vasas ättlingar – och hur Sigrid och Władysław IV är släkt. Exemplet Vasaätten finns inbyggt, så du kan prova allt utan att skriva in en enda person.</p><button class="btn primary" onclick="loadDemo()">👑 Öppna exemplet</button></div>
-      <video class="lv-video" src="docs/media/demo.mp4" poster="docs/media/demo-poster.jpg" muted loop playsinline preload="none" aria-label="Kort film: trädet glider mellan personer och släktvägen lyser upp"></video></section>
+      <video class="lv-video" poster="docs/media/demo-poster.jpg" muted loop playsinline preload="none" aria-label="Kort film: trädet glider mellan personer och släktvägen lyser upp"><source src="docs/media/demo.webm" type="video/webm"><source src="docs/media/demo.mp4" type="video/mp4"></video></section>
     <section class="land-sec"><h2>Det här kan Släktsagan</h2><div class="feat-grid">${F.map(([i,t,d])=>`<div class="feat"><span class="ic">${i}</span><b>${t}</b><p>${d}</p></div>`).join('')}</div></section>
     <section class="land-sec trust"><h2>Din släkt, dina uppgifter</h2><div class="trust-grid">
       <div><b>Sparas hos dig</b><p>Allt ligger i din webbläsare. Inget konto, ingen reklam, ingen spårning – och appen fungerar utan internet.</p></div>

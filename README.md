@@ -115,10 +115,16 @@ tests/              Vitest suite for src/core.js
 
 ```bash
 npm ci
-npm run check     # eslint + tsc (JSDoc types on core.js) + vitest
+npx playwright install chromium   # once, for the browser tests
+npm run check     # eslint + tsc (JSDoc types on core.js) + vitest + Playwright
 ```
 
-CI runs the same checks on every push and pull request. The test suite covers Swedish kinship terms (including half and removed relationships), date parsing, GEDCOM import (character sets, dates, families, sources) and export dates, the undo history, CSV/Excel paste parsing, duplicate scoring and branch hiding, all on synthetic families.
+CI runs all of it on every push and pull request, in two jobs:
+
+- **Unit tests (Vitest)** for the pure logic in `src/core.js`: Swedish kinship terms (including half and removed relationships), date parsing, GEDCOM import (character sets, dates, families, sources) and export dates, Swedish source citations, the undo history, three-way merge and encryption, CSV/Excel paste parsing, duplicate scoring and branch hiding.
+- **Browser tests (Playwright)** that drive the real app in Chromium, on a desktop and a phone viewport: the animated tree, the kinship path, undo/redo, GEDCOM and CSV import, backup and restore, pasted church-record citations, dropping a photo on a card, recording and playing a voice memory (with a fake microphone), and two relatives commenting on a shared tree at the same time against an in-memory stand-in for the Supabase functions, which also checks that nothing readable reaches the server.
+
+All test data is synthetic. Offline, point `E2E_LIB_DIR` at local copies of the CDN libraries and `PW_CHROME` at an installed Chrome.
 
 ## Sharing (end-to-end encrypted)
 
@@ -135,7 +141,7 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Browser tests in CI; split `app.js` into modules
+1. Split `app.js` into modules
 2. Locked tree, step 2: add a branch by clicking someone outside it
 3. "On this day" on the start page; family book as PDF
 

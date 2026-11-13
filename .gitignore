@@ -8,3 +8,5 @@ private/
 slaktsagan-*.json
 klansagan-*.json
 kinsaga-*.json
+test-results/
+playwright-report/

@@ -22,7 +22,14 @@ export default [
     languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: { ...globals.serviceworker } },
   },
   {
-    files: ['tests/**/*.mjs', 'eslint.config.mjs'],
+    files: ['tests/**/*.mjs', 'eslint.config.mjs', 'playwright.config.mjs'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
+  },
+  {
+    // browser tests: Node code, plus the app's globals inside page.evaluate callbacks
+    files: ['e2e/**/*.mjs'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node, ...globals.browser,
+      ALL: 'readonly', ui: 'readonly', P: 'readonly', Store: 'readonly', Share: 'readonly', clone: 'readonly', select: 'readonly', renderRel: 'readonly', deletePerson: 'readonly',
+      withAll: 'readonly', toGedcom: 'readonly', exitDemo: 'readonly', avatarUrl: 'readonly', isAudio: 'readonly' } },
   },
 ];
