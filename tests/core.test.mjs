@@ -172,6 +172,14 @@ describe('sharing: merge and encryption', () => {
     expect(r.data.persons.a.given).toBe('Mitt');
     expect(r.conflicts).toEqual(['persons:a']);
   });
+  it('keeps comments written at the same time by two people, and merges archives without comments', () => {
+    const mine = { persons: base.persons, comments: { c1: { id: 'c1', kind: 'comment', personId: 'a', text: 'Vet någon när Anna föddes?' } } };
+    const theirs = { persons: base.persons, comments: { c2: { id: 'c2', kind: 'comment', personId: 'a', text: 'Dopboken säger 1850.' } } };
+    const r = core.merge3(bh, mine, theirs);
+    expect(Object.keys(r.data.comments).sort()).toEqual(['c1', 'c2']);
+    expect(r.conflicts).toEqual([]);
+    expect(core.merge3(bh, { persons: base.persons }, { persons: base.persons }).data.comments).toEqual({});
+  });
   it('round-trips encrypted data and rejects the wrong key', async () => {
     const key = core.newKey();
     const payload = await core.encryptJSON(base, key);

@@ -39,10 +39,14 @@ const HIST=[
 ];
 
 /* ============ State ============ */
-const ALL={persons:{},places:{},sources:{},views:{}};
-const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
-const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.26';
+const ALL={persons:{},places:{},sources:{},views:{},comments:{}};
+const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views,comments:ALL.comments};
+const KIND={person:'persons',place:'places',source:'sources',view:'views',comment:'comments'};
+const COLS=KinCore.COLS;
+/** Every collection of an archive-shaped object, missing ones as {} (older files and versions have no comments). */
+const cols=o=>Object.fromEntries(COLS.map(c=>[c,(o&&o[c])||{}]));
+const archiveData=()=>Object.fromEntries(COLS.map(c=>[c,ALL[c]]));
+const APP_VERSION='2026-11-14.1';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -54,7 +58,7 @@ function applyView(){
   DATA_REV++;
   const v=activeView(); HIDDEN=v?computeHidden(v):new Set();
   const o={}; for(const id in ALL.persons) if(!HIDDEN.has(id)) o[id]=ALL.persons[id];
-  S.persons=o; S.places=ALL.places; S.sources=ALL.sources; S.views=ALL.views;
+  S.persons=o; S.places=ALL.places; S.sources=ALL.sources; S.views=ALL.views; S.comments=ALL.comments;
 }
 function withAll(fn){const saved=S.persons; S.persons=ALL.persons; try{return fn();} finally{S.persons=saved;}}
 function viewCounts(v){return computeHidden(v).size;}
@@ -134,7 +138,7 @@ const Store={
       await this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
       // IndexedDB is asynchronous and may not finish while a page closes, so unsaved edits
       // also get a synchronous emergency copy that the next start picks up.
-      const flush=()=>{ if(!this._dirty) return; try{localStorage.setItem('klansagan-unsaved',JSON.stringify({k:Share.lsKey(),data:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}}));}catch(e){} this.saveNow(); };
+      const flush=()=>{ if(!this._dirty) return; try{localStorage.setItem('klansagan-unsaved',JSON.stringify({k:Share.lsKey(),data:archiveData()}));}catch(e){} this.saveNow(); };
       addEventListener('pagehide',flush); document.addEventListener('visibilitychange',()=>{ if(document.hidden) flush(); });
       Share.updateStatus(); Share.startPolling();
       setTimeout(()=>Backup.remind(),5000);
@@ -149,7 +153,7 @@ const Store={
     this.col.onSnapshot(snap=>{
       if(!snap.metadata.fromCache){clearTimeout(timer); setStatus('ok',this.canEdit?'Delas & sparas i molnet':'Endast läsning');}
       const T=this.demo?this.demo.saved:ALL;
-      T.persons={};T.places={};T.sources={};T.views={};
+      for(const c of COLS) T[c]={};
       for(const d of snap.docs){const o=d.data(); if(o&&KIND[o.kind]) T[KIND[o.kind]][d.id]=o;}
       if(this.demo) return;
       this.loaded=true; if(!this._purged){this._purged=true; purgeLegacyDemo();} applyView(); renderAll();
@@ -160,8 +164,8 @@ const Store={
      If IndexedDB is unavailable (some private modes), localStorage is still used. */
   backend:'idb',
   async loadLocal(){
-    const k=Share.lsKey(); ALL.persons={};ALL.places={};ALL.sources={};ALL.views={}; Hist.clear();
-    const use=o=>{ if(!o) return; ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{}; };
+    const k=Share.lsKey(); Object.assign(ALL,cols(null)); Hist.clear();
+    const use=o=>{ if(!o) return; Object.assign(ALL,cols(o)); };
     let o=null;
     if(this.backend==='idb' && typeof indexedDB!=='undefined'){
       try{ o=await IDB.aget(k); }catch(e){ console.warn('IndexedDB unavailable, using localStorage',e); this.backend='ls'; }
@@ -187,7 +191,7 @@ const Store={
   },
   saveNow(){
     clearTimeout(this._lt); this._dirty=false;
-    const data={persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}, k=Share.lsKey();
+    const data=archiveData(), k=Share.lsKey();
     // IndexedDB copies the object when the write starts (structured clone), so later edits can't sneak in half-done
     const p=this.writeArchive(k,data).catch(()=>toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000));
     this._saving=p; Share.changed();
@@ -743,6 +747,9 @@ function renderTree(fresh){
     el.append('text').attr('class','yr').attr('x',tx).attr('y',yy+(SMALL?15:20)).text(lifespan(p)||'år okänt');
     const pl=placeName(p.birthPlace)||p.occupation||''; el.append('text').attr('class','pl').attr('x',tx).attr('y',yy+(SMALL?28:37)).text(pl.length>maxc+3?pl.slice(0,maxc+2)+'…':pl);
     const nc=(p.citations||[]).length; if(!nc){el.append('circle').attr('cx',CW-11).attr('cy',11).attr('r',3.5).style('fill','var(--warn)').append('title').text('Ingen källa ännu');}
+    {const oq=openCount(p.id); if(oq){const g=el.append('g').attr('class','qbadge').attr('transform',`translate(${CW-(nc?13:26)},${CH-15})`);
+      g.append('path').attr('d','M-8 -6h16a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-9l-4 3v-3h-3a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3z');
+      g.append('text').attr('x',0).attr('y',3).attr('text-anchor','middle').text(oq>9?'9+':oq); g.append('title').text(oq===1?'1 öppen fråga':oq+' öppna frågor');}}
     if(Store.canEdit){const eg=el.append('g').attr('class','eye').attr('transform',`translate(${CW-(SMALL?26:30)},${CH-(SMALL?24:26)})`); eg.append('rect').attr('width',22).attr('height',20).attr('rx',5);
       eg.append('path').attr('d','M4 10s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5zM4 4l14 12').attr('transform','translate(0,0)');
       eg.append('title').text('Dölj i vyn…'); eg.on('click',ev=>{ev.stopPropagation(); hideModal(p);});}
@@ -915,6 +922,7 @@ function personPanel(p){
     ${cites.length?cites.map(c=>{const s=S.sources[c.sourceId]; return `<div class="cite"><div style="display:flex;gap:6px"><b data-src="${c.sourceId}" style="flex:1">${esc(s?s.title:'(borttagen källa)')}</b>${ed?`<button class="iconbtn" data-delcite="${c.id}" title="Ta bort">×</button>`:''}</div>
       <div class="small muted">${esc(aboutLabel(c.about))}${c.detail?' · '+esc(c.detail):''}${s&&s.ref&&!(c.detail||'').includes(s.ref)?' · '+esc(s.ref):''}</div>${citeLinks(c)}</div>`}).join(''):`<div class="muted small">Inga källor ännu. Koppla husförhörslängder, dopböcker m.m. så vet du var uppgifterna kommer ifrån.</div>`}
   </div>
+  ${commentSection(p)}
   ${voiceSection(p)}
   ${mediaSection(p)}
   <div class="sec"><h4>Anteckningar</h4>
@@ -925,6 +933,46 @@ function personPanel(p){
    Recorded in the browser (MediaRecorder), kept in the image store like photos and,
    in shared trees, uploaded encrypted. A memory can be tied to one of the person's photos. */
 const fmtDur=s=>{s=Math.round(s||0); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+/* ============ Questions & comments per person ============
+   Each comment is its own document ({kind:'comment', personId, text, by, at, resolved}), so two
+   relatives commenting at the same time never overwrite each other when they publish. */
+const commentsFor=pid=>Object.values(ALL.comments).filter(c=>c.personId===pid).sort((a,b)=>(a.at||'').localeCompare(b.at||''));
+const openQuestions=()=>Object.values(ALL.comments).filter(c=>!c.resolved&&!c.replyTo&&P(c.personId));
+const openCount=pid=>Object.values(ALL.comments).filter(c=>c.personId===pid&&!c.resolved&&!c.replyTo).length;
+function ago(iso){ if(!iso) return ''; const d=(Date.now()-Date.parse(iso))/1000;
+  if(d<60) return 'nyss'; if(d<3600) return Math.floor(d/60)+' min sedan'; if(d<86400) return Math.floor(d/3600)+' tim sedan'; if(d<7*86400){const n=Math.floor(d/86400); return n===1?'i går':n+' dagar sedan';}
+  return fmtDate(iso.slice(0,10)); }
+const myName=()=>Share.st.name||'';
+function commentSection(p){
+  const all=commentsFor(p.id), roots=all.filter(c=>!c.replyTo), ed=Store.canEdit, nOpen=roots.filter(c=>!c.resolved).length;
+  const one=(c,reply)=>`<div class="cm${c.resolved?' done':''}${reply?' reply':''}" data-cm="${c.id}">
+      <span class="cm-av" style="background:${nameColor(c.by)}">${esc((c.by||'?').trim().charAt(0).toUpperCase()||'?')}</span>
+      <div class="cm-b"><div class="cm-h"><b>${esc(c.by||'Någon')}</b><span class="muted small">${esc(ago(c.at))}</span>${c.resolved&&!reply?'<span class="cm-tag">✓ Löst</span>':''}</div>
+        <div class="cm-t">${esc(c.text).replace(/\n/g,'<br>')}</div>
+        ${ed?`<div class="cm-acts">${reply?'':`<button class="linkbtn" data-cmreply="${c.id}">Svara</button><button class="linkbtn" data-cmres="${c.id}">${c.resolved?'Öppna igen':'Markera som löst'}</button>`}${!c.by||c.by===myName()||!Share.cur()?`<button class="linkbtn muted" data-cmdel="${c.id}">Ta bort</button>`:''}</div>`:''}</div></div>`;
+  return `<div class="sec comments"><h4>Frågor &amp; kommentarer${nOpen?` <span class="cm-count">${nOpen} öppen${nOpen===1?'':'a'}</span>`:''}</h4>
+    ${roots.length?roots.map(c=>one(c,false)+all.filter(r=>r.replyTo===c.id).map(r=>one(r,true)).join('')+`<div class="cm-replybox" data-replybox="${c.id}" hidden></div>`).join(''):`<div class="muted small">${Share.cur()?'Undrar du något om '+esc(shortName(p))+'? Skriv en fråga här – alla som har länken ser den när du har publicerat.':'Skriv en fråga eller en ledtråd om '+esc(shortName(p))+' som du vill komma ihåg. Delar du trädet ser hela släkten den.'}</div>`}
+    ${ed?`<div class="cm-new"><textarea class="t" id="cmText" rows="2" placeholder="Vet någon när ${esc(shortName(p))} föddes? …"></textarea><button class="btn sm primary" id="cmSend">Skicka</button></div>`:''}
+  </div>`;
+}
+/** A stable soft colour per name, for the little avatar. */
+function nameColor(n){ let h=0; for(const ch of String(n||'?')) h=(h*31+ch.charCodeAt(0))>>>0; return `hsl(${h%360} 32% 46%)`; }
+async function addComment(pid,text,replyTo){
+  text=String(text||'').trim(); if(!text) return false;
+  if(Share.cur()&&!myName()){ const n=await askName(); if(!n) return false; Share.st.name=n; Share.save(); }
+  const c={kind:'comment',id:uid('cm'),personId:pid,text,by:myName(),at:new Date().toISOString()}; if(replyTo) c.replyTo=replyTo;
+  Hist.label(replyTo?'Svar på en fråga':'Ny fråga om '+shortName(P(pid))); await Store.put(c); return true;
+}
+function bindComments(pn,p){
+  const send=pn.querySelector('#cmSend'), ta=pn.querySelector('#cmText');
+  if(send) send.onclick=async()=>{ if(await addComment(p.id,ta.value)) toast(Share.cur()?'Skickad – publicera så att släkten ser den.':'Sparad.',3500,Share.cur()?{label:'Publicera',fn:()=>Share.publish()}:undefined); };
+  if(ta) ta.onkeydown=e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) send.click(); };
+  pn.querySelectorAll('[data-cmres]').forEach(b=>b.onclick=()=>{ const c=clone(ALL.comments[b.dataset.cmres]); c.resolved=!c.resolved; if(c.resolved){c.resolvedBy=myName(); c.resolvedAt=new Date().toISOString();} else {delete c.resolvedBy; delete c.resolvedAt;} Store.put(c); });
+  pn.querySelectorAll('[data-cmdel]').forEach(b=>b.onclick=()=>{ const id=b.dataset.cmdel; Hist.label('Borttagen kommentar'); Store.del('comment',id,{silent:true}); for(const r of Object.values(ALL.comments)) if(r.replyTo===id) Store.del('comment',r.id,{silent:true}); renderAll(); });
+  pn.querySelectorAll('[data-cmreply]').forEach(b=>b.onclick=()=>{ const box=pn.querySelector(`[data-replybox="${b.dataset.cmreply}"]`); box.hidden=false;
+    box.innerHTML='<textarea class="t" rows="2" placeholder="Ditt svar…"></textarea><button class="btn sm primary">Svara</button>'; const t=box.querySelector('textarea'); t.focus();
+    box.querySelector('button').onclick=()=>addComment(p.id,t.value,b.dataset.cmreply); t.onkeydown=e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) box.querySelector('button').click(); }; });
+}
 function voiceRows(o,{forImg,edit}={}){
   const list=(o.media||[]).map((m,i)=>({m,i})).filter(({m})=>isAudio(m)&&(forImg===undefined||m.forImg===forImg));
   return list.map(({m,i})=>{const img=!forImg&&m.forImg?(o.media||[]).find(x=>x.url===m.forImg):null;
@@ -1248,6 +1296,7 @@ function bindMedia(){
   const av=pn.querySelector('#uplAv'); if(av) av.onchange=()=>uploadMedia(av.files,{profile:true});
   pn.querySelectorAll('[data-media]').forEach(el=>el.onclick=()=>openLightbox(o,+el.dataset.media));
   bindVoices(pn,o);
+  if(ui.sel&&ui.sel.type==='person') bindComments(pn,o);
   {const ua=pn.querySelector('#uplAudio'); if(ua) ua.onchange=async()=>{const f=ua.files[0]; if(!f) return; try{const d=await audioDuration(f); await saveVoice(o,f,{duration:d,caption:f.name.replace(/\.[^.]+$/,'')}); toast('Ljudfilen är sparad som röstminne.');}catch(e){toast('Kunde inte spara: '+(e.message||e),6000);}};}
 }
 function currentSelObj(){if(!ui.sel) return null; return ui.sel.type==='person'?P(ui.sel.id):ui.sel.type==='place'?S.places[ui.sel.id]:S.sources[ui.sel.id];}
@@ -1271,6 +1320,7 @@ function openLightbox(o,i){
 }
 async function deletePerson(id){
   {const d=P(id); if(d) Hist.label('Borttagning av '+fullName(d),1500);}
+  for(const c of Object.values(ALL.comments)) if(c.personId===id) Store.del('comment',c.id,{silent:true});
   const others=Object.values(ALL.persons).filter(x=>x.id!==id&&(x.fatherId===id||x.motherId===id||(x.spouseIds||[]).includes(id)||(x.events||[]).some(e=>e.withId===id)));
   for(const o of others){const q=clone(o); if(q.fatherId===id) q.fatherId=''; if(q.motherId===id) q.motherId=''; q.spouseIds=(q.spouseIds||[]).filter(x=>x!==id); (q.events||[]).forEach(e=>{if(e.withId===id) e.withId='';}); Store.put(q,{silent:true});}
   if(ui.focus===id) ui.focus=null;
@@ -1679,7 +1729,7 @@ function renderImport(){
   fi.onchange=()=>fi.files[0]&&readImportFile(fi.files[0]);
   $('#impPasteBtn').onclick=()=>{const t=$('#impPaste').value; if(!t.trim()) return; setImportRows(parseDelimited(t));};
   $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('slaktsagan-import-template.csv','\ufeff'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
-  if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{}),...Object.values(o.views||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>(Hist.label('Återställning från säkerhetskopia',3000), Store.putMany(objs).then(()=>toast('Återställt ✓'))));});};
+  if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=COLS.flatMap(c=>Object.values(o[c]||{})).filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>(Hist.label('Återställning från säkerhetskopia',3000), Store.putMany(objs).then(()=>toast('Återställt ✓'))));});};
   if($('#wipe')) $('#wipe').onclick=()=>modal(`<h3>Töm hela arkivet?</h3><p>Alla ${Object.keys(ALL.persons).length} personer, ${Object.keys(S.sources).length} källor och ${Object.keys(S.places).length} platser tas bort. Exportera en säkerhetskopia först! Skriv <b>TÖM</b> för att bekräfta.</p><input class="t" id="wipeIn"><div class="foot" style="margin-top:12px"><button class="btn" data-x>Avbryt</button><button class="btn primary" style="background:var(--err);border-color:var(--err)" data-ok>Töm arkivet</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{if(ov.querySelector('#wipeIn').value.trim().toUpperCase()!=='TÖM')return; close(); ui.sel=null; ui.focus=null; const all=[...Object.values(ALL.persons),...Object.values(ALL.places),...Object.values(ALL.sources),...Object.values(ALL.views)]; for(const o of all) Store.del(o.kind,o.id,{silent:true}); renderAll(); toast('Arkivet är tömt');};});
   if(imp.rows.length) renderImportStep2();
 }
@@ -1849,7 +1899,7 @@ async function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
   if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) {const map={}; for(const m of d.media||[]){ if(blobId(m)){const old=m.url; m.url=await blobUrl(m); map[old]=m.url;} delete m.thumb; } for(const m of d.media||[]) if(m.forImg&&map[m.forImg]) m.forImg=map[m.forImg];} return o;};
     const [persons,places,sources]=await Promise.all([inl('persons'),inl('places'),inl('sources')]);
-    saveFile(`slaktsagan-${stamp}.json`,JSON.stringify({app:'Släktsagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); Backup.mark(); }
+    saveFile(`slaktsagan-${stamp}.json`,JSON.stringify({app:'Släktsagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views,comments:ALL.comments},null,1)); Backup.mark(); }
   if(kind==='csv'){
     const ids={}; Object.values(S.persons).forEach((p,i)=>ids[p.id]=i+1);
     const c=v=>{v=String(v??''); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -2039,10 +2089,14 @@ function renderStart(){
     </div><div class="hero-art">${heroArt()}</div></div>
     ${treesSection()}
     <div class="tiles">${tiles.map(([h,ic,t,d])=>`<a class="tile" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>
+    ${(()=>{const qs=openQuestions().sort((a,b)=>(b.at||'').localeCompare(a.at||'')); if(!qs.length) return '';
+      return `<h2 class="sec-t">Öppna frågor <span class="muted" style="font-weight:400">· ${qs.length}</span></h2><div class="qlist">${qs.slice(0,6).map(c=>{const p=P(c.personId); const nr=commentsFor(c.personId).filter(r=>r.replyTo===c.id).length;
+        return `<a class="qrow" href="#" data-q="${c.personId}"><span class="cm-av" style="background:${nameColor(c.by)}">${esc((c.by||'?').charAt(0).toUpperCase())}</span><span class="qbody"><b>${esc(fullName(p))}</b><span>${esc(c.text.length>110?c.text.slice(0,108)+'…':c.text)}</span><small class="muted">${esc(c.by||'Någon')} · ${esc(ago(c.at))}${nr?` · ${nr} svar`:''}</small></span></a>`;}).join('')}${qs.length>6?`<div class="muted small" style="padding:6px 2px">… och ${qs.length-6} till</div>`:''}</div>`;})()}
     <h2 class="sec-t">Senast ändrade</h2>
     <div class="recent">${recent.map(p=>chipHTML(p,p.updatedBy&&Store.user?`av <span data-uid="${esc(p.updatedBy)}">…</span>`:'')).join('')}</div>
     ${activeView()?`<p class="small muted" style="margin-top:18px">Du tittar på vyn <b>${esc(activeView().name)}</b> – ${HIDDEN.size} personer är dolda. Byt vy uppe till höger.</p>`:''}</div>`;
   bindChips(v,openCard); fillNames(v); bindTrees(v);
+  v.querySelectorAll('[data-q]').forEach(a=>a.onclick=e=>{e.preventDefault(); setFocus(a.dataset.q); ui.sel={type:'person',id:a.dataset.q}; location.hash='trad'; setTimeout(()=>{const el=document.querySelector('#panel .comments'); if(el) el.scrollIntoView({block:'start',behavior:'smooth'});},350);});
 }
 
 /* ============ SEPARATE TREES ============ */
@@ -2332,6 +2386,7 @@ function renderDups(){
 async function mergePersons(keepId,dropId){
   const k=clone(P(keepId)), d=P(dropId); if(!k||!d) return;
   Hist.label('Sammanslagning av '+fullName(d)+' med '+fullName(k),1500);
+  for(const c of Object.values(ALL.comments)) if(c.personId===dropId) Store.put({...c,personId:keepId},{silent:true});
   for(const f of ['given','callName','surname','sex','birthDate','birthPlace','deathDate','deathPlace','occupation','fatherId','motherId']) if(!k[f]&&d[f]) k[f]=d[f];
   if(d.notes&&d.notes!==k.notes) k.notes=[k.notes,d.notes].filter(Boolean).join('\n\n');
   const evKey=e=>e.type+'|'+(e.date||'')+'|'+(e.placeId||'');
@@ -2748,9 +2803,9 @@ function loadDemo(){
   const stay=!['start','import'].includes(ui.view)&&VIEWS[ui.view];
   if(Store.demo){ if(!stay&&location.hash!=='#trad') location.hash='trad'; return; }
   const {places,sources,persons}=demoData();
-  Store.demo={saved:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},focus:ui.focus,viewId:ui.viewId};
+  Store.demo={saved:archiveData(),focus:ui.focus,viewId:ui.viewId};
   const m=a=>Object.fromEntries(a.map(o=>[o.id,clone(o)]));
-  ALL.persons=m(persons); ALL.places=m(places); ALL.sources=m(sources); ALL.views={}; Hist.clear();
+  ALL.persons=m(persons); ALL.places=m(places); ALL.sources=m(sources); ALL.views={}; ALL.comments={}; Hist.clear();
   ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=2; ui.descGen=3; ui.treeKey=null; ui.sel=null;
   applyView();
   toast('Det här är ett exempel. Inget sparas – dina egna uppgifter ligger kvar orörda.',5000);
@@ -2793,7 +2848,7 @@ const Share={
   cur(){return this.st.active?this.st.trees[this.st.active]:null;},
   lsKey(){return this.st.active?'klansagan-tree-'+this.st.active:'klansagan-v1';},
   link(id=this.st.active){const t=this.st.trees[id]; return `${location.origin}${location.pathname}#dela-${id}.${t.key}`;},
-  archive(){return {persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views};},
+  archive(){return archiveData();},
   async rpc(fn,args){
     const r=await fetch(`${this.cfg.supabaseUrl}/rest/v1/rpc/${fn}`,{method:'POST',headers:{'Content-Type':'application/json',apikey:this.cfg.supabaseKey,Authorization:'Bearer '+this.cfg.supabaseKey},body:JSON.stringify(args)});
     const txt=await r.text(); let body=null; try{body=txt?JSON.parse(txt):null;}catch(e){body=txt;}
@@ -2854,7 +2909,7 @@ const Share={
       const known=this.st.trees[id];
       if(known&&known.key===key){this.st.active=id; this.save(); setTimeout(()=>this.check(true),300); return;}
       const v=await this.fetchVersion(id,key);
-      const data={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
+      const data=cols(v.data);
       this.st.trees[id]={key,version:v.version,base:KinCore.hashArchive(data),joined:new Date().toISOString(),name:'',uploaded:Object.fromEntries([...blobRefs(data)].map(b=>[b,1]))};
       this.st.active=id; this.save();
       await Store.writeArchive('klansagan-tree-'+id,data);
@@ -2871,7 +2926,7 @@ const Share={
   async pull(quiet){
     const t=this.cur(); if(!t) return {conflicts:[]};
     const v=await this.fetchVersion(this.st.active,t.key);
-    const theirs={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
+    const theirs=cols(v.data);
     const mine=this.archive(), hadLocal=this.recount()>0;
     const {data,conflicts}=hadLocal?KinCore.merge3(t.base,mine,theirs):{data:theirs,conflicts:[]};
     Object.assign(ALL,data); Hist.clear(); t.version=v.version; t.base=KinCore.hashArchive(theirs); this.newer=false;
@@ -2905,12 +2960,12 @@ const Share={
     finally{ this.busy=false; }
   },
   async discard(){const t=this.cur(); if(!t) return; const v=await this.fetchVersion(this.st.active,t.key,t.version);
-    Object.assign(ALL,{persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}}); Hist.clear(); applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus(); toast('Dina opublicerade ändringar är borttagna.');},
+    Object.assign(ALL,cols(v.data)); Hist.clear(); applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus(); toast('Dina opublicerade ändringar är borttagna.');},
   async history(){const t=this.cur(); const rows=await this.rpc('kl_history',{tree:this.st.active})||[];
     for(const r of rows){ r.info=null; if(r.meta) try{r.info=await KinCore.decryptJSON(r.meta,t.key);}catch(e){} } return rows;},
   /** Make an older version the working copy. It goes live for everyone when published. */
   async restore(ver){const t=this.cur(); const v=await this.fetchVersion(this.st.active,t.key,ver);
-    Object.assign(ALL,{persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}}); Hist.clear();
+    Object.assign(ALL,cols(v.data)); Hist.clear();
     applyView(); Store.saveNow(); ui.treeKey=null; ui.sel=null; renderAll(true); this.updateStatus();
     toast(`Trädet ser nu ut som i version ${ver}. Tryck Publicera för att alla ska få det.`,7000,{label:'Publicera',fn:()=>this.publish()});},
   async switchTo(id){await Store.saveNow(); this.st.active=id||null; this.newer=false; this.save(); await Store.loadLocal(); applyView(); ui.focus=null; ui.sel=null; ui.treeKey=null; this.updateStatus(); renderAll(true); if(id) this.check(true);},
