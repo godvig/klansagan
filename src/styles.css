@@ -463,3 +463,14 @@ body.simple .morebtn{display:none}
 .cropbox:active{cursor:grabbing}
 .cropbox img{user-select:none;pointer-events:none}
 .cropside{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:180px;flex:1}
+
+/* ---- Tree: small cards, partner toggle, clickable name ---- */
+#treeSvg.small .card .nm{font-size:11px}
+#treeSvg.small .card .yr{font-size:10px}
+#treeSvg.small .card .pl{font-size:9.5px}
+#treeSvg.small .ph-slot .ini{font-size:15px}
+#treeSvg.small .gen-label{font-size:11px}
+.tree-tools .fname{cursor:pointer}
+.tree-tools .fname:hover{text-decoration:underline;text-underline-offset:3px}
+.ctl.chk{display:flex;align-items:center;gap:5px;cursor:pointer}
+.ctl.chk input{accent-color:var(--accent);margin:0}
