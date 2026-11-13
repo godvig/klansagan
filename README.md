@@ -59,6 +59,7 @@ To import your own family, start from [`examples/slaktsagan-import-example.xlsx`
 - **Easy to use:** a start page with three clear choices and a *simple mode* (big text, only Start, Tree and People) that a link can switch on with `?enkelt`. Mark yourself as "me" and kinship is counted from you. Light by default, dark mode on request.
 - **Call names (tilltalsnamn):** mark the name a person went by. It is underlined Swedish-style, and you can show short names everywhere (call name, or the first given name).
 - **Show the path in the tree:** the relationship calculator ("Hur är vi släkt?") opens the tree around the shared ancestor and lights up the chain between the two people, couples included, and dims everyone else.
+- **Backups:** a local archive lives only in the browser, so *Import & export* shows when you last saved a backup and how much has changed since, and the app reminds you (at most every few days) when you have never saved one or it is two weeks old with changes. The backup is one JSON file with everything, photos and voice memories included, and reads straight back in.
 - **Photos straight onto people:** drag an image onto a card in the tree (or the person panel), paste one with Ctrl+V while someone is selected, or tap the empty photo on a card; on a phone that offers the camera. The first photo becomes the profile picture and is framed on the face.
 - **Undo everything:** every change — an edit, a deleted person with all their links, a photo upload, a whole import — can be undone and redone with the ↶ ↷ buttons or Ctrl+Z / Ctrl+Shift+Z. Changes made in one go count as one step, and the toast says what was undone.
 - **Animated tree:** when you click someone, they stay put under your cursor while the rest of the family glides into its new places (and the view eases them back towards the middle if they ended up near an edge); relatives who leave the view fade out and new ones fade in. Respects *reduce motion*.
@@ -129,17 +130,16 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
+Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Backup reminder and one-click backup file
-2. GEDCOM import
-3. Swedish source templates (Riksarkivet, ArkivDigital)
-4. Landing page for new visitors
-5. Comment threads per person
-6. Browser tests in CI; split `app.js` into modules
-7. Locked tree, step 2: add a branch by clicking someone outside it
-8. "On this day" on the start page; family book as PDF
+1. GEDCOM import
+2. Swedish source templates (Riksarkivet, ArkivDigital)
+3. Landing page for new visitors
+4. Comment threads per person
+5. Browser tests in CI; split `app.js` into modules
+6. Locked tree, step 2: add a branch by clicking someone outside it
+7. "On this day" on the start page; family book as PDF
 
 **Later:** life path on the map, photo gallery on the person card, read-only share links with protection for living people, "what's new since your last visit", English UI.
 

@@ -653,3 +653,8 @@ body.dragging-files #treeSvg g.card:not(.ghost) rect.bg{stroke-dasharray:6 4}
 body.dragging-files #treeSvg g.card.drop-on rect.bg,#treeSvg g.card.drop-on rect.bg{stroke:var(--accent);stroke-width:3.5;stroke-dasharray:none;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--accent) 50%,transparent))}
 #panel.drop-on,.pc.drop-on{outline:3px dashed var(--accent);outline-offset:-6px}
 body.dragging-files #view::after{content:'Släpp bilden på en person';position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:99px;font-size:14px;pointer-events:none;z-index:50}
+
+/* Backup box on "Läs in & spara" */
+.box.backup{border-left:4px solid var(--accent)}
+.box.backup.due{border-left-color:#c0392b;background:color-mix(in srgb,#c0392b 5%,var(--card))}
+.box.backup .bk-line{margin:6px 0 12px}

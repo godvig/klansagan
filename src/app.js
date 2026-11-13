@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.22';
+const APP_VERSION='2026-11-13.23';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -137,6 +137,7 @@ const Store={
       const flush=()=>{ if(!this._dirty) return; try{localStorage.setItem('klansagan-unsaved',JSON.stringify({k:Share.lsKey(),data:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}}));}catch(e){} this.saveNow(); };
       addEventListener('pagehide',flush); document.addEventListener('visibilitychange',()=>{ if(document.hidden) flush(); });
       Share.updateStatus(); Share.startPolling();
+      setTimeout(()=>Backup.remind(),5000);
       setTimeout(()=>Unpub.nudge((n,pl)=>`Välkommen tillbaka! Du har ${n} från förra gången som inte är publicerad${pl} än.`),1500);
       renderAll();
       migrateInline().then(ch=>{ if(ch){ Share.updateStatus(); renderAll(); } return backfillThumbs(); });
@@ -1616,6 +1617,7 @@ const imp={headers:[],rows:[],map:{},sheets:null,wb:null,skipDup:true,createMiss
 function renderImport(){
   const v=$('#view');
   v.innerHTML=`<div class="view-pad"><div class="toolbar"><h2>Import &amp; export</h2></div>
+    ${Store.mode!=='db'&&!Store.demo&&Object.keys(ALL.persons).length?Backup.box():''}
     ${E.canEdit?`<div class="box"><h3>1. Läs in din släktlista</h3>
       <p>Välj en Excel-fil (.xlsx, .xls) eller CSV – eller kopiera cellerna i Excel och klistra in dem nedan. En rad per person. Föräldrar kan anges med namn eller med personens id-nummer i listan.</p>
       <div class="drop" id="drop"><b>Släpp filen här</b> eller klicka för att välja<input type="file" id="impFile" accept=".xlsx,.xls,.csv,.tsv,.txt,.ods" hidden></div>
@@ -1625,8 +1627,8 @@ function renderImport(){
       <div style="margin-top:12px" class="small muted">Osäker på formatet? <a href="#" id="tplDl">Ladda ner en mall</a> med rätt kolumner.</div>
     </div>
     <div id="impStep2"></div>`:''}
-    <div class="box"><h3>Exportera &amp; säkerhetskopiera</h3>
-      <p>Spara en kopia av hela arkivet. GEDCOM är standardformatet som MyHeritage, Ancestry, Geni, Disgen och de flesta släktprogram kan läsa.</p>
+    <div class="box"><h3>Exportera</h3>
+      <p>GEDCOM är standardformatet som MyHeritage, Ancestry, Geni, Disgen och de flesta släktprogram kan läsa.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" data-exp="json">Säkerhetskopia (.json)</button>
         <button class="btn" data-exp="ged">GEDCOM</button>
@@ -1637,7 +1639,8 @@ function renderImport(){
     <div class="box"><h3>Övrigt</h3><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.keys(S.persons).length?'':'<button class="btn" onclick="loadDemo()">Ladda Vasaätten som exempel</button>'}<button class="btn danger" id="wipe">Töm hela arkivet…</button></div>
       <p class="small muted" style="margin-top:10px">${Store.mode==='db'?'Ditt arkiv sparas i molnet och syns bara för dig tills du väljer att dela sidan. Delar du den kan andra läsa, men bara du och de du gör till redigerare kan ändra.':'Sidan körs utanför claude.ai, så allt sparas bara i den här webbläsaren. Exportera regelbundet!'}</p></div>`:''}
   </div>`;
-  v.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>doExport(b.dataset.exp));
+  v.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>doExport(b.dataset.exp).then(()=>{ if(b.dataset.exp==='json') renderImport(true); }));
+  {const bb=$('#bkSave'); if(bb) bb.onclick=async()=>{bb.disabled=true; bb.textContent='Sparar…'; try{await Backup.save();}finally{renderImport(true);}};}
   if(!E.canEdit) return;
   const drop=$('#drop'),fi=$('#impFile');
   drop.onclick=()=>fi.click();
@@ -1647,7 +1650,7 @@ function renderImport(){
   fi.onchange=()=>fi.files[0]&&readImportFile(fi.files[0]);
   $('#impPasteBtn').onclick=()=>{const t=$('#impPaste').value; if(!t.trim()) return; setImportRows(parseDelimited(t));};
   $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('slaktsagan-import-template.csv','\ufeff'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
-  if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{}),...Object.values(o.views||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>Store.putMany(objs).then(()=>toast('Återställt ✓')));});};
+  if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{}),...Object.values(o.views||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>(Hist.label('Återställning från säkerhetskopia',3000), Store.putMany(objs).then(()=>toast('Återställt ✓'))));});};
   if($('#wipe')) $('#wipe').onclick=()=>modal(`<h3>Töm hela arkivet?</h3><p>Alla ${Object.keys(ALL.persons).length} personer, ${Object.keys(S.sources).length} källor och ${Object.keys(S.places).length} platser tas bort. Exportera en säkerhetskopia först! Skriv <b>TÖM</b> för att bekräfta.</p><input class="t" id="wipeIn"><div class="foot" style="margin-top:12px"><button class="btn" data-x>Avbryt</button><button class="btn primary" style="background:var(--err);border-color:var(--err)" data-ok>Töm arkivet</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{if(ov.querySelector('#wipeIn').value.trim().toUpperCase()!=='TÖM')return; close(); ui.sel=null; ui.focus=null; const all=[...Object.values(ALL.persons),...Object.values(ALL.places),...Object.values(ALL.sources),...Object.values(ALL.views)]; for(const o of all) Store.del(o.kind,o.id,{silent:true}); renderAll(); toast('Arkivet är tömt');};});
   if(imp.rows.length) renderImportStep2();
 }
@@ -1775,7 +1778,7 @@ async function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
   if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) {const map={}; for(const m of d.media||[]){ if(blobId(m)){const old=m.url; m.url=await blobUrl(m); map[old]=m.url;} delete m.thumb; } for(const m of d.media||[]) if(m.forImg&&map[m.forImg]) m.forImg=map[m.forImg];} return o;};
     const [persons,places,sources]=await Promise.all([inl('persons'),inl('places'),inl('sources')]);
-    saveFile(`slaktsagan-${stamp}.json`,JSON.stringify({app:'Släktsagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); }
+    saveFile(`slaktsagan-${stamp}.json`,JSON.stringify({app:'Släktsagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); Backup.mark(); }
   if(kind==='csv'){
     const ids={}; Object.values(S.persons).forEach((p,i)=>ids[p.id]=i+1);
     const c=v=>{v=String(v??''); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -2856,6 +2859,33 @@ function shareTreeModal(){
       catch(e){cr.disabled=false; cr.textContent='Skapa delningslänk'; toast('Kunde inte skapa delningen: '+(e.message||e),7000);} };
   });
 }
+/* ============ Backups ============
+   A local archive lives only in this browser. Remember when a backup file was last saved,
+   show it on the "Läs in & spara" page, and nudge (at most every few days) when it's overdue. */
+const Backup={
+  key:()=>'klansagan-backup-'+Share.lsKey(),
+  last(){ try{return JSON.parse(localStorage.getItem(this.key())||'null');}catch(e){return null;} },
+  mark(){ try{localStorage.setItem(this.key(),JSON.stringify({at:new Date().toISOString(),n:Object.keys(ALL.persons).length}));}catch(e){} },
+  changedSince(at){ let n=0; for(const col of ['persons','places','sources']) for(const d of Object.values(ALL[col])) if((d.updatedAt||d.createdAt||'')>at) n++; return n; },
+  status(){ const l=this.last(), n=Object.keys(ALL.persons).length;
+    if(!l) return {n,last:null,changed:n,days:Infinity};
+    return {n,last:l.at,changed:this.changedSince(l.at),days:(Date.now()-Date.parse(l.at))/864e5}; },
+  /** Only local archives: a shared tree is kept, encrypted, on the server in 30 versions. */
+  overdue(){ if(Store.demo||Store.mode==='db'||!Store.canEdit||Share.cur()) return false;
+    const st=this.status(); if(st.n<5) return false; return !st.last||(st.changed>0&&st.days>=14); },
+  async save(){ await doExport('json'); },
+  box(){ const st=this.status(), d=st.last?fmtDate(st.last.slice(0,10)):'';
+    const line=!st.last?'Du har inte sparat någon säkerhetskopia än.':st.changed?`Senaste kopian sparades ${d}. ${st.changed} ${st.changed===1?'sak har':'saker har'} ändrats sedan dess.`:`Senaste kopian sparades ${d}. Inget har ändrats sedan dess.`;
+    return `<div class="box backup ${this.overdue()?'due':''}"><h3>Säkerhetskopia</h3>
+      <p>${Share.cur()?'Det här trädet är delat, så de publicerade versionerna finns krypterade på servern. En egen kopia skadar ändå aldrig.':'Arkivet finns bara i den här webbläsaren. Rensas webbläsaren, eller byter du dator, försvinner det – om du inte har en kopia.'} Kopian är en fil med allt, bilder och röstminnen inräknade, som du kan läsa in igen här.</p>
+      <p class="bk-line"><b>${line}</b></p>
+      <button class="btn primary" id="bkSave">💾 Spara säkerhetskopia</button></div>`; },
+  remind(){ if(!this.overdue()) return;
+    try{ const sn=+localStorage.getItem('klansagan-backup-nudged')||0; if(Date.now()-sn<3*864e5) return; localStorage.setItem('klansagan-backup-nudged',String(Date.now())); }catch(e){}
+    const st=this.status();
+    toast(st.last?`Det var ${Math.round(st.days)} dagar sedan du sparade en säkerhetskopia.`:`Du har ${st.n} personer i arkivet men ingen säkerhetskopia.`,12000,{label:'Spara kopia',fn:()=>this.save()}); },
+};
+
 /* ============ Unpublished changes ============
    In a shared tree your edits stay on this device until you publish them. Leaving with
    unpublished edits asks first; coming back to them, and sitting on them for a while, gets a nudge. */
