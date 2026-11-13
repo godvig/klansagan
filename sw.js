@@ -2,7 +2,7 @@
    - Pages: network first, so a new version shows up as soon as you are online.
    - Own files and libraries from CDNs: served from cache, refreshed in the background.
    - Supabase (shared trees) is never cached: that data is always fetched live. */
-const CACHE = 'klansagan-v7'; // old prefix kept on purpose; bump the number to refresh the app shell
+const CACHE = 'klansagan-v8'; // old prefix kept on purpose; bump the number to refresh the app shell
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'fonts/ibm-plex-sans-latin-400-normal.woff2', 'fonts/ibm-plex-sans-latin-500-normal.woff2', 'fonts/ibm-plex-sans-latin-600-normal.woff2', 'fonts/fraunces-latin-opsz-normal.woff2'];
 

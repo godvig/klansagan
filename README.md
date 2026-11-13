@@ -52,7 +52,7 @@ To import your own family, start from [`examples/slaktsagan-import-example.xlsx`
 - **Views:** hide a branch ("dad's side only"), single people or descendants. Each view has its own link, and nothing is deleted. One click undoes a change.
 - **Several trees in one archive:** families that aren't connected yet show up as separate trees. Link them with a plain-language sentence ("Anna *is the mother of* Ellen"), or accept a suggested match when the same person appears in both.
 - **Duplicate finder:** catches spelling variants (Gustaf/Gustav, Wasa/Vasa, Larsdtr/Larsdotter) and merges the records safely.
-- **Import:** Excel, CSV or cells pasted from Excel. Columns are mapped automatically, with Swedish and English headers.
+- **Import:** GEDCOM 5.5 / 5.5.1 / 7 from any genealogy program (Disgen, MyHeritage, Ancestry, Geni, Holger, Legacy…), including the old ANSEL and IBM PC character sets Swedish programs used, the `*` call-name marker, dates like `ABT`/`BET … AND …`, coordinates, notes, sources with page references and marriages. A preview shows what was found before anything is saved; places and sources the archive already has are reused, and the whole import is one undoable step. Excel, CSV or cells pasted from Excel work too, with columns mapped automatically from Swedish or English headers.
 - **Export:** GEDCOM 5.5.1 (MyHeritage, Ancestry, Gramps, Disgen…), CSV and a JSON backup. The tree, fan chart and person cards print as PDF (A3/A4) or PNG.
 - **Collaboration:** when hosted as a Claude artifact, invited relatives edit the same tree live, and every change records who made it.
 - **Works on phones:** a bottom tab bar, a compact tree toolbar, person details as a sheet, touch zoom and pan.
@@ -89,7 +89,7 @@ To import your own family, start from [`examples/slaktsagan-import-example.xlsx`
 
 ```
 index.html          markup shell, loads D3 + topojson from CDN
-src/core.js         pure logic: dates, GEDCOM dates, kinship terms, views, duplicate scoring
+src/core.js         pure logic: dates, GEDCOM parsing and dates, kinship terms, views, duplicate scoring, undo history
 src/app.js          UI: views, panels, import/export, storage adapters
 src/styles.css      design tokens (light + dark), layout
 fonts/              Fraunces + IBM Plex Sans (woff2, SIL OFL), served from the site itself
@@ -116,7 +116,7 @@ npm ci
 npm run check     # eslint + tsc (JSDoc types on core.js) + vitest
 ```
 
-CI runs the same checks on every push and pull request. The test suite covers Swedish kinship terms (including half and removed relationships), date parsing and GEDCOM conversion, CSV/Excel paste parsing, duplicate scoring and branch hiding, all on synthetic families.
+CI runs the same checks on every push and pull request. The test suite covers Swedish kinship terms (including half and removed relationships), date parsing, GEDCOM import (character sets, dates, families, sources) and export dates, the undo history, CSV/Excel paste parsing, duplicate scoring and branch hiding, all on synthetic families.
 
 ## Sharing (end-to-end encrypted)
 
@@ -130,16 +130,15 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
+Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. GEDCOM import
-2. Swedish source templates (Riksarkivet, ArkivDigital)
-3. Landing page for new visitors
-4. Comment threads per person
-5. Browser tests in CI; split `app.js` into modules
-6. Locked tree, step 2: add a branch by clicking someone outside it
-7. "On this day" on the start page; family book as PDF
+1. Swedish source templates (Riksarkivet, ArkivDigital)
+2. Landing page for new visitors
+3. Comment threads per person
+4. Browser tests in CI; split `app.js` into modules
+5. Locked tree, step 2: add a branch by clicking someone outside it
+6. "On this day" on the start page; family book as PDF
 
 **Later:** life path on the map, photo gallery on the person card, read-only share links with protection for living people, "what's new since your last visit", English UI.
 
