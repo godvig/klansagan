@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.10';
+const APP_VERSION='2026-11-13.11';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -627,7 +627,7 @@ function renderPersons(){
       </div>
       <span class="ctl" style="margin-left:auto">Sortera <select id="pls"><option value="namn">Efternamn</option><option value="fodd">Födelseår</option><option value="senast">Senast ändrad</option></select></span>
     </div>
-    <table class="list"><thead><tr><th>Namn</th><th>Född</th><th>Död</th><th>Yrke</th><th>Underlag</th></tr></thead><tbody>
+    <table class="list m-persons"><thead><tr><th>Namn</th><th>Född</th><th>Död</th><th>Yrke</th><th>Underlag</th></tr></thead><tbody>
     ${list.map(p=>`<tr class="click ${sel===p.id?'sel':''}" data-id="${p.id}"><td><span class="dot" style="background:${sexColor(p)}"></span><b>${esc(fullName(p))}</b></td>
       <td>${esc(p.birthDate||'')}<div class="small muted">${esc(placeName(p.birthPlace))}</div></td>
       <td>${esc(p.deathDate||'')}<div class="small muted">${esc(placeName(p.deathPlace))}</div></td>
@@ -1004,7 +1004,7 @@ function placePanel(pl){
     <div class="acts"><button class="btn sm" data-pact="map">${pl.lat!=null?'Visa på kartan':'Placera på kartan'}</button>${pl.lat!=null&&ed?'<button class="btn sm" data-pact="move">Flytta markören</button>':''}${ed?'<button class="btn sm" data-pact="edit">Redigera</button><button class="btn sm" data-pact="merge">Slå ihop…</button>':''}</div></div>
     <div class="sec"><h4>Detaljer</h4><dl class="facts"><dt>Församling</dt><dd>${esc(pl.parish||'–')}</dd><dt>Län</dt><dd>${esc(pl.county||'–')}</dd><dt>Land</dt><dd>${esc(pl.country||'–')}</dd><dt>Koordinat</dt><dd>${pl.lat!=null?pl.lat.toFixed(4)+', '+pl.lon.toFixed(4):'<span class="tag warn">saknas</span>'}</dd></dl>
     ${pl.notes?`<p style="white-space:pre-wrap">${esc(pl.notes)}</p>`:''}</div>
-    <div class="sec"><h4>Händelser här (${refs.length})</h4>${refs.map(r=>`<div class="ev"><span class="d">${esc(r.e.date||'–')}</span><span class="w"><b>${esc(r.e.type)}</b> · <a href="#" data-goto="${r.p.id}">${esc(fullName(r.p))}</a></span><span></span></div>`).join('')||'<div class="muted small">Inga.</div>'}</div>
+    <div class="sec"><h4>Händelser här (${refs.length})</h4>${refs.map(r=>`<div class="ev"><span class="d">${esc(r.e.date||'–')}</span><span class="w"><b>${esc(r.e.type)}</b> · <a href="#" data-goto="${r.p.id}">${esc(fullName(r.p))}</a>${r.e.desc?`<div class="small">${esc(r.e.desc)}</div>`:''}${r.e.note&&r.e.note!==r.e.desc?`<div class="small muted">${esc(r.e.note)}</div>`:''}</span><span></span></div>`).join('')||'<div class="muted small">Inga.</div>'}</div>
     ${mediaSection(pl)}`;
 }
 function bindPlacePanel(pl){
@@ -1059,7 +1059,7 @@ function renderSources(){
   const unsourced=Object.values(S.persons).filter(p=>!(p.citations||[]).length).length;
   v.innerHTML=`<div class="view-pad"><div class="toolbar"><h2>Källor</h2>${E.canEdit?'<button class="btn primary" id="newSrc">+ Ny källa</button>':''}</div>
     <p class="muted" style="max-width:720px;line-height:1.55;margin-top:-6px">Registrera varje volym eller dokument en gång – t.ex. en husförhörslängd med arkivreferens och bild-ID – och koppla den sedan till de personer den nämner. ${unsourced?`<b style="color:var(--warn)">${unsourced} personer saknar källa.</b> <a href="#personer" onclick="ui.plFilter='kalla'">Visa dem</a>`:''}</p>
-    ${all.length?`<table class="list"><thead><tr><th>Källa</th><th>Typ</th><th>Arkiv / referens</th><th>Hänvisningar</th></tr></thead><tbody>
+    ${all.length?`<table class="list m-sources"><thead><tr><th>Källa</th><th>Typ</th><th>Arkiv / referens</th><th>Hänvisningar</th></tr></thead><tbody>
     ${all.map(s=>`<tr class="click ${sel===s.id?'sel':''}" data-id="${s.id}"><td><b>${esc(s.title)}</b>${s.date?`<div class="small muted">${esc(s.date)}</div>`:''}</td><td>${esc(s.type||'')}</td><td>${esc([s.archive,s.ref].filter(Boolean).join(' · '))}</td><td>${citationsOf(s.id).length}</td></tr>`).join('')}</tbody></table>`
     :`<div class="box"><h3>Inga källor ännu</h3><p>Lägg till din första källa här, eller direkt från en person under ”Källor”.</p></div>`}</div>`;
   v.querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>select('source',tr.dataset.id));
@@ -1129,7 +1129,7 @@ function renderTimeline(){
   // event list
   const list=[]; for(const p of ppl) for(const e of lifeEvents(p)) if(e.date) list.push({p,e,k:dateKey(e.date)});
   list.sort((a,b)=>(a.k??9e9)-(b.k??9e9));
-  $('#tlList').innerHTML=list.length?`<table class="list"><thead><tr><th style="width:120px">Datum</th><th>Händelse</th><th>Person</th><th>Plats</th></tr></thead><tbody>${list.map(r=>`<tr class="click" data-id="${r.p.id}"><td>${esc(r.e.date)}</td><td>${esc(r.e.type)}${r.e.desc?`<div class="small muted">${esc(r.e.desc)}</div>`:''}</td><td><span class="dot" style="background:${sexColor(r.p)}"></span>${esc(fullName(r.p))}</td><td>${esc(placeName(r.e.placeId))}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">Inga daterade händelser.</p>';
+  $('#tlList').innerHTML=list.length?`<table class="list m-events"><thead><tr><th style="width:120px">Datum</th><th>Händelse</th><th>Person</th><th>Plats</th></tr></thead><tbody>${list.map(r=>`<tr class="click" data-id="${r.p.id}"><td>${esc(r.e.date)}</td><td>${esc(r.e.type)}${r.e.desc?`<div class="small muted">${esc(r.e.desc)}</div>`:''}</td><td><span class="dot" style="background:${sexColor(r.p)}"></span>${esc(fullName(r.p))}</td><td>${esc(placeName(r.e.placeId))}</td></tr>`).join('')}</tbody></table>`:'<p class="muted">Inga daterade händelser.</p>';
   $('#tlList').querySelectorAll('tr[data-id]').forEach(tr=>tr.onclick=()=>showPerson(tr.dataset.id));
   if(!rows.length) return;
   const box=$('#tlChart'); const W=Math.max(box.clientWidth,760); const H=TOP+rows.length*RH+16;
@@ -1689,14 +1689,14 @@ let fanZoom=null;
 function renderFan(fresh){
   const v=$('#view');
   if(!Object.keys(S.persons).length){v.innerHTML=emptyState();return;}
-  let F=P(ui.focus); if(!ui.fanGen) ui.fanGen=5; let fanNote='';
+  let F=P(ui.focus); if(!ui.fanGen) ui.fanGen=matchMedia('(max-width:700px)').matches?3:4; let fanNote='';
   if(F&&!F.fatherId&&!F.motherId){let best=null,bn=0; for(const p of Object.values(S.persons)){const n=ancestorsOf(p.id).size; if(n>bn){bn=n;best=p;}} if(best){fanNote=`${esc(shortName(F))} har inga registrerade föräldrar – visar ${esc(fullName(best))}, som har flest kända anor.`; F=best;}}
   if(!$('#fanSvg')||fresh){
     v.innerHTML=`<div id="fanWrap"><svg id="fanSvg"><g class="vp"></g></svg>
       <div class="tree-tools"><span class="fname" id="fanName"></span>
         <span class="ctl">Generationer <select id="fanGen">${[3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.fanGen?'selected':''}>${n}</option>`).join('')}</select></span>
-        <button class="btn sm" id="fanFit">Centrera</button><button class="btn sm" id="fanPrint">⎙ Skriv ut / spara</button></div>
-      <div class="fan-legend" id="fanLegend"></div><div id="fanNote" class="banner" style="top:auto;bottom:70px;display:none;font-size:13px;max-width:80%"></div></div>`;
+        <button class="btn sm" id="fanFit">Centrera</button><button class="btn sm" id="fanPrint">⎙ Skriv ut / spara</button><div id="fanNote" class="fan-note" style="display:none"></div></div>
+      <div class="fan-legend" id="fanLegend"></div></div>`;
     $('#fanGen').onchange=e=>{ui.fanGen=+e.target.value; ui.fanKey=null; renderFan();};
     $('#fanFit').onclick=()=>{ui.fanKey=null; renderFan();};
     $('#fanPrint').onclick=()=>printChart($('#fanSvg'),'Solfjäder för '+$('#fanName').textContent,'klansagan-fan');
@@ -1755,7 +1755,9 @@ function renderFan(fresh){
   // fit
   const key=F.id+'|'+N;
   if(ui.fanKey!==key){ui.fanKey=key; const Wd=$('#fanSvg').clientWidth,Hd=$('#fanSvg').clientHeight, R=rOut(N);
-    const k=Math.min(1.4,(Wd-40)/(2*R+20),(Hd-90)/(R+R0+20)); svg.call(fanZoom.transform,d3.zoomIdentity.translate(Wd/2,(Hd+R-R0)/2+30).scale(k));}
+    const tb=document.querySelector('#fanWrap .tree-tools'), top=tb?tb.getBoundingClientRect().bottom-$('#fanSvg').getBoundingClientRect().top+12:60, avail=Hd-top-12;
+    const k=Math.min(1.6,(Wd-24)/(2*R+20),avail/(R+R0+24)); const cy=top+(avail-(R+R0)*k)/2+R*k;
+    svg.call(fanZoom.transform,d3.zoomIdentity.translate(Wd/2,cy).scale(k));}
 }
 
 /* ============ PERSON CARD ============ */

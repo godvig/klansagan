@@ -549,7 +549,12 @@ button.status:hover{background:rgba(127,110,80,.12)}
   .fan-legend{display:none}
   #fanNote{max-width:calc(100% - 24px)!important}
   /* lists and forms */
-  table.list th:nth-child(n+3),table.list td:nth-child(n+3){display:none}
+  table.m-persons th:nth-child(n+3),table.m-persons td:nth-child(n+3){display:none}
+  table.m-events th:nth-child(4),table.m-events td:nth-child(4){display:none}
+  table.m-events th:first-child{width:86px!important}
+  table.m-sources th:nth-child(3),table.m-sources td:nth-child(3){display:none}
+  .viewsel .pop{position:fixed;left:8px;right:8px;top:calc(56px + env(safe-area-inset-top));width:auto;max-height:70vh;overflow:auto}
+  .status:not(.dirty):not(.new){display:none}
   .ov{padding:8px;align-items:flex-end}
   .modal{padding:18px 16px;border-radius:16px 16px 12px 12px;max-height:calc(100vh - 16px);overflow:auto}
   .modal .foot{position:sticky;bottom:-18px;background:var(--card);padding:10px 0 4px;margin-bottom:-4px}
@@ -565,3 +570,6 @@ button.status:hover{background:rgba(127,110,80,.12)}
 .ios-share{display:inline-block;border:1px solid var(--line2);border-radius:5px;padding:0 5px;font-size:12px}
 /* installed app: leave room for the phone's status bar */
 @media (display-mode: standalone){ header{padding-top:env(safe-area-inset-top);height:calc(52px + env(safe-area-inset-top))} }
+
+.fan-note{flex-basis:100%;font-size:12.5px;color:var(--ink2);line-height:1.4;padding-top:2px}
+.vp-i.on b{color:var(--accent)}
