@@ -614,3 +614,15 @@ button.status:hover{background:rgba(127,110,80,.12)}
 .vimg input:checked+img,.vimg input:checked+span{border-color:var(--accent)}
 .f .lab{display:block;font-size:13px;color:var(--ink3);margin-bottom:2px}
 .pc .vms{margin-bottom:18px}
+
+/* Kinship path lit up in the tree */
+#treeSvg.relhl g.card:not(.hl),#treeSvg.relhl g.ghost{opacity:.28;transition:opacity .3s}
+#treeSvg.relhl path.link:not(.hl){opacity:.18}
+#treeSvg.relhl text.gen-label{opacity:.35}
+#treeSvg.relhl path.link.hl{stroke:var(--accent);stroke-width:3.4;stroke-dasharray:none;opacity:1}
+#treeSvg.relhl path.link.dot.hl{fill:var(--accent);stroke:var(--paper)}
+#treeSvg.relhl g.card.hl rect.bg{stroke:var(--accent);stroke-width:2.5}
+#treeSvg.relhl g.card.hl-end rect.bg{stroke-width:4;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--accent) 55%,transparent))}
+#relBanner{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px;max-width:calc(100% - 28px);background:var(--glass);border:1px solid var(--accent);border-radius:99px;padding:6px 8px 6px 16px;box-shadow:var(--shadow);font-size:14px}
+#relBanner span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:700px){#relBanner{left:12px;right:12px;transform:none;max-width:none;bottom:calc(76px + env(safe-area-inset-bottom));border-radius:14px;font-size:13px}#relBanner span{white-space:normal;flex:1}}

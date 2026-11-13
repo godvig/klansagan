@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.17';
+const APP_VERSION='2026-11-13.18';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -584,6 +584,24 @@ function renderTree(fresh){
   for(let d=1; d<=ui.ancGen; d++){ if(aRoot.descendants().some(n=>n.depth===d&&n.data.p)){ const xs=aRoot.descendants().filter(n=>n.depth===d).map(n=>n.x); g.append('text').attr('class','gen-label').attr('x',Math.min(...xs)-CW/2).attr('y',-d*(CH+56)-CH/2-8).text(['','Föräldrar','Farföräldrar & morföräldrar','Farfars- och morfarsföräldrar','Generation 4','Generation 5','Generation 6'][d]||('Generation '+d)); } }
   const linkSel=g.selectAll('path.link').data(links).join('path').attr('class',l=>'link'+(l.type==='cp'?' sp'+(l.dash?' far':''):'')+(l.type==='dot'?' dot':'')+(l.fam?' fam'+l.fam:'')).attr('d',lp);
   const sel=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
+  const HL=ui.relHL&&nodes.some(n=>n.data.p&&n.data.p.id===ui.relHL.a)&&nodes.some(n=>n.data.p&&n.data.p.id===ui.relHL.b)?ui.relHL:null;
+  svg.classed('relhl',!!HL);
+  if(HL){ // links on the chain: a child on the path hangs from its parents on the path; couple lines between two lit cards
+    const lit=nodes.filter(n=>n.data.p&&HL.ids.has(n.data.p.id)), litAt=(x,y)=>lit.some(n=>Math.abs(n.y-y)<2&&(Math.abs(n.x+CW/2-x)<2||Math.abs(n.x-CW/2-x)<2));
+    const srcs=[];
+    linkSel.classed('hl',l=>{
+      if(l.type==='desc'||l.type==='anc'){const c=l.type==='desc'?l.t:l.s, q=l.type==='desc'?l.s:l.t, cid=c.data&&c.data.p&&c.data.p.id;
+        if(!cid||!HL.ids.has(cid)||HL.commons.has(cid)&&l.type==='desc') return false;
+        if(l.type==='anc'){const pid=q.data&&q.data.p&&q.data.p.id; return !!pid&&HL.ids.has(pid);}
+        srcs.push(q); return true;}
+      if(l.type==='cp') return litAt(l.x1,l.y)&&litAt(l.x2,l.y);
+      return false;});
+    linkSel.filter(l=>l.type==='dot').classed('hl',l=>srcs.some(q=>Math.abs(q.x-l.x)<2&&Math.abs(q.y-l.y)<2));
+  }
+  {let bn=$('#relBanner'); if(HL){ if(!bn){bn=document.createElement('div'); bn.id='relBanner'; $('#treeWrap').appendChild(bn);}
+      bn.innerHTML=`<span>🔗 ${esc(HL.label)}</span><button class="btn sm" id="relBack">Tillbaka</button><button class="iconbtn" id="relOff" title="Sluta markera" aria-label="Sluta markera">×</button>`;
+      $('#relOff').onclick=()=>{ui.relHL=null; renderTree();}; $('#relBack').onclick=()=>{ui.relHL=null; location.hash='slaktskap';};}
+    else if(bn) bn.remove(); if(!HL) ui.relHL=null;}
   const cards=g.selectAll('g.node').data(nodes).join('g').attr('data-k',nodeKey).attr('transform',n=>`translate(${n.x-CW/2},${n.y-CH/2})`);
   cards.each(function(n){
     const el=d3.select(this), d=n.data;
@@ -595,7 +613,7 @@ function renderTree(fresh){
       return;
     }
     const p=d.p;
-    el.attr('class','card'+(n.focus?' focus':'')+(sel===p.id?' sel':''));
+    el.attr('class','card'+(n.focus?' focus':'')+(sel===p.id?' sel':'')+(HL&&HL.ids.has(p.id)?' hl'+(p.id===HL.a||p.id===HL.b?' hl-end':''):''));
     el.append('rect').attr('class','bg').attr('width',CW).attr('height',CH).attr('rx',9);
     el.append('rect').attr('width',5).attr('height',CH-16).attr('x',0).attr('y',8).attr('rx',2).style('fill',sexColor(p));
     const av=avatarUrl(p), tx=PX+PW+(SMALL?8:12), maxc=MAXC, LH=SMALL?13:16, Y0=SMALL?20:28;
@@ -625,7 +643,7 @@ function renderTree(fresh){
     cards.each(function(n){const o=was.get(nodeKey(n)), el=d3.select(this);
       if(o){const sx=o.x+dx, sy=o.y+dy; if(Math.abs(sx-n.x)+Math.abs(sy-n.y)<1) return; changed=true;
         el.attr('transform',`translate(${sx-CW/2},${sy-CH/2})`).transition('glide').duration(DUR).ease(ease).attr('transform',`translate(${n.x-CW/2},${n.y-CH/2})`);}
-      else {changed=true; el.style('opacity',0).transition('glide').delay(DUR*.55).duration(DUR*.6).style('opacity',1);}});
+      else {changed=true; el.style('opacity',0).transition('glide').delay(DUR*.55).duration(DUR*.6).style('opacity',1).on('end interrupt',function(){this.style.opacity='';});}});
     if(changed){ linkSel.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null);
     labels.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null);
     // cards that leave the view fade out where they were
@@ -646,16 +664,23 @@ function renderTree(fresh){
   if(ui.treeKey!==key&&ui.treeAnchor){
     ui.treeKey=key; const a=ui.treeAnchor; ui.treeAnchor=null;
     const at=d3.zoomIdentity.translate(a.x-(fNew?fNew.x*a.k:0),a.y-(fNew?fNew.y*a.k:0)).scale(a.k);
-    if(anchored) svg.interrupt().call(treeZoom.transform,at); else svg.transition().duration(350).call(treeZoom.transform,at);
+    if(anchored){ svg.interrupt().call(treeZoom.transform,at);
+      // after the glide: if the person ended up near an edge, ease them towards the middle
+      const el0=svg.node(), W=el0.clientWidth, H=el0.clientHeight, fx=at.applyX(fNew.x), fy=at.applyY(fNew.y);
+      if(fx<W*.28||fx>W*.72||fy<H*.25||fy>H*.75){const tx=Math.max(W*.3,Math.min(W*.7,fx)), ty=Math.max(H*.3,Math.min(H*.7,fy));
+        svg.transition().delay(DUR*.85).duration(550).ease(d3.easeCubicInOut).call(treeZoom.transform,d3.zoomIdentity.translate(at.x+(tx-fx),at.y+(ty-fy)).scale(at.k));}}
+    else svg.transition().duration(350).call(treeZoom.transform,at);
   }
   if(ui.treeKey!==key){
     ui.treeKey=key;
     const W=$('#treeSvg').clientWidth,H=$('#treeSvg').clientHeight;
-    const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y);
+    const fitN=HL?nodes.filter(n=>n.data.p&&HL.ids.has(n.data.p.id)):nodes;
+    const xs=fitN.map(n=>n.x),ys=fitN.map(n=>n.y);
     const x0=Math.min(...xs)-CW/2-30,x1=Math.max(...xs)+CW/2+30,y0=Math.min(...ys)-CH/2-40,y1=Math.max(...ys)+CH/2+30;
     let k=Math.min(1.05,Math.min(W/(x1-x0),(H-60)/(y1-y0)));
     let cx=(x0+x1)/2, cy=(y0+y1)/2;
-    if(k<(ui.simple?.85:.6)){k=ui.simple?.85:.6; cx=Math.max(x0+W/(2*k),Math.min(x1-W/(2*k),CW)); cy=Math.max(y0+(H-60)/(2*k),Math.min(y1-(H-60)/(2*k),0));}
+    if(HL) k=Math.max(k,W<700?.16:.3);
+    else if(k<(ui.simple?.85:.6)){k=ui.simple?.85:.6; cx=Math.max(x0+W/(2*k),Math.min(x1-W/(2*k),CW)); cy=Math.max(y0+(H-60)/(2*k),Math.min(y1-(H-60)/(2*k),0));}
     const t=d3.zoomIdentity.translate(W/2-k*cx,(H+50)/2-k*cy).scale(k);
     svg.transition().duration(fresh?0:450).call(treeZoom.transform,t);
   }
@@ -2081,6 +2106,18 @@ function relation(aId,bId){
     return {text:t,r:r2,kind:'inlaw',via:q.id,viaSide:'a'};}}
   return {text:null};
 }
+/** Open the tree around the shared ancestor and light up the chain between a and b. */
+function showRelInTree(aId,bId,res){
+  const ids=new Set([aId,bId]); let top=aId, need=0, label=res.text;
+  if(res.r){ const r=res.r; r.pa.forEach(x=>ids.add(x)); r.pb.forEach(x=>ids.add(x)); (r.commons||[]).forEach(x=>ids.add(x));
+    top=(r.commons&&r.commons[0])||r.pa[r.pa.length-1]; need=Math.max(r.a,r.b);
+    if(res.via){ ids.add(res.via); if(res.viaSide==='b'&&r.b===0) need=Math.max(need,0); } }
+  else if(res.kind==='partner'){ top=aId; }
+  const commons=res.r&&res.r.commons?res.r.commons:[top];
+  ui.relHL={ids,a:aId,b:bId,commons:new Set(commons),label:`${fullName(P(bId))} är ${genitive(shortName(P(aId)))} ${label}`};
+  ui.treeLock=false; if(ui.descGen<need) ui.descGen=need; if(ui.showPartners===false&&(res.via||res.kind==='partner'||commons.length>1)) ui.showPartners=true;
+  setFocus(top); ui.treeKey=null; ui.sel=null; location.hash='trad';
+}
 function renderRel(){
   const v=$('#view'); const all=Object.values(S.persons);
   if(all.length<2){v.innerHTML=emptyState();return;}
@@ -2104,11 +2141,12 @@ function renderRel(){
     <div class="rel-answer">${res.text?`<div class="muted small" style="margin-bottom:6px">${res.kind==='blood'&&res.r?`${res.r.a+res.r.b} generationssteg via ${listJoin(res.r.commons.map(id=>esc(fullName(P(id)))))}`:res.kind==='inlaw'?'Släkt genom giftermål':res.kind==='partner'?'Partner':''}</div>
       <div class="big"><b>${bn}</b> är ${genitive(an)} <b>${esc(res.text)}</b>.</div>
       ${res.kind==='blood'&&res.r&&res.r.a!==res.r.b&&res.r.a>0&&res.r.b>0?`<div class="muted" style="margin-top:8px">Omvänt: ${an} är ${esc(genitive(shortName(B)))} ${esc(bloodTerm({...res.r,a:res.r.b,b:res.r.a,pa:res.r.pb,pb:res.r.pa},B.id,A.id))}.</div>`:''}
-      ${pathHTML}`
+      ${pathHTML}<div style="margin-top:16px;text-align:center"><button class="btn primary" id="relTree">🌳 Visa vägen i trädet</button></div>`
     :`<div class="big">Ingen känd släktskap</div><p class="muted" style="margin:8px 0 0">Hittade ingen gemensam ana eller koppling via giftermål mellan ${an} och ${bn} i arkivet.</p>`}</div></div>`;
   const pick=(inp,key)=>{inp.onchange=()=>{const p=personByLabel(inp.value); if(p){ui[key]=p.id; renderRel();} else toast('Välj en person i listan');};};
   pick($('#relA'),'relA'); pick($('#relB'),'relB');
   $('#relSwap').onclick=()=>{[ui.relA,ui.relB]=[ui.relB,ui.relA]; renderRel();};
+  {const rt=$('#relTree'); if(rt) rt.onclick=()=>showRelInTree(A.id,B.id,res);}
   bindChips(v,openCard);
 }
 

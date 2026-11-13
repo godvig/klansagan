@@ -10,7 +10,9 @@ Most genealogy tools are either subscription platforms that own your tree, or de
 
 The interface is in Swedish for now, and it understands Swedish sources (household examination rolls, parishes, patronymics). An English UI is next on the [roadmap](#roadmap).
 
-![Klansagan family tree view with the House of Vasa example](docs/screenshots/tree.png)
+![Klansagan demo: clicking through the House of Vasa, the tree glides to each new person, then the relationship calculator lights up how Sigrid and Władysław IV are related](docs/screenshots/demo.gif)
+
+*Click someone and the family rearranges around them; ask how two people are related and the chain lights up in the tree. Try it on the [House of Vasa example](https://klansagan.godvig.com/#exempel).*
 
 | Fan chart | Relationship calculator | Person card |
 |---|---|---|
@@ -54,7 +56,8 @@ To import your own family, start from [`examples/klansagan-import-example.xlsx`]
 - **Works on phones:** a bottom tab bar, a compact tree toolbar, person details as a sheet, touch zoom and pan.
 - **Easy to use:** a start page with three clear choices and a *simple mode* (big text, only Start, Tree and People) that a link can switch on with `?enkelt`. Mark yourself as "me" and kinship is counted from you. Light by default, dark mode on request.
 - **Call names (tilltalsnamn):** mark the name a person went by. It is underlined Swedish-style, and you can show short names everywhere (call name, or the first given name).
-- **Animated tree:** when you click someone, they stay put under your cursor while the rest of the family glides into its new places; relatives who leave the view fade out and new ones fade in. Respects *reduce motion*.
+- **Show the path in the tree:** the relationship calculator ("Hur är vi släkt?") opens the tree around the shared ancestor and lights up the chain between the two people, couples included, and dims everyone else.
+- **Animated tree:** when you click someone, they stay put under your cursor while the rest of the family glides into its new places (and the view eases them back towards the middle if they ended up near an edge); relatives who leave the view fade out and new ones fade in. Respects *reduce motion*.
 - **Voice memories:** record grandma telling a story straight from the browser (or upload an audio file) and attach it to a person, or to one of their photos. Recordings are small (Opus, about 180 KB a minute), kept on the device and, in shared trees, uploaded end-to-end encrypted like photos.
 - **Thumbnails:** photos get a small thumbnail when uploaded, so the tree and lists load only a few kilobytes per person; the full image is fetched when you open it.
 - **Photos framed on the face:** profile photos are centred on the face automatically (MediaPipe face detection, loaded on demand) and can be dragged and zoomed by hand.
@@ -120,11 +123,10 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: encrypted sharing with publish and merge, version history, photo storage, phone layout, installable offline app (PWA).
+Done recently: encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Kinship calculator highlights the path in the tree
-2. Performance: whole archive in IndexedDB, partial re-rendering, self-hosted fonts
+1. Performance: whole archive in IndexedDB, partial re-rendering, self-hosted fonts
 
 **Later**
 - Undo/redo everywhere; warning before leaving with unpublished changes
