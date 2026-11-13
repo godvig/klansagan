@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.14';
+const APP_VERSION='2026-11-13.15';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -79,7 +79,7 @@ const Store={
       this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
       Share.updateStatus(); Share.startPolling();
       renderAll();
-      migrateInline().then(ch=>{ if(ch){ Share.updateStatus(); renderAll(); } });
+      migrateInline().then(ch=>{ if(ch){ Share.updateStatus(); renderAll(); } return backfillThumbs(); });
     }
   },
   subscribe(){
@@ -182,7 +182,7 @@ function cropPct(m,A){const f=m&&m.focus; if(!f||!f.nw||!f.nh) return null;
   return {w:w/A*100,h:h*100,l:l/A*100,t:t*100};}
 /** <img> for a person's avatar in a frame of aspect A, honouring the saved framing. */
 function avImg(p,A=1){const m=avatarMedia(p); if(!m) return ''; const c=cropPct(m,A);
-  return c?`<img src="${esc(murl(m))}" alt="" style="position:absolute;max-width:none;object-fit:fill;width:${c.w}%;height:${c.h}%;left:${c.l}%;top:${c.t}%">`:`<img src="${esc(murl(m))}" alt="">`;}
+  return c?`<img src="${esc(thumbUrl(m))}" alt="" style="position:absolute;max-width:none;object-fit:fill;width:${c.w}%;height:${c.h}%;left:${c.l}%;top:${c.t}%">`:`<img src="${esc(thumbUrl(m))}" alt="">`;}
 /* ---- Image store ----
    Photos live in IndexedDB on this device (localStorage is far too small) and are
    referenced from the data as "kl:<id>". In a shared tree they are also stored on the
@@ -197,6 +197,10 @@ const IDB={_db:null,
 const PIXEL='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 const blobId=m=>m&&typeof m.url==='string'&&m.url.startsWith('kl:')?m.url.slice(3):null;
 /** URL to show for a media item. Stored photos load in the background and the page redraws. */
+/** Small version for trees, lists and avatars; falls back to the full image. */
+function thumbUrl(m){ if(!m) return ''; if(m.thumb){ const tid=blobId({url:m.thumb}); if(BLOB[tid]) return BLOB[tid]; const fid=blobId(m); if(fid&&BLOB[fid]) return BLOB[fid]; return murl({url:m.thumb}); } return murl(m); }
+/** Scale a data URL down to at most `max` px on the long side. */
+function makeThumb(dataUrl,max=240,q=.8){return loadImg(dataUrl).then(img=>{const k=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)); const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(img.naturalWidth*k)); c.height=Math.max(1,Math.round(img.naturalHeight*k)); c.getContext('2d').drawImage(img,0,0,c.width,c.height); return c.toDataURL('image/jpeg',q);});}
 function murl(m){const id=blobId(m); if(!id) return m?m.url:''; if(BLOB[id]) return BLOB[id]; needBlob(id); return PIXEL;}
 let _blobTimer=null;
 function needBlob(id){ if(BLOB_WAIT.has(id)) return; BLOB_WAIT.add(id); clearTimeout(_blobTimer); _blobTimer=setTimeout(loadBlobs,30); }
@@ -216,13 +220,26 @@ async function migrateInline(){
   if(Store.mode==='db'||typeof indexedDB==='undefined') return false; let n=0;
   for(const col of ['persons','places','sources']) for(const o of Object.values(ALL[col])){
     if(!(o.media||[]).some(m=>typeof m.url==='string'&&m.url.startsWith('data:'))) continue;
-    for(const m of o.media) if(typeof m.url==='string'&&m.url.startsWith('data:')){ try{m.url='kl:'+await storeBlob(m.url); delete m.local; n++;}catch(e){return false;} } }
+    for(const m of o.media) if(typeof m.url==='string'&&m.url.startsWith('data:')){ try{const full=m.url; m.url='kl:'+await storeBlob(full); if(isImg(m)) m.thumb='kl:'+await storeBlob(await makeThumb(full)); delete m.local; n++;}catch(e){return false;} } }
   if(n){ Store.saveNow(); }
   return n>0;
 }
+/** Give older photos a thumbnail, using full images already on this device. */
+async function backfillThumbs(){
+  if(Store.mode==='db'||Store.demo||typeof indexedDB==='undefined') return 0; let n=0;
+  for(const col of ['persons','places','sources']) for(const id of Object.keys(ALL[col])){ const o=ALL[col][id];
+    const todo=(o.media||[]).filter(m=>isImg(m)&&blobId(m)&&!m.thumb); if(!todo.length) continue;
+    const q=clone(o); let ch=false;
+    for(const m of q.media){ if(!(isImg(m)&&blobId(m)&&!m.thumb)) continue;
+      const full=BLOB[blobId(m)]||await IDB.get(blobId(m)).catch(()=>null); if(!full) continue;
+      try{ m.thumb='kl:'+await storeBlob(await makeThumb(full)); ch=true; n++; }catch(e){} }
+    if(ch) ALL[col][id]=q; }
+  if(n){ applyView(); Store.saveNow(); Share.updateStatus(); renderAll(); }
+  return n;
+}
 /** All image ids referenced by the archive. */
-function blobRefs(data){const out=new Set(); for(const col of ['persons','places','sources']) for(const o of Object.values(data[col]||{})) for(const m of o.media||[]){const id=blobId(m); if(id) out.add(id);} return out;}
-function avatarUrl(p){const imgs=(p.media||[]).filter(isImg); const m=imgs.find(m=>m.profile)||imgs[0]; return m?murl(m):null;}
+function blobRefs(data){const out=new Set(); for(const col of ['persons','places','sources']) for(const o of Object.values(data[col]||{})) for(const m of o.media||[]){const id=blobId(m); if(id) out.add(id); const t=blobId({url:m.thumb}); if(t) out.add(t);} return out;}
+function avatarUrl(p){const imgs=(p.media||[]).filter(isImg); const m=imgs.find(m=>m.profile)||imgs[0]; return m?thumbUrl(m):null;}
 const homePerson=()=>Object.values(S.persons).find(p=>p.home);
 function goHome(){const h=homePerson(); if(h) setFocus(h.id); else {const first=Object.values(S.persons).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''))[0]; if(first) setFocus(first.id);} ui.sel=null; ui.treeKey=null; ui.plQuery=''; if(location.hash!=='#trad') location.hash='trad'; else renderAll(true); window.scrollTo(0,0);}
 async function setHome(id){for(const p of Object.values(ALL.persons)) if(p.home&&p.id!==id){const q=clone(p); delete q.home; await Store.put(q,{silent:true});} const q=clone(P(id)); q.home=true; await Store.put(q); toast('★ '+fullName(q)+' är markerad som ”jag”. Startsidan och släktskap utgår nu härifrån.',4500);}
@@ -731,7 +748,7 @@ function mediaSection(o){
   const ed=E.canEdit; const can=ed;
   return `<div class="sec"><h4>Bilder &amp; dokument ${can?`<label class="btn sm" style="cursor:pointer">+ Ladda upp<input type="file" id="upl" multiple accept="${E.assets?'image/*,application/pdf':'image/*'}" hidden></label>`:''}</h4>
     <div id="uplprog"></div>
-    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(murl(m))}" alt="${esc(m.caption||'')}">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
+    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(thumbUrl(m))}" alt="${esc(m.caption||'')}" loading="lazy">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
   </div>`;
 }
 function bindPanel(){
@@ -826,7 +843,7 @@ async function uploadMedia(files,{profile}={}){
   for(const file of files){
     try{
       if(E.assets){const r=await E.assets.upload(file); added.push({assetId:r.id,url:r.url,name:file.name,contentType:r.contentType||file.type,caption:''});}
-      else{ if(!/^image\//.test(file.type)) throw new Error('bara bilder kan sparas här'); const url=await shrinkImage(file,1100,.82); const id=await storeBlob(url); added.push({url:'kl:'+id,name:file.name,contentType:'image/jpeg',caption:''}); }
+      else{ if(!/^image\//.test(file.type)) throw new Error('bara bilder kan sparas här'); const url=await shrinkImage(file,1100,.82); const id=await storeBlob(url); const tid=await storeBlob(await makeThumb(url)); added.push({url:'kl:'+id,thumb:'kl:'+tid,name:file.name,contentType:'image/jpeg',caption:''}); }
     }catch(e){toast('Kunde inte ladda upp '+file.name+(e&&e.message?': '+e.message:''));}
     i++; const bar=prog&&prog.querySelector('i'); if(bar) bar.style.width=(100*i/files.length)+'%';
   }
@@ -1447,7 +1464,7 @@ async function saveFile(name,data){
 function doExport(kind){ return withAll(()=>doExport0(kind)); }
 async function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
-  if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) for(const m of d.media||[]) if(blobId(m)) m.url=await blobUrl(m); return o;};
+  if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) for(const m of d.media||[]){ if(blobId(m)) m.url=await blobUrl(m); delete m.thumb; } return o;};
     const [persons,places,sources]=await Promise.all([inl('persons'),inl('places'),inl('sources')]);
     saveFile(`klansagan-${stamp}.json`,JSON.stringify({app:'Klansagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); }
   if(kind==='csv'){
@@ -1833,7 +1850,7 @@ function renderCard(){
       <div class="acts">${Store.canEdit?'<button class="btn" data-pc="edit">Redigera</button>':''}<button class="btn" data-pc="tree">Visa i trädet</button><button class="btn" data-pc="fan">Solfjäder</button><button class="btn" data-pc="rel">Hur är vi släkt?</button><button class="btn" data-pc="pdf">⎙ Skriv ut / PDF</button></div></div></div>
     <div class="pc-grid"><div>
       <h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>
-      ${imgs.length?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(murl(mm))}" alt="${esc(mm.caption||'')}">`:'📄'}</div>`).join('')}</div>`:''}
+      ${imgs.length?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(thumbUrl(mm))}" alt="${esc(mm.caption||'')}" loading="lazy">`:'📄'}</div>`).join('')}</div>`:''}
       <h3>Tidslinje</h3><div class="vtl">${evs.map(e=>{const y=yearOf(e.date); const age=by&&y&&e.fixed!=='birth'?y-by:null; return `<div class="it"><div class="d">${esc(fmtDate(e.date)||'okänt datum')}${age!=null&&age>=0?` · ${age} år`:''}</div><b>${esc(e.type==='Övrigt'&&e.desc?e.desc:e.type)}</b>${e.placeId?` · ${esc(placeName(e.placeId))}`:''}${e.withId&&P(e.withId)?` · med ${esc(fullName(P(e.withId)))}`:''}${e.desc&&e.type!=='Övrigt'?`<div class="muted small">${esc(e.desc)}</div>`:''}</div>`;}).join('')||'<p class="muted">Inga händelser.</p>'}</div>
       ${p.notes?`<h3>Anteckningar</h3><p style="white-space:pre-wrap;line-height:1.6">${esc(p.notes)}</p>`:''}
     </div><div>
