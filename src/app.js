@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.4';
+const APP_VERSION='2026-11-13.5';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:10,descGen:10,kinDeg:10,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -79,6 +79,7 @@ const Store={
       this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
       Share.updateStatus(); Share.startPolling();
       renderAll();
+      migrateInline().then(ch=>{ if(ch){ Share.updateStatus(); renderAll(); } });
     }
   },
   subscribe(){
@@ -181,8 +182,47 @@ function cropPct(m,A){const f=m&&m.focus; if(!f||!f.nw||!f.nh) return null;
   return {w:w/A*100,h:h*100,l:l/A*100,t:t*100};}
 /** <img> for a person's avatar in a frame of aspect A, honouring the saved framing. */
 function avImg(p,A=1){const m=avatarMedia(p); if(!m) return ''; const c=cropPct(m,A);
-  return c?`<img src="${esc(m.url)}" alt="" style="position:absolute;max-width:none;object-fit:fill;width:${c.w}%;height:${c.h}%;left:${c.l}%;top:${c.t}%">`:`<img src="${esc(m.url)}" alt="">`;}
-function avatarUrl(p){const imgs=(p.media||[]).filter(isImg); const m=imgs.find(m=>m.profile)||imgs[0]; return m?m.url:null;}
+  return c?`<img src="${esc(murl(m))}" alt="" style="position:absolute;max-width:none;object-fit:fill;width:${c.w}%;height:${c.h}%;left:${c.l}%;top:${c.t}%">`:`<img src="${esc(murl(m))}" alt="">`;}
+/* ---- Image store ----
+   Photos live in IndexedDB on this device (localStorage is far too small) and are
+   referenced from the data as "kl:<id>". In a shared tree they are also stored on the
+   server, each one encrypted with the tree's key, and fetched when first needed. */
+const BLOB={}, BLOB_WAIT=new Set();
+const IDB={_db:null,
+  open(){return this._db||(this._db=new Promise((ok,bad)=>{const r=indexedDB.open('klansagan',1); r.onupgradeneeded=()=>r.result.createObjectStore('blobs'); r.onsuccess=()=>ok(r.result); r.onerror=()=>bad(r.error);}));},
+  async tx(mode,fn){const db=await this.open(); return new Promise((ok,bad)=>{const t=db.transaction('blobs',mode); const st=t.objectStore('blobs'); const out=fn(st); t.oncomplete=()=>ok(out?out.result:undefined); t.onerror=()=>bad(t.error);});},
+  get(id){return this.tx('readonly',st=>st.get(id));},
+  put(id,v){return this.tx('readwrite',st=>st.put(v,id));},
+};
+const PIXEL='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+const blobId=m=>m&&typeof m.url==='string'&&m.url.startsWith('kl:')?m.url.slice(3):null;
+/** URL to show for a media item. Stored photos load in the background and the page redraws. */
+function murl(m){const id=blobId(m); if(!id) return m?m.url:''; if(BLOB[id]) return BLOB[id]; needBlob(id); return PIXEL;}
+let _blobTimer=null;
+function needBlob(id){ if(BLOB_WAIT.has(id)) return; BLOB_WAIT.add(id); clearTimeout(_blobTimer); _blobTimer=setTimeout(loadBlobs,30); }
+async function loadBlobs(){
+  const ids=[...BLOB_WAIT]; let got=0; const missing=[];
+  for(const id of ids){ try{const v=await IDB.get(id); if(v){BLOB[id]=v; got++; BLOB_WAIT.delete(id);} else missing.push(id);}catch(e){missing.push(id);} }
+  if(missing.length&&Share.cur()){ try{ got+=await Share.fetchBlobs(missing); }catch(e){console.warn('Kunde inte hämta bilder',e);} }
+  missing.forEach(id=>{ if(!BLOB[id]) setTimeout(()=>BLOB_WAIT.delete(id),30000); else BLOB_WAIT.delete(id); });
+  if(got){ renderAll(); if(ui.sel) select(ui.sel.type,ui.sel.id); }
+}
+/** Make sure a media item's image is loaded, and return a usable URL. */
+async function blobUrl(m){const id=blobId(m); if(!id) return m.url; if(BLOB[id]) return BLOB[id];
+  let v=await IDB.get(id).catch(()=>null); if(!v&&Share.cur()){await Share.fetchBlobs([id]); v=BLOB[id];} if(v) BLOB[id]=v; return v||PIXEL;}
+async function storeBlob(dataUrl){const id=KinCore.b64u(crypto.getRandomValues(new Uint8Array(16))); await IDB.put(id,dataUrl); BLOB[id]=dataUrl; return id;}
+/** Move photos embedded in the data (older versions, imports) into the image store. */
+async function migrateInline(){
+  if(Store.mode==='db'||typeof indexedDB==='undefined') return false; let n=0;
+  for(const col of ['persons','places','sources']) for(const o of Object.values(ALL[col])){
+    if(!(o.media||[]).some(m=>typeof m.url==='string'&&m.url.startsWith('data:'))) continue;
+    for(const m of o.media) if(typeof m.url==='string'&&m.url.startsWith('data:')){ try{m.url='kl:'+await storeBlob(m.url); delete m.local; n++;}catch(e){return false;} } }
+  if(n){ Store.saveNow(); }
+  return n>0;
+}
+/** All image ids referenced by the archive. */
+function blobRefs(data){const out=new Set(); for(const col of ['persons','places','sources']) for(const o of Object.values(data[col]||{})) for(const m of o.media||[]){const id=blobId(m); if(id) out.add(id);} return out;}
+function avatarUrl(p){const imgs=(p.media||[]).filter(isImg); const m=imgs.find(m=>m.profile)||imgs[0]; return m?murl(m):null;}
 const homePerson=()=>Object.values(S.persons).find(p=>p.home);
 function goHome(){const h=homePerson(); if(h) setFocus(h.id); else {const first=Object.values(S.persons).sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''))[0]; if(first) setFocus(first.id);} ui.sel=null; ui.treeKey=null; ui.plQuery=''; if(location.hash!=='#trad') location.hash='trad'; else renderAll(true); window.scrollTo(0,0);}
 async function setHome(id){for(const p of Object.values(ALL.persons)) if(p.home&&p.id!==id){const q=clone(p); delete q.home; await Store.put(q,{silent:true});} const q=clone(P(id)); q.home=true; await Store.put(q); toast('★ '+fullName(q)+' är markerad som ”jag”. Startsidan och släktskap utgår nu härifrån.',4500);}
@@ -615,7 +655,7 @@ function mediaSection(o){
   const ed=E.canEdit; const can=ed;
   return `<div class="sec"><h4>Bilder &amp; dokument ${can?`<label class="btn sm" style="cursor:pointer">+ Ladda upp<input type="file" id="upl" multiple accept="${E.assets?'image/*,application/pdf':'image/*'}" hidden></label>`:''}</h4>
     <div id="uplprog"></div>
-    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(m.url)}" alt="${esc(m.caption||'')}">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
+    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(murl(m))}" alt="${esc(m.caption||'')}">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
   </div>`;
 }
 function bindPanel(){
@@ -710,7 +750,7 @@ async function uploadMedia(files,{profile}={}){
   for(const file of files){
     try{
       if(E.assets){const r=await E.assets.upload(file); added.push({assetId:r.id,url:r.url,name:file.name,contentType:r.contentType||file.type,caption:''});}
-      else{ if(!/^image\//.test(file.type)) throw new Error('bara bilder kan sparas här'); const url=await shrinkImage(file,Store.mode==='db'?600:900,Store.mode==='db'?.72:.8); added.push({url,name:file.name,contentType:'image/jpeg',caption:'',local:true}); }
+      else{ if(!/^image\//.test(file.type)) throw new Error('bara bilder kan sparas här'); const url=await shrinkImage(file,1100,.82); const id=await storeBlob(url); added.push({url:'kl:'+id,name:file.name,contentType:'image/jpeg',caption:''}); }
     }catch(e){toast('Kunde inte ladda upp '+file.name+(e&&e.message?': '+e.message:''));}
     i++; const bar=prog&&prog.querySelector('i'); if(bar) bar.style.width=(100*i/files.length)+'%';
   }
@@ -741,7 +781,7 @@ async function findFrame(url){const img=await loadImg(url); const nw=img.natural
   return {frame:f?frameForFace(f,nw,nh):null,nw,nh};}
 async function autoFrame(pid){
   const p=P(pid), m=p&&avatarMedia(p); if(!m) return;
-  try{const {frame,nw,nh}=await findFrame(m.url); const q=clone(P(pid)), mm=avatarMedia(q); if(!mm) return;
+  try{const {frame,nw,nh}=await findFrame(await blobUrl(m)); const q=clone(P(pid)), mm=avatarMedia(q); if(!mm) return;
     mm.focus=frame||{x:.5,y:.35,z:1,nw,nh}; await Store.put(q);
     toast(frame?'Bilden är centrerad på ansiktet.':'Hittade inget ansikte. Du kan flytta bilden själv.',5000,{label:'Justera',fn:()=>photoModal(pid)});
   }catch(e){toast('Bilden är sparad. Vill du flytta den?',5000,{label:'Justera',fn:()=>photoModal(pid)});}
@@ -751,14 +791,14 @@ function photoModal(pid){
   const W=240,H=320; let f=Object.assign({x:.5,y:.35,z:1},m.focus||{});
   modal(`<h3>Justera bilden</h3>
     <p class="muted" style="margin-top:-4px">Dra i bilden så att ansiktet hamnar i rutan. Zooma med reglaget eller mushjulet.</p>
-    <div class="cropwrap"><div class="cropbox" id="cropBox" style="width:${W}px;height:${H}px"><img id="cropImg" src="${esc(m.url)}" alt="" draggable="false"></div>
-      <div class="cropside"><div class="avatar" id="cropCircle" style="width:96px;height:96px;position:relative"><img src="${esc(m.url)}" alt=""></div><span class="muted small">Så blir den runda bilden</span>
+    <div class="cropwrap"><div class="cropbox" id="cropBox" style="width:${W}px;height:${H}px"><img id="cropImg" src="${esc(murl(m))}" alt="" draggable="false"></div>
+      <div class="cropside"><div class="avatar" id="cropCircle" style="width:96px;height:96px;position:relative"><img src="${esc(murl(m))}" alt=""></div><span class="muted small">Så blir den runda bilden</span>
       <label class="f" style="width:100%"><span>Zoom</span><input type="range" id="cropZ" min="1" max="6" step="0.01" value="${f.z}"></label>
       <button class="btn" id="cropAuto">✨ Hitta ansiktet automatiskt</button><span class="muted small" id="cropMsg"></span></div></div>
     <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>Spara</button></div>`,
   async(ov,close)=>{
     const q=x=>ov.querySelector(x), img=q('#cropImg'), circ=q('#cropCircle img');
-    try{const i=await loadImg(m.url); f.nw=f.nw||i.naturalWidth; f.nh=f.nh||i.naturalHeight;}catch(e){f.nw=f.nw||W; f.nh=f.nh||H;}
+    try{const i=await loadImg(murl(m)); f.nw=f.nw||i.naturalWidth; f.nh=f.nh||i.naturalHeight;}catch(e){f.nw=f.nw||W; f.nh=f.nh||H;}
     const place=(el,A)=>{const c=cropPct({focus:f},A); Object.assign(el.style,{position:'absolute',maxWidth:'none',width:c.w+'%',height:c.h+'%',left:c.l+'%',top:c.t+'%'});};
     const draw=()=>{place(img,W/H); place(circ,1); q('#cropZ').value=f.z;};
     const clampF=()=>{f.x=Math.min(1,Math.max(0,f.x)); f.y=Math.min(1,Math.max(0,f.y)); f.z=Math.min(6,Math.max(1,f.z));};
@@ -771,7 +811,7 @@ function photoModal(pid){
     box.onwheel=e=>{e.preventDefault(); f.z*=e.deltaY<0?1.08:1/1.08; clampF(); draw();};
     q('#cropZ').oninput=e=>{f.z=+e.target.value; draw();};
     q('#cropAuto').onclick=async()=>{const msg=q('#cropMsg'); msg.textContent='Letar efter ansikte…';
-      try{const r=await findFrame(m.url); if(r.frame){f=r.frame; draw(); msg.textContent='Klart!';} else msg.textContent='Hittade inget ansikte – flytta bilden själv.';}
+      try{const r=await findFrame(murl(m)); if(r.frame){f=r.frame; draw(); msg.textContent='Klart!';} else msg.textContent='Hittade inget ansikte – flytta bilden själv.';}
       catch(e){msg.textContent='Det gick inte att söka efter ansikten här.';}};
     q('[data-x]').onclick=close;
     q('[data-ok]').onclick=async()=>{const pq=clone(P(pid)), mm=avatarMedia(pq); if(mm){mm.focus={x:+f.x.toFixed(4),y:+f.y.toFixed(4),z:+f.z.toFixed(3),nw:f.nw,nh:f.nh}; await Store.put(pq);} close(); ui.treeKey=null; renderAll(true);};
@@ -787,7 +827,7 @@ function currentSelObj(){if(!ui.sel) return null; return ui.sel.type==='person'?
 function openLightbox(o,i){
   const m=o.media[i]; const isImg=/^image\//.test(m.contentType||'');
   const lb=document.createElement('div'); lb.className='lightbox';
-  lb.innerHTML=`${isImg?`<img src="${esc(m.url)}" alt="">`:`<div style="font-size:48px">📄</div><p>${esc(m.name)}</p><a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener" style="color:var(--ink)">Öppna dokumentet</a>`}
+  lb.innerHTML=`${isImg?`<img src="${esc(murl(m))}" alt="">`:`<div style="font-size:48px">📄</div><p>${esc(m.name)}</p><a class="btn" href="${esc(murl(m))}" target="_blank" rel="noopener" style="color:var(--ink)">Öppna dokumentet</a>`}
     <div class="cap">${E.canEdit?`<input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button>${isImg&&ui.sel&&ui.sel.type==='person'&&!m.profile?'<button class="btn" id="lbProf">Använd som profilbild</button>':''}<button class="btn danger" id="lbDel">Ta bort</button>`:`<span>${esc(m.caption||'')}</span>`}<button class="btn" id="lbClose">Stäng</button></div>`;
   document.body.appendChild(lb);
   const close=()=>lb.remove();
@@ -1328,9 +1368,11 @@ async function saveFile(name,data){
   catch(e){toast('Kunde inte spara filen: '+(e.message||e));}
 }
 function doExport(kind){ return withAll(()=>doExport0(kind)); }
-function doExport0(kind){
+async function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
-  if(kind==='json') saveFile(`klansagan-${stamp}.json`,JSON.stringify({app:'Klansagan',version:1,exported:new Date().toISOString(),persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},null,1));
+  if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) for(const m of d.media||[]) if(blobId(m)) m.url=await blobUrl(m); return o;};
+    const [persons,places,sources]=await Promise.all([inl('persons'),inl('places'),inl('sources')]);
+    saveFile(`klansagan-${stamp}.json`,JSON.stringify({app:'Klansagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); }
   if(kind==='csv'){
     const ids={}; Object.values(S.persons).forEach((p,i)=>ids[p.id]=i+1);
     const c=v=>{v=String(v??''); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
@@ -1710,7 +1752,7 @@ function renderCard(){
       <div class="acts">${Store.canEdit?'<button class="btn" data-pc="edit">Redigera</button>':''}<button class="btn" data-pc="tree">Visa i trädet</button><button class="btn" data-pc="fan">Solfjäder</button><button class="btn" data-pc="rel">Hur är vi släkt?</button><button class="btn" data-pc="pdf">⎙ Skriv ut / PDF</button></div></div></div>
     <div class="pc-grid"><div>
       <h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>
-      ${imgs.length?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(mm.url)}" alt="${esc(mm.caption||'')}">`:'📄'}</div>`).join('')}</div>`:''}
+      ${imgs.length?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(murl(mm))}" alt="${esc(mm.caption||'')}">`:'📄'}</div>`).join('')}</div>`:''}
       <h3>Tidslinje</h3><div class="vtl">${evs.map(e=>{const y=yearOf(e.date); const age=by&&y&&e.fixed!=='birth'?y-by:null; return `<div class="it"><div class="d">${esc(fmtDate(e.date)||'okänt datum')}${age!=null&&age>=0?` · ${age} år`:''}</div><b>${esc(e.type==='Övrigt'&&e.desc?e.desc:e.type)}</b>${e.placeId?` · ${esc(placeName(e.placeId))}`:''}${e.withId&&P(e.withId)?` · med ${esc(fullName(P(e.withId)))}`:''}${e.desc&&e.type!=='Övrigt'?`<div class="muted small">${esc(e.desc)}</div>`:''}</div>`;}).join('')||'<p class="muted">Inga händelser.</p>'}</div>
       ${p.notes?`<h3>Anteckningar</h3><p style="white-space:pre-wrap;line-height:1.6">${esc(p.notes)}</p>`:''}
     </div><div>
@@ -2216,6 +2258,23 @@ const Share={
     return body;
   },
   dirty(){return this._dirty;},
+  /** Download and decrypt images, 40 at a time. Returns how many arrived. */
+  async fetchBlobs(ids){
+    const t=this.cur(); if(!t||!ids.length) return 0; let n=0; t.uploaded=t.uploaded||{};
+    for(let i=0;i<ids.length;i+=40){
+      const rows=await this.rpc('kl_get_blobs',{tree:this.st.active,ids:ids.slice(i,i+40)})||[];
+      for(const r of rows){ try{const v=await KinCore.decryptJSON(r.payload,t.key); await IDB.put(r.id,v); BLOB[r.id]=v; t.uploaded[r.id]=1; n++;}catch(e){console.warn('Bild kunde inte dekrypteras',r.id);} }
+    }
+    if(n) this.save(); return n;
+  },
+  /** Upload images the server doesn't have yet. */
+  async uploadBlobs(data,onProg){
+    const t=this.cur(); t.uploaded=t.uploaded||{}; const todo=[...blobRefs(data)].filter(id=>!t.uploaded[id]); if(!todo.length) return;
+    const ws=await KinCore.writeSecret(t.key); let i=0;
+    for(const id of todo){ const v=BLOB[id]||await IDB.get(id).catch(()=>null);
+      if(v){ await this.rpc('kl_put_blob',{tree:this.st.active,write_secret:ws,blob_id:id,payload:await KinCore.encryptJSON(v,t.key)}); t.uploaded[id]=1; this.save(); }
+      onProg&&onProg(++i,todo.length); }
+  },
   recount(){const t=this.cur(); if(!t){this._dirty=0; return 0;} const now=KinCore.hashArchive(this.archive()); let n=0;
     for(const c of Object.keys(now)){const a=now[c], b=(t.base&&t.base[c])||{}; for(const id in a) if(a[id]!==b[id]) n++; for(const id in b) if(!(id in a)) n++;}
     this._dirty=n; return n;},
@@ -2235,11 +2294,15 @@ const Share={
     const s=$('#status'); if(s){s.querySelector('span').textContent=this.newer?'Ny version':n?`${n} att publicera`:'Delat';}
   },
   async create(){
+    await migrateInline();
     const key=KinCore.newKey(), data=this.archive();
     const payload=await KinCore.encryptJSON({...data,meta:{by:this.st.name||'',at:new Date().toISOString()}},key);
     const id=await this.rpc('kl_create_tree',{write_secret:await KinCore.writeSecret(key),payload});
-    this.st.trees[id]={key,version:1,base:KinCore.hashArchive(data),created:new Date().toISOString(),name:treeTitle()};
-    this.st.active=id; this.save(); Store.saveNow(); this.updateStatus(); return id;
+    this.st.trees[id]={key,version:1,base:KinCore.hashArchive(data),created:new Date().toISOString(),name:treeTitle(),uploaded:{}};
+    this.st.active=id; this.save(); Store.saveNow(); this.updateStatus();
+    try{await this.uploadBlobs(data,(i,n)=>{if(i===1||i===n||i%10===0) toast(`Laddar upp bilder… ${i} av ${n}`,4000);});}
+    catch(e){toast('Länken är klar, men alla bilder kom inte upp. De laddas upp nästa gång du publicerar.',7000);}
+    return id;
   },
   async fetchVersion(id,key,ver){const rows=await this.rpc('kl_get',{tree:id,ver:ver??null}); const r=rows&&rows[0]; if(!r) throw new Error('Trädet finns inte (länken kan vara fel eller trädet borttaget).');
     return {version:r.version,at:r.created_at,data:await KinCore.decryptJSON(r.payload,key)};},
@@ -2249,7 +2312,7 @@ const Share={
       if(known&&known.key===key){this.st.active=id; this.save(); setTimeout(()=>this.check(true),300); return;}
       const v=await this.fetchVersion(id,key);
       const data={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
-      this.st.trees[id]={key,version:v.version,base:KinCore.hashArchive(data),joined:new Date().toISOString(),name:''};
+      this.st.trees[id]={key,version:v.version,base:KinCore.hashArchive(data),joined:new Date().toISOString(),name:'',uploaded:Object.fromEntries([...blobRefs(data)].map(b=>[b,1]))};
       this.st.active=id; this.save();
       localStorage.setItem('klansagan-tree-'+id,JSON.stringify(data));
       setTimeout(()=>{const n=Object.keys(data.persons).length; toast(`Du är med i ett delat släktträd – ${n} personer. Dina ändringar syns för de andra när du publicerar.`,7000);},600);
@@ -2268,7 +2331,8 @@ const Share={
     const theirs={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
     const mine=this.archive(), hadLocal=this.recount()>0;
     const {data,conflicts}=hadLocal?KinCore.merge3(t.base,mine,theirs):{data:theirs,conflicts:[]};
-    Object.assign(ALL,data); t.version=v.version; t.base=KinCore.hashArchive(theirs); this.newer=false; this.save();
+    Object.assign(ALL,data); t.version=v.version; t.base=KinCore.hashArchive(theirs); this.newer=false;
+    t.uploaded=t.uploaded||{}; for(const b of blobRefs(theirs)) t.uploaded[b]=1; this.save();
     applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus();
     if(!quiet||conflicts.length){const by=v.data.meta&&v.data.meta.by; toast(`Hämtade version ${v.version}${by?' från '+by:''}.`+(conflicts.length?` ${conflicts.length} uppgift(er) hade ändrats av er båda – den senaste ändringen behölls.`:'')+(hadLocal?' Dina egna ändringar ligger kvar opublicerade.':''),6500);}
     return {conflicts};
@@ -2279,7 +2343,9 @@ const Share={
     this.busy=true;
     try{
       for(let attempt=0;attempt<3;attempt++){
+        await migrateInline();
         const data=this.archive();
+        await this.uploadBlobs(data,(i,n)=>{if(i===1||i===n||i%10===0) toast(`Laddar upp bilder… ${i} av ${n}`,4000);});
         const payload=await KinCore.encryptJSON({...data,meta:{by:this.st.name,at:new Date().toISOString()}},t.key);
         if(payload.length>20000000) throw new Error('Trädet är för stort att publicera (för många eller för stora bilder).');
         try{

@@ -110,7 +110,9 @@ CI runs the same checks on every push and pull request. The test suite covers Sw
 
 Everyone with the link can edit a local working copy and **publish** when ready. If two people publish in parallel, the second publish merges document by document (three-way merge); when both changed the same person, the newer edit wins. The server keeps the last 30 versions.
 
-To run your own: create a Supabase project, run `supabase/migrations/0001_shared_trees.sql` in the SQL editor, and put the project URL and publishable key in `src/config.js`. The publishable key is public by design: the tables are closed and only the `kl_*` functions are exposed.
+Photos are kept in IndexedDB on each device and, in a shared tree, uploaded once each as separate encrypted blobs, so publishing never re-sends them.
+
+To run your own: create a Supabase project, run the files in `supabase/migrations/` in order in the SQL editor, and put the project URL and publishable key in `src/config.js`. The publishable key is public by design: the tables are closed and only the `kl_*` functions are exposed.
 
 ## Roadmap
 
