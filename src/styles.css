@@ -454,3 +454,12 @@ body.simple .morebtn{display:none}
 /* ---- Locked tree ---- */
 #treeWrap.locked::after{content:'🔒 Trädet är låst – klicka på en person för att läsa om den';position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--glass);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:13px;color:var(--ink2);box-shadow:var(--shadow);pointer-events:none}
 #treeWrap.locked .card.sel rect.bg{stroke:var(--warn);stroke-width:2.5}
+
+/* ---- Photo framing ---- */
+.avatar,.pc-photo{position:relative}
+.avatar img,.pc-photo img{object-position:50% 30%}
+.cropwrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin:6px 0 4px}
+.cropbox{position:relative;overflow:hidden;border-radius:10px;background:var(--paper2);cursor:grab;touch-action:none;box-shadow:0 0 0 1px var(--line2)}
+.cropbox:active{cursor:grabbing}
+.cropbox img{user-select:none;pointer-events:none}
+.cropside{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:180px;flex:1}
