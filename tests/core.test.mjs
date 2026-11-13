@@ -282,3 +282,31 @@ describe('GEDCOM import', () => {
     expect([p.given, p.surname]).toEqual(['Åsa', 'Öberg']);
   });
 });
+
+describe('Swedish source citations', () => {
+  const p = core.parseSwedishCitation;
+  it('reads an ArkivDigital citation', () => {
+    expect(p('Röke (L) AII:3 (1918-1933) Bild 70 / sid 3 (AID: v350192.b70.s3, NAD: SE/LLA/13324)')).toMatchObject({
+      from: 'ad', parish: 'Röke', county: 'Kristianstads län', volume: 'AII:3', years: '1918–1933', type: 'Församlingsbok',
+      title: 'Röke (L) AII:3 (1918–1933)', image: '70', page: '3', aid: 'v350192.b70.s3', detail: 'Bild 70 / sid 3 (AID: v350192.b70.s3)', key: 'SE/LLA/13324|AII:3' });
+    expect(p('Hardemo (T) C:3 (1689-1750) Bild 56')).toMatchObject({ type: 'Födelse- och dopbok', county: 'Örebro län', detail: 'Bild 56' });
+    expect(p('Rättvik (W) AI:15 (1850-1855) Image 12 / Page 3')).toMatchObject({ type: 'Husförhörslängd', image: '12', page: '3' });
+  });
+  it('reads a Riksarkivet citation and links the image', () => {
+    const r = p('Röke kyrkoarkiv, Församlingsböcker, SE/LLA/13324/A II/3 (1918-1933), bildid: 00127782_00010');
+    expect(r).toMatchObject({ from: 'ra', parish: 'Röke', type: 'Församlingsbok', bildid: '00127782_00010',
+      url: 'https://sok.riksarkivet.se/bildvisning/00127782_00010', detail: 'bildid: 00127782_00010' });
+    // the same volume from both services gets the same key, so it becomes one source
+    expect(r.key).toBe(p('Röke (L) AII:3 (1918-1933) Bild 70 (AID: v350192.b70.s3, NAD: SE/LLA/13324)').key);
+    expect(p('Linköpings domkyrkoförsamlings kyrkoarkiv, Födelse- och dopböcker, SE/VaLA/00222/C I/1 (1664-1694), bildid: C0016904_00105'))
+      .toMatchObject({ parish: 'Linköping', type: 'Födelse- och dopbok', years: '1664–1694' });
+    expect(p('https://sok.riksarkivet.se/bildvisning/C0016904_00105')).toMatchObject({ bildid: 'C0016904_00105', title: '' });
+  });
+  it('keeps AID and image ids from GEDCOM page references', () => {
+    const g = ['0 HEAD', '1 CHAR UTF-8', '0 @S1@ SOUR', '1 TITL Röke (L) AII:3', '0 @I1@ INDI', '1 NAME A /B/', '1 BIRT', '2 SOUR @S1@', '3 PAGE Bild 70 / sid 3 (AID: v350192.b70.s3)', '1 DEAT', '2 SOUR @S1@', '3 PAGE bildid: C0016904_00105', '0 TRLR'].join('\n');
+    const c = Object.values(core.parseGedcom(g).persons)[0].citations;
+    expect(c[0].aid).toBe('v350192.b70.s3');
+    expect(c[1].url).toBe('https://sok.riksarkivet.se/bildvisning/C0016904_00105');
+  });
+  it('ignores other text', () => { expect(p('Muntligt från moster Lena')).toBeNull(); expect(p('')).toBeNull(); });
+});

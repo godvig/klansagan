@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.24';
+const APP_VERSION='2026-11-13.25';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -913,7 +913,7 @@ function personPanel(p){
   <div class="sec cites"><h4>Källor ${ed?'<button class="btn sm" data-act="addcite">+ Källhänvisning</button>':''}</h4>
     <div id="citeform"></div>
     ${cites.length?cites.map(c=>{const s=S.sources[c.sourceId]; return `<div class="cite"><div style="display:flex;gap:6px"><b data-src="${c.sourceId}" style="flex:1">${esc(s?s.title:'(borttagen källa)')}</b>${ed?`<button class="iconbtn" data-delcite="${c.id}" title="Ta bort">×</button>`:''}</div>
-      <div class="small muted">${esc(aboutLabel(c.about))}${c.detail?' · '+esc(c.detail):''}${s&&s.ref?' · '+esc(s.ref):''}</div></div>`}).join(''):`<div class="muted small">Inga källor ännu. Koppla husförhörslängder, dopböcker m.m. så vet du var uppgifterna kommer ifrån.</div>`}
+      <div class="small muted">${esc(aboutLabel(c.about))}${c.detail?' · '+esc(c.detail):''}${s&&s.ref&&!(c.detail||'').includes(s.ref)?' · '+esc(s.ref):''}</div>${citeLinks(c)}</div>`}).join(''):`<div class="muted small">Inga källor ännu. Koppla husförhörslängder, dopböcker m.m. så vet du var uppgifterna kommer ifrån.</div>`}
   </div>
   ${voiceSection(p)}
   ${mediaSection(p)}
@@ -1080,10 +1080,19 @@ function eventForm(p,ev){
     Store.put(q);
   };
 }
+/** Links for a citation: the image at Riksarkivet, or the AID to paste into ArkivDigital. */
+function citeLinks(c){
+  if(!c.url&&!c.aid) return '';
+  return `<div class="cite-links">${c.url?`<a href="${esc(c.url)}" target="_blank" rel="noopener">Visa bilden hos Riksarkivet ↗</a>`:''}${c.aid?`<button class="linkbtn" data-copyaid="${esc(c.aid)}" title="Klistra in i ArkivDigitals sökruta för att öppna bilden">Kopiera AID ${esc(c.aid)}</button>`:''}</div>`;
+}
+document.addEventListener('click',e=>{ const b=/** @type {HTMLElement} */(e.target).closest&&/** @type {HTMLElement} */(e.target).closest('[data-copyaid]'); if(!b) return;
+  const v=b.getAttribute('data-copyaid'); (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast('AID kopierat – klistra in det i ArkivDigital för att öppna bilden.'),()=>toast('AID: '+v,6000)); });
 function citeForm(p){
   const f=$('#citeform');
   const srcs=Object.values(S.sources).sort((a,b)=>a.title.localeCompare(b.title,'sv'));
   f.innerHTML=`<div class="mini">
+    <label class="f"><span>Klistra in från ArkivDigital eller Riksarkivet <small class="muted">– fyller i resten åt dig</small></span><textarea class="t" id="ciPaste" rows="2" placeholder="Röke (L) AII:3 (1918-1933) Bild 70 / sid 3 (AID: v350192.b70.s3, NAD: SE/LLA/13324)"></textarea></label>
+    <div id="ciParsed" class="ci-parsed" hidden></div>
     <label class="f"><span>Källa</span><select class="t" id="ciS"><option value="__new">+ Ny källa…</option>${srcs.map(s=>`<option value="${s.id}">${esc(s.title)}</option>`).join('')}</select></label>
     <div id="ciNew"><div class="row2"><label class="f"><span>Titel på ny källa</span><input class="t" id="ciT" placeholder="Rättvik (W) AI:15 1850–1855"></label>
       <label class="f"><span>Typ</span><select class="t" id="ciTy">${SOURCE_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></label></div></div>
@@ -1093,10 +1102,27 @@ function citeForm(p){
   const sync=()=>$('#ciNew').style.display=$('#ciS').value==='__new'?'':'none';
   if(srcs.length) $('#ciS').value=srcs[0].id; sync(); $('#ciS').onchange=sync;
   $('#ciC').onclick=()=>f.innerHTML='';
+  // A pasted ArkivDigital / Riksarkivet citation picks (or prepares) the volume as the source and fills in image and page.
+  let parsed=null;
+  $('#ciPaste').oninput=()=>{
+    const r=KinCore.parseSwedishCitation($('#ciPaste').value), box=$('#ciParsed'); parsed=r;
+    if(!r){ box.hidden=!$('#ciPaste').value.trim(); box.innerHTML='Känner inte igen texten. Kopiera hänvisningen från ArkivDigital (Kopiera källa) eller Riksarkivets bildvisning (Källa).'; box.className='ci-parsed bad'; return; }
+    const ex=r.key&&Object.values(S.sources).find(x=>x.volKey===r.key) || r.title&&Object.values(S.sources).find(x=>norm(x.title)===norm(r.title));
+    if(ex) $('#ciS').value=ex.id; else if(r.title){ $('#ciS').value='__new'; $('#ciT').value=r.title; if(SOURCE_TYPES.includes(r.type)) $('#ciTy').value=r.type; }
+    sync(); $('#ciD').value=r.detail;
+    const ab={'Födelse- och dopbok':'Födelse','Död- och begravningsbok':'Död'}[r.type]; const vig=r.type==='Lysnings- och vigselbok'&&(p.events||[]).find(e=>e.type==='Vigsel');
+    if(ab) $('#ciA').value=ab; else if(vig) $('#ciA').value='event:'+vig.id;
+    box.hidden=false; box.className='ci-parsed ok';
+    box.innerHTML=`✓ ${r.from==='ad'?'ArkivDigital':'Riksarkivet'}${r.parish?` · ${esc(r.parish)}${r.county?' ('+esc(r.county)+')':''}`:''}${r.type!=='Övrigt'?' · '+esc(r.type):''} – ${ex?`kopplas till <b>${esc(ex.title)}</b>`:r.title?'ny källa skapas':'välj vilken källa bilden hör till'}${r.url?` · <a href="${esc(r.url)}" target="_blank" rel="noopener">visa bilden ↗</a>`:''}`;
+  };
   $('#ciOk').onclick=()=>{
     let sid=$('#ciS').value;
-    if(sid==='__new'){const t=$('#ciT').value.trim(); if(!t){$('#ciT').focus();return;} const s={kind:'source',id:uid('s'),title:t,type:$('#ciTy').value,createdAt:new Date().toISOString()}; Store.put(s,{silent:true}); sid=s.id;}
-    const q=clone(P(p.id)); q.citations=(q.citations||[]).concat([{id:uid('c'),sourceId:sid,about:$('#ciA').value,detail:$('#ciD').value.trim()}]);
+    if(sid==='__new'){const t=$('#ciT').value.trim(); if(!t){$('#ciT').focus();return;} const s={kind:'source',id:uid('s'),title:t,type:$('#ciTy').value,createdAt:new Date().toISOString()};
+      if(parsed&&parsed.title&&norm(parsed.title)===norm(t)){ if(parsed.key) s.volKey=parsed.key; if(parsed.nad) s.ref=parsed.nad+(parsed.from==='ad'?'':'/'+parsed.volume); s.archive=parsed.from==='ad'?'ArkivDigital':'Riksarkivet'; if(parsed.county) s.county=parsed.county; if(parsed.parish) s.parish=parsed.parish; if(parsed.nad) s.url='https://sok.riksarkivet.se/?postid=ArkisRef%20'+parsed.nad.split('/').slice(0,3).join('/'); }
+      Store.put(s,{silent:true}); sid=s.id;}
+    const c={id:uid('c'),sourceId:sid,about:$('#ciA').value,detail:$('#ciD').value.trim()};
+    if(parsed){ if(parsed.aid) c.aid=parsed.aid; if(parsed.bildid) c.bildid=parsed.bildid; if(parsed.url) c.url=parsed.url; }
+    const q=clone(P(p.id)); q.citations=(q.citations||[]).concat([c]);
     Store.put(q);
   };
 }
@@ -2219,7 +2245,7 @@ function renderCard(){
       ${(()=>{const solo=kids.filter(c=>!parts.some(sp=>c.fatherId===sp.id||c.motherId===sp.id)); return solo.length?`<div class="fam-group"><h5>Barn</h5><div class="recent" style="grid-template-columns:1fr">${solo.map(c=>chipHTML(c)).join('')}</div></div>`:'';})()}
       ${sibs.length?`<div class="fam-group"><h5>Syskon (${sibs.length})</h5><div class="recent" style="grid-template-columns:1fr">${sibs.map(c=>chipHTML(c)).join('')}</div></div>`:''}
       <h3 style="margin-top:22px">Källor</h3>
-      ${(p.citations||[]).map(c=>{const s=S.sources[c.sourceId]; return s?`<div class="cite"><b>${esc(s.title)}</b><div class="small muted">${esc([c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.ref].filter(Boolean).join(' · '))}</div></div>`:'';}).join('')||'<p class="muted small">Inga källor kopplade ännu.</p>'}
+      ${(p.citations||[]).map(c=>{const s=S.sources[c.sourceId]; return s?`<div class="cite"><b>${esc(s.title)}</b><div class="small muted">${esc([c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.ref].filter(Boolean).join(' · '))}</div>${citeLinks(c)}</div>`:'';}).join('')||'<p class="muted small">Inga källor kopplade ännu.</p>'}
     </div></div></div>`;
   bindChips(v,openCard);
   v.querySelectorAll('[data-img]').forEach(el=>el.onclick=()=>{ui.sel={type:'person',id:p.id}; openLightbox(p,+el.dataset.img);});

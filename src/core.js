@@ -411,6 +411,71 @@
     return b64u(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('klansagan-write'))));
   }
 
+  /* ------------------------------------------------- Swedish source citations */
+
+  /** County letters used in Swedish church-record references, e.g. "Röke (L)". */
+  const COUNTY = { AB: 'Stockholms län', A: 'Stockholms stad', B: 'Stockholms län', C: 'Uppsala län', D: 'Södermanlands län', E: 'Östergötlands län', F: 'Jönköpings län', G: 'Kronobergs län', H: 'Kalmar län', I: 'Gotlands län', K: 'Blekinge län', L: 'Kristianstads län', M: 'Malmöhus län', N: 'Hallands län', O: 'Göteborgs och Bohus län', P: 'Älvsborgs län', R: 'Skaraborgs län', S: 'Värmlands län', T: 'Örebro län', U: 'Västmanlands län', W: 'Kopparbergs län', X: 'Gävleborgs län', Y: 'Västernorrlands län', Z: 'Jämtlands län', AC: 'Västerbottens län', BD: 'Norrbottens län' };
+  /** Church-archive series → source type: AI husförhör, AII församlingsbok, B flytt, C födde, E vigda, F döda. @param {string} vol */
+  function seriesType(vol) {
+    const v = String(vol || '').toUpperCase().replace(/[\s:./]/g, '');
+    if (/^AII/.test(v)) return 'Församlingsbok';
+    if (/^AI/.test(v)) return 'Husförhörslängd';
+    if (/^A\d/.test(v)) return 'Husförhörslängd';
+    if (/^B/.test(v)) return 'Flyttlängd';
+    if (/^C/.test(v)) return 'Födelse- och dopbok';
+    if (/^E/.test(v)) return 'Lysnings- och vigselbok';
+    if (/^F/.test(v)) return 'Död- och begravningsbok';
+    return 'Övrigt';
+  }
+  /** "A II/3", "AII:3", "C:3" → "AII:3" / "C:3" (same volume written by Riksarkivet and ArkivDigital). @param {string} v */
+  const volKey = (v) => String(v || '').toUpperCase().replace(/\s+/g, '').replace(/[/.]/g, ':');
+
+  /**
+   * Read a citation copied from ArkivDigital or Riksarkivet (SVAR), or a link to an image there.
+   *  - ArkivDigital: "Röke (L) AII:3 (1918-1933) Bild 70 / sid 3 (AID: v350192.b70.s3, NAD: SE/LLA/13324)"
+   *  - Riksarkivet:  "Röke kyrkoarkiv, Församlingsböcker, SE/LLA/13324/A II/3 (1918-1933), bildid: 00127782_00010"
+   * Returns the volume as a source (title, type, NAD reference) and the place in it as a citation
+   * (image, page, AID / image id, link), or null when the text is neither.
+   * @param {string} text
+   */
+  function parseSwedishCitation(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim(); if (!t) return null;
+    const bild = t.match(/(?:bildid|bild-id|image id)[:\s]*([A-Z0-9]{8}_\d{5})\b/i) || t.match(/riksarkivet\.se\/bildvisning\/(?:Kalla\/)?([A-Z0-9]{8}_\d{5})/i) || t.match(/\b([A-Z]\d{7}_\d{5}|\d{8}_\d{5})\b/);
+    const aid = t.match(/\bAID[:\s]*(v\d+[a-z]?\.b\d+(?:\.s\d+)?)/i) || t.match(/\b(v\d+[a-z]?\.b\d+\.s\d+)\b/i);
+    const nadM = t.match(/\bNAD[:\s]*(SE\/[A-Za-zÅÄÖåäö]+\/[\w.-]+)/i);
+    const years = (t.match(/\((\d{4})\s*[-–]\s*(\d{4})\)/) || t.match(/\((\d{4})\)/));
+    const yr = years ? (years[2] ? `${years[1]}–${years[2]}` : years[1]) : '';
+    /** @type {any} */ let r = null;
+    // ArkivDigital: "<Parish> (<county>) <volume> (<years>) Bild <n> / sid <n>"
+    const ad = t.match(/^(.+?)\s*\(([A-ZÅÄÖ]{1,2})\)\s+([A-ZÅÄÖ]{1,4}\s?[IVX]*\s?[a-z]?[:/]?\s?\d+[a-zA-Z]?(?:[:/]\d+)?)\s*(?:\((\d{4}(?:\s*[-–]\s*\d{4})?)\))?/);
+    if (ad && !/kyrkoarkiv/i.test(ad[1])) {
+      const vol = ad[3].replace(/\s+/g, ''), cty = ad[2].toUpperCase();
+      r = { from: 'ad', parish: ad[1].trim(), county: COUNTY[cty] || '', countyCode: cty, volume: vol, years: yr, nad: nadM ? nadM[1] : '', type: seriesType(vol) };
+      r.title = `${r.parish} (${cty}) ${vol}${yr ? ` (${yr})` : ''}`;
+    }
+    // Riksarkivet: "<Archive>, <series>, SE/<arkiv>/<nr>/<volume> (<years>), bildid: …"
+    const ra = t.match(/^(.+?),\s*([^,]+?),\s*(SE\/[A-Za-zÅÄÖåäö]+\/[\w.-]+)\/([^,(]+?)\s*(?:\(([^)]*)\))?\s*(?:,|$)/);
+    if (!r && ra) {
+      const vol = ra[4].trim(), arch = ra[1].trim();
+      const parish = arch.replace(/\s+(kyrkoarkiv|församlings? kyrkoarkiv|domkyrkoförsamlings kyrkoarkiv)$/i, '').replace(/s$/, (m) => /kyrkoarkiv/i.test(arch) && !/(ss|us)$/.test(arch.replace(/\s.*$/, '')) ? '' : m);
+      const st = /födelse|dop/i.test(ra[2]) ? 'Födelse- och dopbok' : /husförhör/i.test(ra[2]) ? 'Husförhörslängd' : /församlingsb/i.test(ra[2]) ? 'Församlingsbok' : /vigsel|lysning/i.test(ra[2]) ? 'Lysnings- och vigselbok' : /död|begrav/i.test(ra[2]) ? 'Död- och begravningsbok' : /flytt/i.test(ra[2]) ? 'Flyttlängd' : /bouppteck/i.test(ra[2]) ? 'Bouppteckning' : /mönsterrull/i.test(ra[2]) ? 'Generalmönsterrulla' : seriesType(vol);
+      r = { from: 'ra', archive: arch, parish, series: ra[2].trim(), nad: ra[3], volume: vol, years: yr || (ra[5] || ''), type: st };
+      r.title = `${arch}, ${r.series}, ${ra[3]}/${vol}${r.years ? ` (${r.years})` : ''}`;
+    }
+    if (!r && (bild || aid)) r = { from: bild ? 'ra' : 'ad', title: '', type: 'Övrigt' };
+    if (!r) return null;
+    const img = t.match(/\b(?:bild|image)\s*(\d+)/i) || (aid && aid[1].match(/\.b(\d+)/));
+    const page = t.match(/\b(?:sid(?:a|an)?|s\.|page|pag\.?)\s*(\d+[a-z]?)/i) || (aid && aid[1].match(/\.s(\d+)/));
+    r.image = img ? img[1] : ''; r.page = page ? page[1] : '';
+    if (aid) r.aid = aid[1]; if (bild) r.bildid = bild[1].toUpperCase();
+    if (r.bildid) r.url = 'https://sok.riksarkivet.se/bildvisning/' + r.bildid;
+    r.detail = [r.image && 'Bild ' + r.image, r.page && 'sid ' + r.page].filter(Boolean).join(' / ');
+    if (r.aid) r.detail += (r.detail ? ' ' : '') + `(AID: ${r.aid})`;
+    if (r.bildid) r.detail += (r.detail ? ', ' : '') + `bildid: ${r.bildid}`;
+    r.key = r.nad && r.volume ? r.nad.split('/').slice(0, 3).join('/') + '|' + volKey(r.volume) : '';
+    return r;
+  }
+
   /* --------------------------------------------------------------- GEDCOM import */
 
   const ANSEL_COMB = { 0xE1: '̀', 0xE2: '́', 0xE3: '̂', 0xE4: '̃', 0xE5: '̄', 0xE6: '̆', 0xE7: '̇', 0xE8: '̈', 0xE9: '̌', 0xEA: '̊', 0xEB: '͡', 0xED: '̕', 0xEE: '̋', 0xF0: '̧', 0xF1: '̨', 0xF2: '̣', 0xF3: '̤', 0xF4: '̥', 0xF5: '̳', 0xF6: '̲', 0xF7: '̦', 0xF8: '̜', 0xF9: '̮', 0xFE: '̓' };
@@ -537,7 +602,10 @@
     const cites = (/** @type {GNode} */ n, /** @type {string} */ about) => n.kids.filter(k => k.tag === 'SOUR').map(k => {
       let sid = srcByX[k.val.trim()];
       if (!sid) { const t = k.val.trim(); if (!t || t.startsWith('@')) return null; sid = srcByTitle[t]; if (!sid) { sid = id('s'); sources[sid] = { kind: 'source', id: sid, title: t, type: sourceType(t), createdAt: at }; srcByTitle[t] = sid; stats.sources++; } }
-      stats.citations++; const c = /** @type {any} */ ({ sourceId: sid, about }); const pg = kidv(k, 'PAGE'); if (pg) c.detail = pg; return c;
+      stats.citations++; const c = /** @type {any} */ ({ sourceId: sid, about }); const pg = kidv(k, 'PAGE'); if (pg) c.detail = pg;
+      const aid = pg.match(/\b(v\d+[a-z]?\.b\d+(?:\.s\d+)?)\b/i), bid = pg.match(/\b([A-Z]\d{7}_\d{5}|\d{8}_\d{5})\b/);
+      if (aid) c.aid = aid[1]; if (bid) { c.bildid = bid[1]; c.url = 'https://sok.riksarkivet.se/bildvisning/' + bid[1]; }
+      return c;
     }).filter(Boolean);
 
     /* people */
@@ -653,7 +721,7 @@
     };
   }
 
-  const api = { parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
+  const api = { parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;

@@ -685,3 +685,11 @@ body.dragging-files #view::after{content:'Släpp bilden på en person';position:
   header .viewbtn .vname,header .viewbtn .vlabel{display:none}
   .undo .iconbtn:disabled{display:none}
 }
+
+/* Swedish citations */
+.ci-parsed{font-size:13px;border-radius:8px;padding:7px 10px;margin:-2px 0 8px;line-height:1.45}
+.ci-parsed.ok{background:color-mix(in srgb,var(--accent) 10%,var(--card));color:var(--ink)}
+.ci-parsed.bad{background:var(--paper2);color:var(--ink3)}
+.cite-links{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px;font-size:12.5px}
+.cite-links a{color:var(--accent)}
+.linkbtn{border:none;background:none;padding:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:2px}
