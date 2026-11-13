@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.15';
+const APP_VERSION='2026-11-13.16';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -171,6 +171,7 @@ function children(id){return Object.values(S.persons).filter(c=>c.fatherId===id|
 function partners(p){const set=new Set(p.spouseIds||[]); for(const c of children(p.id)){const o=c.fatherId===p.id?c.motherId:c.fatherId; if(o) set.add(o);} set.delete(p.id); return [...set].map(P).filter(Boolean);}
 function siblings(p){if(!p.fatherId&&!p.motherId) return []; return Object.values(S.persons).filter(s=>s.id!==p.id&&((p.fatherId&&s.fatherId===p.fatherId)||(p.motherId&&s.motherId===p.motherId))).sort((a,b)=>(dateKey(a.birthDate)||9999)-(dateKey(b.birthDate)||9999));}
 const isImg=m=>/^image\//.test(m&&m.contentType||'');
+const isAudio=m=>/^audio\//.test(m&&m.contentType||'');
 /** Profile image entry (media item) for a person, or null. */
 function avatarMedia(p){const imgs=(p.media||[]).filter(isImg); return imgs.find(m=>m.profile)||imgs[0]||null;}
 /* Photo framing: m.focus={x,y,z,nw,nh}. x/y = point (0–1) of the image that should sit
@@ -220,7 +221,9 @@ async function migrateInline(){
   if(Store.mode==='db'||typeof indexedDB==='undefined') return false; let n=0;
   for(const col of ['persons','places','sources']) for(const o of Object.values(ALL[col])){
     if(!(o.media||[]).some(m=>typeof m.url==='string'&&m.url.startsWith('data:'))) continue;
-    for(const m of o.media) if(typeof m.url==='string'&&m.url.startsWith('data:')){ try{const full=m.url; m.url='kl:'+await storeBlob(full); if(isImg(m)) m.thumb='kl:'+await storeBlob(await makeThumb(full)); delete m.local; n++;}catch(e){return false;} } }
+    const map={};
+    for(const m of o.media) if(typeof m.url==='string'&&m.url.startsWith('data:')){ try{const full=m.url; m.url='kl:'+await storeBlob(full); map[full]=m.url; if(isImg(m)) m.thumb='kl:'+await storeBlob(await makeThumb(full)); delete m.local; n++;}catch(e){return false;} }
+    for(const m of o.media) if(m.forImg&&map[m.forImg]) m.forImg=map[m.forImg]; }
   if(n){ Store.saveNow(); }
   return n>0;
 }
@@ -739,16 +742,108 @@ function personPanel(p){
     ${cites.length?cites.map(c=>{const s=S.sources[c.sourceId]; return `<div class="cite"><div style="display:flex;gap:6px"><b data-src="${c.sourceId}" style="flex:1">${esc(s?s.title:'(borttagen källa)')}</b>${ed?`<button class="iconbtn" data-delcite="${c.id}" title="Ta bort">×</button>`:''}</div>
       <div class="small muted">${esc(aboutLabel(c.about))}${c.detail?' · '+esc(c.detail):''}${s&&s.ref?' · '+esc(s.ref):''}</div></div>`}).join(''):`<div class="muted small">Inga källor ännu. Koppla husförhörslängder, dopböcker m.m. så vet du var uppgifterna kommer ifrån.</div>`}
   </div>
+  ${voiceSection(p)}
   ${mediaSection(p)}
   <div class="sec"><h4>Anteckningar</h4>
     ${ed?`<textarea class="t" id="notes" placeholder="Forskningsanteckningar, frågor, ledtrådar…">${esc(p.notes||'')}</textarea><div class="hint" id="notesHint">Sparas när du klickar utanför rutan.</div>`:`<div style="white-space:pre-wrap">${esc(p.notes||'–')}</div>`}
   </div>`;
 }
+/* ============ Voice memories ============
+   Recorded in the browser (MediaRecorder), kept in the image store like photos and,
+   in shared trees, uploaded encrypted. A memory can be tied to one of the person's photos. */
+const fmtDur=s=>{s=Math.round(s||0); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
+function voiceRows(o,{forImg,edit}={}){
+  const list=(o.media||[]).map((m,i)=>({m,i})).filter(({m})=>isAudio(m)&&(forImg===undefined||m.forImg===forImg));
+  return list.map(({m,i})=>{const img=!forImg&&m.forImg?(o.media||[]).find(x=>x.url===m.forImg):null;
+    return `<div class="vm" data-vm="${i}"><button class="vm-play" data-play="${i}" aria-label="Spela upp">▶</button>
+      <div class="vm-b"><b>${esc(m.caption||'Röstminne')}</b><span class="small muted">${fmtDur(m.duration)}${m.recordedAt?' · '+esc(fmtDate(m.recordedAt.slice(0,10))):''}${m.by?' · '+esc(m.by):''}</span><div class="vm-player"></div></div>
+      ${img?`<img class="vm-img" src="${esc(thumbUrl(img))}" alt="" title="Hör till bilden ${esc(img.caption||img.name||'')}">`:''}
+      ${edit?`<button class="iconbtn" data-vedit="${i}" title="Ändra">✎</button>`:''}</div>`;}).join('');
+}
+function voiceSection(o){
+  const n=(o.media||[]).filter(isAudio).length, ed=E.canEdit;
+  if(!n&&!ed) return '';
+  return `<div class="sec"><h4>Röstminnen ${ed?`<span style="display:flex;gap:6px"><button class="btn sm" data-act="record">🎙 Spela in</button><label class="btn sm" style="cursor:pointer" title="Ladda upp en ljudfil">↑ Fil<input type="file" id="uplAudio" accept="audio/*" hidden></label></span>`:''}</h4>
+    ${n?`<div class="vms">${voiceRows(o,{edit:ed})}</div>`:`<div class="muted small">Spela in när någon berättar om personen – en historia, ett minne, hur rösten lät. Inspelningen sparas här${Share.cur()?' och delas krypterad med släkten':''}.</div>`}</div>`;
+}
+/** Wire play buttons (and edit buttons) inside an element. */
+function bindVoices(root,o){
+  root.querySelectorAll('[data-play]').forEach(b=>b.onclick=async e=>{e.stopPropagation(); const m=o.media[+b.dataset.play]; const row=b.closest('.vm'); const box=row.querySelector('.vm-player');
+    if(box.firstChild){ const a=box.querySelector('audio'); if(a.paused) a.play(); else a.pause(); return; }
+    b.textContent='…'; const src=await blobUrl(m); if(!src||src===PIXEL){b.textContent='▶'; toast('Inspelningen kunde inte hämtas just nu.'); return;}
+    box.innerHTML=`<audio controls autoplay src="${esc(src)}"></audio>`; const a=box.querySelector('audio');
+    a.onplay=()=>b.textContent='❚❚'; a.onpause=a.onended=()=>b.textContent='▶'; b.textContent='❚❚'; a.play().catch(()=>{});});
+  root.querySelectorAll('[data-vedit]').forEach(b=>b.onclick=e=>{e.stopPropagation(); voiceEdit(o,+b.dataset.vedit);});
+}
+function voiceEdit(o,i){
+  const m=o.media[i], imgs=(o.media||[]).filter(isImg);
+  modal(`<h3>Röstminne</h3>
+    <label class="f"><span>Titel</span><input class="t" id="veT" value="${esc(m.caption||'')}" placeholder="t.ex. Farmor berättar om flytten till Göteborg"></label>
+    ${imgs.length?`<div class="f"><span class="lab">Hör till bild</span><div class="vimgs"><label class="vimg"><input type="radio" name="veI" value="" ${!m.forImg?'checked':''}><span>Ingen</span></label>${imgs.map(x=>`<label class="vimg"><input type="radio" name="veI" value="${esc(x.url)}" ${m.forImg===x.url?'checked':''}><img src="${esc(thumbUrl(x))}" alt=""></label>`).join('')}</div></div>`:''}
+    <div class="foot"><button class="btn ghost danger" id="veDel" style="margin-right:auto">Ta bort</button><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>Spara</button></div>`,
+  (ov,close)=>{const q=x=>ov.querySelector(x); q('[data-x]').onclick=close;
+    q('[data-ok]').onclick=()=>{const c=clone(o); const mm=c.media[i]; mm.caption=q('#veT').value.trim(); const r=ov.querySelector('[name=veI]:checked'); if(r){ if(r.value) mm.forImg=r.value; else delete mm.forImg; } Store.put(c); close();};
+    q('#veDel').onclick=()=>{close(); confirmBox('Ta bort röstminnet?','Inspelningen tas bort ur arkivet.','Ta bort',()=>{const c=clone(o); c.media.splice(i,1); Store.put(c);});};});
+}
+async function saveVoice(o,blob,{duration,caption,forImg}){
+  if(blob.size>2600000) throw new Error('inspelningen är för stor (max cirka 10 minuter)');
+  const type=(blob.type||'audio/webm').split(';')[0], ext=type.includes('mp4')?'m4a':type.includes('ogg')?'ogg':type.includes('mpeg')?'mp3':'webm';
+  let item;
+  if(E.assets){const r=await E.assets.upload(new File([blob],'rostminne.'+ext,{type})); item={assetId:r.id,url:r.url,contentType:type};}
+  else{ const dataUrl=await new Promise((ok,bad)=>{const fr=new FileReader(); fr.onload=()=>ok(fr.result); fr.onerror=()=>bad(fr.error); fr.readAsDataURL(blob);}); item={url:'kl:'+await storeBlob(dataUrl),contentType:type}; }
+  Object.assign(item,{name:'rostminne.'+ext,caption:caption||'',duration:Math.round(duration||0),recordedAt:new Date().toISOString(),by:Share.st.name||''});
+  if(forImg) item.forImg=forImg;
+  const c=clone(P(o.id)||o); c.media=(c.media||[]).concat([item]); await Store.put(c);
+}
+function audioDuration(blob){return new Promise(res=>{const a=document.createElement('audio'); a.preload='metadata'; const u=URL.createObjectURL(blob);
+  a.onloadedmetadata=()=>{ if(a.duration===Infinity){a.currentTime=1e9; a.ontimeupdate=()=>{a.ontimeupdate=null; res(a.duration); URL.revokeObjectURL(u);};} else {res(a.duration); URL.revokeObjectURL(u);} };
+  a.onerror=()=>{res(0); URL.revokeObjectURL(u);}; a.src=u;});}
+function recordModal(o,{forImg}={}){
+  if(!navigator.mediaDevices||!window.MediaRecorder){toast('Den här webbläsaren kan inte spela in ljud. Ladda upp en ljudfil i stället.',6000);return;}
+  const imgs=(o.media||[]).filter(isImg), MAX=600;
+  modal(`<h3>Spela in ett röstminne</h3>
+    <p class="muted" style="margin-top:-4px">${esc(fullName(o))}. Håll telefonen nära den som berättar. Max 10 minuter.</p>
+    <div class="rec"><button class="rec-btn" id="recBtn" aria-label="Börja spela in"><i></i></button>
+      <div class="rec-info"><div class="rec-time" id="recTime">0:00</div><div class="rec-meter"><i id="recLvl"></i></div><div class="small muted" id="recMsg">Tryck på den röda knappen för att börja.</div></div></div>
+    <div id="recAfter" hidden>
+      <audio id="recPlay" controls style="width:100%;margin:8px 0 12px"></audio>
+      <label class="f"><span>Titel</span><input class="t" id="recT" placeholder="t.ex. Farmor berättar om flytten till Göteborg"></label>
+      ${imgs.length?`<div class="f"><span class="lab">Hör till bild (valfritt)</span><div class="vimgs"><label class="vimg"><input type="radio" name="recI" value="" ${!forImg?'checked':''}><span>Ingen</span></label>${imgs.map(x=>`<label class="vimg"><input type="radio" name="recI" value="${esc(x.url)}" ${forImg===x.url?'checked':''}><img src="${esc(thumbUrl(x))}" alt=""></label>`).join('')}</div></div>`:''}
+    </div>
+    <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok disabled>Spara</button></div>`,
+  (ov,close0)=>{
+    const q=x=>ov.querySelector(x); let stream=null, rec=null, chunks=[], t0=0, timer=null, raf=null, ctx=null, blob=null, secs=0;
+    const stopAll=()=>{clearInterval(timer); cancelAnimationFrame(raf); if(stream) stream.getTracks().forEach(t=>t.stop()); stream=null; if(ctx) ctx.close().catch(()=>{}); ctx=null;};
+    const close=()=>{ if(rec&&rec.state==='recording'){rec.onstop=null; rec.stop();} stopAll(); close0(); };
+    q('[data-x]').onclick=close;
+    const btn=q('#recBtn');
+    btn.onclick=async()=>{
+      if(rec&&rec.state==='recording'){rec.stop(); return;}
+      try{ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); }
+      catch(e){ q('#recMsg').textContent='Fick inte använda mikrofonen. Tillåt mikrofon för sidan i webbläsarens inställningar.'; return; }
+      const mime=['audio/webm;codecs=opus','audio/mp4','audio/ogg;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t));
+      rec=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:24000}:{audioBitsPerSecond:24000}); chunks=[];
+      rec.ondataavailable=e=>{if(e.data&&e.data.size) chunks.push(e.data);};
+      rec.onstop=async()=>{ stopAll(); blob=new Blob(chunks,{type:rec.mimeType||mime||'audio/webm'}); btn.classList.remove('on'); btn.setAttribute('aria-label','Spela in igen');
+        q('#recMsg').textContent='Klart! Lyssna, ge den en titel och spara. Tryck på knappen igen för att börja om.';
+        const u=URL.createObjectURL(blob); q('#recPlay').src=u; q('#recAfter').hidden=false; q('[data-ok]').disabled=false; q('#recT').focus(); };
+      rec.start(1000); t0=Date.now(); btn.classList.add('on'); btn.setAttribute('aria-label','Stoppa'); q('#recMsg').textContent='Spelar in… tryck igen för att stoppa.'; q('#recAfter').hidden=true; q('[data-ok]').disabled=true;
+      timer=setInterval(()=>{secs=(Date.now()-t0)/1000; q('#recTime').textContent=fmtDur(secs); if(secs>=MAX) rec.stop();},250);
+      try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); const an=ctx.createAnalyser(); an.fftSize=512; ctx.createMediaStreamSource(stream).connect(an); const d=new Uint8Array(an.fftSize);
+        const tick=()=>{an.getByteTimeDomainData(d); let m=0; for(const v of d) m=Math.max(m,Math.abs(v-128)); q('#recLvl').style.width=Math.min(100,m/64*100)+'%'; raf=requestAnimationFrame(tick);}; tick(); }catch(e){}
+    };
+    q('[data-ok]').onclick=async()=>{ if(!blob) return; const b=q('[data-ok]'); b.disabled=true; b.textContent='Sparar…';
+      const r=ov.querySelector('[name=recI]:checked');
+      try{ await saveVoice(o,blob,{duration:secs,caption:q('#recT').value.trim(),forImg:r&&r.value||''}); close(); toast('Röstminnet är sparat.'+(Share.cur()?' Publicera så att släkten kan lyssna.':''),5000); }
+      catch(e){ b.disabled=false; b.textContent='Spara'; toast('Kunde inte spara: '+(e.message||e),6000); }
+    };
+  });
+}
 function mediaSection(o){
   const ed=E.canEdit; const can=ed;
   return `<div class="sec"><h4>Bilder &amp; dokument ${can?`<label class="btn sm" style="cursor:pointer">+ Ladda upp<input type="file" id="upl" multiple accept="${E.assets?'image/*,application/pdf':'image/*'}" hidden></label>`:''}</h4>
     <div id="uplprog"></div>
-    ${(o.media||[]).length?`<div class="media">${o.media.map((m,i)=>`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(thumbUrl(m))}" alt="${esc(m.caption||'')}" loading="lazy">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
+    ${(o.media||[]).some(m=>!isAudio(m))?`<div class="media">${o.media.map((m,i)=>isAudio(m)?'':`<div class="m" data-media="${i}" title="${esc(m.caption||m.name)}">${/^image\//.test(m.contentType||'')?`<img src="${esc(thumbUrl(m))}" alt="${esc(m.caption||'')}" loading="lazy">`:`📄<br>${esc((m.name||'dokument').slice(0,26))}`}${m.profile?'<span style="position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;border-radius:99px;font-size:10px;padding:1px 6px">profil</span>':''}</div>`).join('')}</div>`:`<div class="muted small">${can?(E.assets?'Lägg till foton, inskannade brev eller kyrkboksutdrag (bild eller PDF).':'Lägg till foton eller inskannade dokument som bild. Bilderna förminskas och sparas i webbläsaren.'):'Inga filer.'}</div>`}
   </div>`;
 }
 function bindPanel(){
@@ -777,6 +872,7 @@ function bindPersonPanel(p){
     if(act==='addev') eventForm(p,null);
     if(act==='addcite') citeForm(p);
     if(act==='link') linkModal(p.id);
+    if(act==='record') recordModal(p);
     if(act==='photo') photoModal(p.id);
   });
   pn.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{
@@ -915,18 +1011,23 @@ function bindMedia(){
   const up=pn.querySelector('#upl'); if(up) up.onchange=()=>uploadMedia(up.files);
   const av=pn.querySelector('#uplAv'); if(av) av.onchange=()=>uploadMedia(av.files,{profile:true});
   pn.querySelectorAll('[data-media]').forEach(el=>el.onclick=()=>openLightbox(o,+el.dataset.media));
+  bindVoices(pn,o);
+  {const ua=pn.querySelector('#uplAudio'); if(ua) ua.onchange=async()=>{const f=ua.files[0]; if(!f) return; try{const d=await audioDuration(f); await saveVoice(o,f,{duration:d,caption:f.name.replace(/\.[^.]+$/,'')}); toast('Ljudfilen är sparad som röstminne.');}catch(e){toast('Kunde inte spara: '+(e.message||e),6000);}};}
 }
 function currentSelObj(){if(!ui.sel) return null; return ui.sel.type==='person'?P(ui.sel.id):ui.sel.type==='place'?S.places[ui.sel.id]:S.sources[ui.sel.id];}
 function openLightbox(o,i){
   const m=o.media[i]; const isImg=/^image\//.test(m.contentType||'');
   const lb=document.createElement('div'); lb.className='lightbox';
   lb.innerHTML=`${isImg?`<img src="${esc(murl(m))}" alt="">`:`<div style="font-size:48px">📄</div><p>${esc(m.name)}</p><a class="btn" href="${esc(murl(m))}" target="_blank" rel="noopener" style="color:var(--ink)">Öppna dokumentet</a>`}
-    <div class="cap">${E.canEdit?`<input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button>${isImg&&ui.sel&&ui.sel.type==='person'&&!m.profile?'<button class="btn" id="lbProf">Använd som profilbild</button>':''}<button class="btn danger" id="lbDel">Ta bort</button>`:`<span>${esc(m.caption||'')}</span>`}<button class="btn" id="lbClose">Stäng</button></div>`;
+    ${isImg&&(o.media||[]).some(x=>isAudio(x)&&x.forImg===m.url)?`<div class="lb-voices vms">${voiceRows(o,{forImg:m.url})}</div>`:''}
+    <div class="cap">${E.canEdit?`<input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button>${isImg&&ui.sel&&ui.sel.type==='person'&&!m.profile?'<button class="btn" id="lbProf">Använd som profilbild</button>':''}${isImg&&ui.sel&&ui.sel.type==='person'?'<button class="btn" id="lbRec">🎙 Berätta om bilden</button>':''}<button class="btn danger" id="lbDel">Ta bort</button>`:`<span>${esc(m.caption||'')}</span>`}<button class="btn" id="lbClose">Stäng</button></div>`;
   document.body.appendChild(lb);
   const close=()=>lb.remove();
   lb.onclick=e=>{if(e.target===lb) close();};
   $('#lbClose').onclick=close;
+  bindVoices(lb,o);
   if(E.canEdit){
+    const rb=$('#lbRec'); if(rb) rb.onclick=()=>{close(); recordModal(currentSelObj(),{forImg:m.url});};
     $('#lbSave').onclick=()=>{const c=clone(currentSelObj()); c.media[i].caption=$('#lbCap').value; Store.put(c); close();};
     const pb=$('#lbProf'); if(pb) pb.onclick=()=>{const c=clone(currentSelObj()); c.media.forEach((x,j)=>{if(j===i) x.profile=true; else delete x.profile;}); Store.put(c); close(); toast('Profilbilden är bytt');};
     $('#lbDel').onclick=()=>{close(); confirmBox('Ta bort filen?','Filen tas bort från arkivet för gott.','Ta bort',async()=>{const c=clone(currentSelObj()); const [rm]=c.media.splice(i,1); await Store.put(c); if(rm&&rm.assetId&&E.assets){try{await E.assets.delete(rm.assetId);}catch(e){}}});};
@@ -1464,7 +1565,7 @@ async function saveFile(name,data){
 function doExport(kind){ return withAll(()=>doExport0(kind)); }
 async function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
-  if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) for(const m of d.media||[]){ if(blobId(m)) m.url=await blobUrl(m); delete m.thumb; } return o;};
+  if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) {const map={}; for(const m of d.media||[]){ if(blobId(m)){const old=m.url; m.url=await blobUrl(m); map[old]=m.url;} delete m.thumb; } for(const m of d.media||[]) if(m.forImg&&map[m.forImg]) m.forImg=map[m.forImg];} return o;};
     const [persons,places,sources]=await Promise.all([inl('persons'),inl('places'),inl('sources')]);
     saveFile(`klansagan-${stamp}.json`,JSON.stringify({app:'Klansagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); }
   if(kind==='csv'){
@@ -1850,7 +1951,8 @@ function renderCard(){
       <div class="acts">${Store.canEdit?'<button class="btn" data-pc="edit">Redigera</button>':''}<button class="btn" data-pc="tree">Visa i trädet</button><button class="btn" data-pc="fan">Solfjäder</button><button class="btn" data-pc="rel">Hur är vi släkt?</button><button class="btn" data-pc="pdf">⎙ Skriv ut / PDF</button></div></div></div>
     <div class="pc-grid"><div>
       <h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>
-      ${imgs.length?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(thumbUrl(mm))}" alt="${esc(mm.caption||'')}" loading="lazy">`:'📄'}</div>`).join('')}</div>`:''}
+      ${imgs.some(isAudio)?`<h3>Röstminnen</h3><div class="vms">${voiceRows(p)}</div>`:''}
+      ${imgs.some(x=>!isAudio(x))?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>isAudio(mm)?'':`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(thumbUrl(mm))}" alt="${esc(mm.caption||'')}" loading="lazy">`:'📄'}</div>`).join('')}</div>`:''}
       <h3>Tidslinje</h3><div class="vtl">${evs.map(e=>{const y=yearOf(e.date); const age=by&&y&&e.fixed!=='birth'?y-by:null; return `<div class="it"><div class="d">${esc(fmtDate(e.date)||'okänt datum')}${age!=null&&age>=0?` · ${age} år`:''}</div><b>${esc(e.type==='Övrigt'&&e.desc?e.desc:e.type)}</b>${e.placeId?` · ${esc(placeName(e.placeId))}`:''}${e.withId&&P(e.withId)?` · med ${esc(fullName(P(e.withId)))}`:''}${e.desc&&e.type!=='Övrigt'?`<div class="muted small">${esc(e.desc)}</div>`:''}</div>`;}).join('')||'<p class="muted">Inga händelser.</p>'}</div>
       ${p.notes?`<h3>Anteckningar</h3><p style="white-space:pre-wrap;line-height:1.6">${esc(p.notes)}</p>`:''}
     </div><div>
@@ -1864,6 +1966,7 @@ function renderCard(){
     </div></div></div>`;
   bindChips(v,openCard);
   v.querySelectorAll('[data-img]').forEach(el=>el.onclick=()=>{ui.sel={type:'person',id:p.id}; openLightbox(p,+el.dataset.img);});
+  bindVoices(v,p);
   v.querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{const a=b.dataset.pc;
     if(a==='edit') openPersonModal(p);
     if(a==='tree'){setFocus(p.id); ui.treeKey=null; location.hash='trad';}
