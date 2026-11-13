@@ -286,7 +286,132 @@
     return Object.values(groups).sort((a, b) => b.length - a.length);
   }
 
-  const api = { yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components };
+  /* ---------- Sharing: hashing, three-way merge, end-to-end encryption ---------- */
+
+  /**
+   * Short, stable hash of a JSON-able value (cyrb53). Used to remember what a
+   * document looked like at the last published version without storing it.
+   * @param {unknown} v
+   * @returns {string}
+   */
+  function docHash(v) {
+    const str = JSON.stringify(v);
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) {
+      const ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  }
+
+  const COLS = ['persons', 'places', 'sources', 'views'];
+
+  /**
+   * Hashes of every document in an archive: { persons: { id: hash }, … }.
+   * @param {Record<string, Record<string, unknown>>} data
+   * @returns {Record<string, Record<string, string>>}
+   */
+  function hashArchive(data) {
+    /** @type {Record<string, Record<string, string>>} */
+    const out = {};
+    for (const c of COLS) { out[c] = {}; for (const [id, d] of Object.entries((data && data[c]) || {})) out[c][id] = docHash(d); }
+    return out;
+  }
+
+  /**
+   * Three-way merge of two archives that both started from `base` (given as hashes).
+   * A document changed on only one side keeps that change; changed on both sides,
+   * the one with the later `updatedAt` wins and counts as a conflict. Deletions merge too.
+   * @param {Record<string, Record<string, string>>} baseHashes
+   * @param {Record<string, Record<string, any>>} mine
+   * @param {Record<string, Record<string, any>>} theirs
+   * @returns {{ data: Record<string, Record<string, any>>, conflicts: string[] }}
+   */
+  function merge3(baseHashes, mine, theirs) {
+    /** @type {Record<string, Record<string, any>>} */
+    const data = {};
+    /** @type {string[]} */
+    const conflicts = [];
+    for (const c of COLS) {
+      const B = (baseHashes && baseHashes[c]) || {}, M = (mine && mine[c]) || {}, T = (theirs && theirs[c]) || {};
+      data[c] = {};
+      for (const id of new Set([...Object.keys(B), ...Object.keys(M), ...Object.keys(T)])) {
+        const b = B[id], m = M[id], t = T[id];
+        const hm = m === undefined ? undefined : docHash(m), ht = t === undefined ? undefined : docHash(t);
+        let pick;
+        if (hm === b) pick = t;
+        else if (ht === b || hm === ht) pick = m;
+        else {
+          conflicts.push(c + ':' + id);
+          if (m === undefined) pick = t; else if (t === undefined) pick = m;
+          else pick = String(m.updatedAt || '') >= String(t.updatedAt || '') ? m : t;
+        }
+        if (pick !== undefined) data[c][id] = pick;
+      }
+    }
+    return { data, conflicts };
+  }
+
+  /** @param {Uint8Array} u @returns {string} */
+  function b64u(u) {
+    let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, Array.from(u.subarray(i, i + 0x8000)));
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  /** @param {string} s @returns {Uint8Array} */
+  function unb64u(s) {
+    const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+    const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u;
+  }
+
+  /** @param {Uint8Array} data @param {'gzip'} fmt @param {boolean} inflate */
+  async function zip(data, fmt, inflate) {
+    const S = inflate ? DecompressionStream : CompressionStream;
+    const stream = new Blob([/** @type {BlobPart} */ (data)]).stream().pipeThrough(new S(fmt));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+
+  /** New random 256-bit key, base64url. @returns {string} */
+  function newKey() { return b64u(crypto.getRandomValues(new Uint8Array(32))); }
+
+  /** @param {string} key */
+  function aesKey(key) { return crypto.subtle.importKey('raw', /** @type {BufferSource} */ (unb64u(key)), 'AES-GCM', false, ['encrypt', 'decrypt']); }
+
+  /**
+   * Encrypt any JSON value with AES-256-GCM (gzip first when the browser can).
+   * Format: "k1.<iv>.<ciphertext>", base64url. The key never leaves the browser.
+   * @param {unknown} obj @param {string} key @returns {Promise<string>}
+   */
+  async function encryptJSON(obj, key) {
+    let body = new TextEncoder().encode(JSON.stringify(obj)), flag = 0;
+    if (typeof CompressionStream === 'function') { body = await zip(body, 'gzip', false); flag = 1; }
+    const plain = new Uint8Array(body.length + 1); plain[0] = flag; plain.set(body, 1);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await aesKey(key), /** @type {BufferSource} */ (plain)));
+    return 'k1.' + b64u(iv) + '.' + b64u(ct);
+  }
+
+  /** @param {string} payload @param {string} key @returns {Promise<any>} */
+  async function decryptJSON(payload, key) {
+    const [ver, iv, ct] = String(payload).split('.');
+    if (ver !== 'k1' || !iv || !ct) throw new Error('Okänt format');
+    const plain = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: /** @type {BufferSource} */ (unb64u(iv)) }, await aesKey(key), /** @type {BufferSource} */ (unb64u(ct))));
+    let body = plain.subarray(1); if (plain[0] === 1) body = await zip(body, 'gzip', true);
+    return JSON.parse(new TextDecoder().decode(body));
+  }
+
+  /**
+   * Secret that proves to the server you may publish. Derived from the key, so
+   * everyone with the link can publish, and the server only ever sees its hash.
+   * @param {string} key @returns {Promise<string>}
+   */
+  async function writeSecret(key) {
+    const k = await crypto.subtle.importKey('raw', /** @type {BufferSource} */ (unb64u(key)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    return b64u(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('klansagan-write'))));
+  }
+
+  const api = { yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;

@@ -474,3 +474,18 @@ body.simple .morebtn{display:none}
 .tree-tools .fname:hover{text-decoration:underline;text-underline-offset:3px}
 .ctl.chk{display:flex;align-items:center;gap:5px;cursor:pointer}
 .ctl.chk input{accent-color:var(--accent);margin:0}
+
+/* ---- Sharing ---- */
+button.status{border:0;background:transparent;font:inherit;font-size:12px;cursor:pointer;padding:5px 8px;border-radius:99px}
+button.status:hover{background:rgba(127,110,80,.12)}
+.status.dirty,.status.new{background:var(--warnbg);color:var(--warnfg);font-weight:600}
+[data-theme=wood] header .status{color:var(--hdrink2)}
+[data-theme=wood] header .status.dirty,[data-theme=wood] header .status.new{background:#f0d9a8;color:#5a3d12}
+.sharebtn{white-space:nowrap}
+[data-theme=wood] header .sharebtn{background:rgba(255,240,215,.1);border-color:rgba(255,240,215,.28);color:var(--hdrink)}
+.sh-state{background:var(--paper2);border-radius:10px;padding:10px 12px;margin:12px 0 10px;line-height:1.5}
+.sh-acts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.sh-list{padding-left:0;list-style:none;line-height:1.55;margin:10px 0}
+.sh-list li{margin:6px 0}
+[data-theme=wood] header #status.dirty,[data-theme=wood] header #status.new{background:#f0d9a8;color:#5a3d12}
+[data-theme=wood] header #status.dirty i,[data-theme=wood] header #status.new i{background:#b7791f}

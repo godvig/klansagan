@@ -104,6 +104,14 @@ npm run check     # eslint + tsc (JSDoc types on core.js) + vitest
 
 CI runs the same checks on every push and pull request. The test suite covers Swedish kinship terms (including half and removed relationships), date parsing and GEDCOM conversion, CSV/Excel paste parsing, duplicate scoring and branch hiding, all on synthetic families.
 
+## Sharing (end-to-end encrypted)
+
+**Dela** creates a link you send to relatives. The tree is encrypted in the browser with AES-256-GCM; the key sits in the link's `#fragment`, which browsers never send to a server. Supabase stores only ciphertext and checks a write secret derived from the key, so neither the host nor the site owner can read a shared tree.
+
+Everyone with the link can edit a local working copy and **publish** when ready. If two people publish in parallel, the second publish merges document by document (three-way merge); when both changed the same person, the newer edit wins. The server keeps the last 30 versions.
+
+To run your own: create a Supabase project, run `supabase/migrations/0001_shared_trees.sql` in the SQL editor, and put the project URL and publishable key in `src/config.js`. The publishable key is public by design: the tables are closed and only the `kl_*` functions are exposed.
+
 ## Roadmap
 
 - [ ] **English UI** with a language switcher and English kinship terms ("first cousin once removed")

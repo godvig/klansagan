@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.2';
+const APP_VERSION='2026-11-13.4';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:10,descGen:10,kinDeg:10,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -74,8 +74,10 @@ const Store={
       } else this.isAdmin=false;
       this.subscribe();
     }else{
-      this.mode='local'; this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
-      setStatus('warn','Sparas bara i den här webbläsaren');
+      this.mode='local';
+      if(Share.pendingJoin){const j=Share.pendingJoin; Share.pendingJoin=null; await Share.join(j.id,j.key);}
+      this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
+      Share.updateStatus(); Share.startPolling();
       renderAll();
     }
   },
@@ -92,12 +94,17 @@ const Store={
     },err=>{clearTimeout(timer); setStatus('err','Kunde inte läsa data ('+err.code+')'); this.loaded=true; renderAll();});
   },
   loadLocal(){
-    try{const raw=localStorage.getItem('klansagan-v1')||localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1'); if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
+    try{const k=Share.lsKey(); const raw=localStorage.getItem(k)||(k==='klansagan-v1'?(localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1')):null); ALL.persons={};ALL.places={};ALL.sources={};ALL.views={}; if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
   },
   saveLocal(){
     if(this.demo) return;
     clearTimeout(this._lt);
-    this._lt=setTimeout(()=>{try{localStorage.setItem('klansagan-v1',JSON.stringify(ALL));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}},250);
+    this._lt=setTimeout(()=>this.saveNow(),250);
+  },
+  saveNow(){
+    clearTimeout(this._lt);
+    try{localStorage.setItem(Share.lsKey(),JSON.stringify({persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}
+    Share.changed();
   },
   async write(id,fn){
     const prev=this.chains[id]||Promise.resolve();
@@ -2014,6 +2021,7 @@ function hideModal(p){
   });
 }
 function shareModal(v){
+  if(Share.enabled()&&!v) return shareTreeModal();
   const link=viewLink(v); const inClaude=Store.mode==='db';
   modal(`<h3>Dela med släkten</h3>
     ${inClaude?`<p style="line-height:1.55;margin-top:-6px">Alla som får tillgång ser samma träd, och ändringar syns för alla direkt. Varje ändring märks med vem som gjorde den.</p>
@@ -2188,4 +2196,146 @@ function purgeLegacyDemo(){
 
 /* ============ Boot ============ */
 route();
+/* ============ SHARING (Supabase, end-to-end encrypted) ============
+   A shared tree lives on the server only as ciphertext. The key is in the link's
+   #fragment, so only people with the link can read it. Everyone edits a local working
+   copy and publishes when they are ready; parallel edits are merged document by document. */
+const Share={
+  cfg:window.KLANSAGAN_CONFIG||{}, pendingJoin:null, newer:false, busy:false, _dirty:0, _ct:null,
+  st:(()=>{try{return JSON.parse(localStorage.getItem('klansagan-shares')||'')||{active:null,trees:{}};}catch(e){return {active:null,trees:{}};}})(),
+  save(){try{localStorage.setItem('klansagan-shares',JSON.stringify(this.st));}catch(e){}},
+  enabled(){return !!this.cfg.supabaseUrl&&Store.mode!=='db';},
+  cur(){return this.st.active?this.st.trees[this.st.active]:null;},
+  lsKey(){return this.st.active?'klansagan-tree-'+this.st.active:'klansagan-v1';},
+  link(id=this.st.active){const t=this.st.trees[id]; return `${location.origin}${location.pathname}#dela-${id}.${t.key}`;},
+  archive(){return {persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views};},
+  async rpc(fn,args){
+    const r=await fetch(`${this.cfg.supabaseUrl}/rest/v1/rpc/${fn}`,{method:'POST',headers:{'Content-Type':'application/json',apikey:this.cfg.supabaseKey,Authorization:'Bearer '+this.cfg.supabaseKey},body:JSON.stringify(args)});
+    const txt=await r.text(); let body=null; try{body=txt?JSON.parse(txt):null;}catch(e){body=txt;}
+    if(!r.ok){const m=(body&&body.message)||String(txt||r.status); const e=new Error(m); e.code=/conflict/.test(m)?'conflict':/forbidden/.test(m)?'forbidden':'server'; throw e;}
+    return body;
+  },
+  dirty(){return this._dirty;},
+  recount(){const t=this.cur(); if(!t){this._dirty=0; return 0;} const now=KinCore.hashArchive(this.archive()); let n=0;
+    for(const c of Object.keys(now)){const a=now[c], b=(t.base&&t.base[c])||{}; for(const id in a) if(a[id]!==b[id]) n++; for(const id in b) if(!(id in a)) n++;}
+    this._dirty=n; return n;},
+  changedNames(){const t=this.cur(); if(!t) return []; const b=(t.base&&t.base.persons)||{}, out=[];
+    for(const p of Object.values(ALL.persons)) if(KinCore.docHash(p)!==b[p.id]) out.push((b[p.id]?'':'Ny: ')+fullName(p));
+    for(const id in b) if(!ALL.persons[id]) out.push('Borttagen person'); return out;},
+  changed(){if(!this.cur()) return; clearTimeout(this._ct); this._ct=setTimeout(()=>{this.recount(); this.updateStatus();},500);},
+  updateStatus(){
+    const b=$('#shareBtn'); if(b) b.hidden=!this.enabled()||Store.demo;
+    if(Store.mode==='db') return;
+    const t=this.cur();
+    if(!t){setStatus('warn','Sparas bara i den här webbläsaren'); return;}
+    const n=this.recount();
+    if(this.newer) setStatus('warn new','Ny version finns – klicka för att hämta');
+    else if(n) setStatus('warn dirty',`Delat · ${n} ${n===1?'ändring':'ändringar'} ej publicerade`);
+    else setStatus('ok',`Delat · version ${t.version}`);
+    const s=$('#status'); if(s){s.querySelector('span').textContent=this.newer?'Ny version':n?`${n} att publicera`:'Delat';}
+  },
+  async create(){
+    const key=KinCore.newKey(), data=this.archive();
+    const payload=await KinCore.encryptJSON({...data,meta:{by:this.st.name||'',at:new Date().toISOString()}},key);
+    const id=await this.rpc('kl_create_tree',{write_secret:await KinCore.writeSecret(key),payload});
+    this.st.trees[id]={key,version:1,base:KinCore.hashArchive(data),created:new Date().toISOString(),name:treeTitle()};
+    this.st.active=id; this.save(); Store.saveNow(); this.updateStatus(); return id;
+  },
+  async fetchVersion(id,key,ver){const rows=await this.rpc('kl_get',{tree:id,ver:ver??null}); const r=rows&&rows[0]; if(!r) throw new Error('Trädet finns inte (länken kan vara fel eller trädet borttaget).');
+    return {version:r.version,at:r.created_at,data:await KinCore.decryptJSON(r.payload,key)};},
+  async join(id,key){
+    try{
+      const known=this.st.trees[id];
+      if(known&&known.key===key){this.st.active=id; this.save(); setTimeout(()=>this.check(true),300); return;}
+      const v=await this.fetchVersion(id,key);
+      const data={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
+      this.st.trees[id]={key,version:v.version,base:KinCore.hashArchive(data),joined:new Date().toISOString(),name:''};
+      this.st.active=id; this.save();
+      localStorage.setItem('klansagan-tree-'+id,JSON.stringify(data));
+      setTimeout(()=>{const n=Object.keys(data.persons).length; toast(`Du är med i ett delat släktträd – ${n} personer. Dina ändringar syns för de andra när du publicerar.`,7000);},600);
+    }catch(e){ const msg=e&&e.name==='OperationError'?'länken verkar vara fel eller ofullständig. Kopiera hela länken igen.':(e.message||e); setTimeout(()=>toast('Kunde inte öppna det delade trädet: '+msg,8000),600); }
+  },
+  async check(quiet){
+    const t=this.cur(); if(!t||!this.enabled()||this.busy) return;
+    try{const head=await this.rpc('kl_head',{tree:this.st.active});
+      if(head>t.version){ if(!this.recount()) await this.pull(true); else {this.newer=true; this.updateStatus(); if(!quiet) toast('Någon har publicerat en ny version.',5000,{label:'Hämta',fn:()=>this.pull()});} }
+    }catch(e){ if(!quiet) toast('Kunde inte nå servern just nu.'); }
+  },
+  /** Fetch the latest version and merge in any unpublished local changes. */
+  async pull(quiet){
+    const t=this.cur(); if(!t) return {conflicts:[]};
+    const v=await this.fetchVersion(this.st.active,t.key);
+    const theirs={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
+    const mine=this.archive(), hadLocal=this.recount()>0;
+    const {data,conflicts}=hadLocal?KinCore.merge3(t.base,mine,theirs):{data:theirs,conflicts:[]};
+    Object.assign(ALL,data); t.version=v.version; t.base=KinCore.hashArchive(theirs); this.newer=false; this.save();
+    applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus();
+    if(!quiet||conflicts.length){const by=v.data.meta&&v.data.meta.by; toast(`Hämtade version ${v.version}${by?' från '+by:''}.`+(conflicts.length?` ${conflicts.length} uppgift(er) hade ändrats av er båda – den senaste ändringen behölls.`:'')+(hadLocal?' Dina egna ändringar ligger kvar opublicerade.':''),6500);}
+    return {conflicts};
+  },
+  async publish(){
+    const t=this.cur(); if(!t||this.busy) return; if(Store.demo){toast('Stäng exemplet först.');return;}
+    if(!this.st.name){ const n=await askName(); if(!n) return; this.st.name=n; this.save(); }
+    this.busy=true;
+    try{
+      for(let attempt=0;attempt<3;attempt++){
+        const data=this.archive();
+        const payload=await KinCore.encryptJSON({...data,meta:{by:this.st.name,at:new Date().toISOString()}},t.key);
+        if(payload.length>20000000) throw new Error('Trädet är för stort att publicera (för många eller för stora bilder).');
+        try{
+          const v=await this.rpc('kl_publish',{tree:this.st.active,base_version:t.version,write_secret:await KinCore.writeSecret(t.key),payload});
+          t.version=v; t.base=KinCore.hashArchive(data); this.newer=false; this.save(); this.updateStatus();
+          toast(`Publicerat! Version ${v} syns nu för alla med länken.`,4500); return true;
+        }catch(e){ if(e.code!=='conflict') throw e; this.busy=false; await this.pull(true); this.busy=true; }
+      }
+      throw new Error('Andra publicerar just nu – försök igen om en stund.');
+    }catch(e){ toast('Kunde inte publicera: '+(e.code==='forbidden'?'länken saknar skrivrätt.':(e.message||e)),7000); }
+    finally{ this.busy=false; }
+  },
+  async discard(){const t=this.cur(); if(!t) return; const v=await this.fetchVersion(this.st.active,t.key,t.version);
+    Object.assign(ALL,{persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}}); applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus(); toast('Dina opublicerade ändringar är borttagna.');},
+  switchTo(id){Store.saveNow(); this.st.active=id||null; this.newer=false; this.save(); Store.loadLocal(); applyView(); ui.focus=null; ui.sel=null; ui.treeKey=null; this.updateStatus(); renderAll(true); if(id) this.check(true);},
+  startPolling(){ if(this._poll) return; this._poll=setInterval(()=>this.check(true),60000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) this.check(true);}); if(this.cur()) setTimeout(()=>this.check(true),1500); },
+};
+{const m=location.hash.match(/^#dela-([0-9a-f-]{36})\.([A-Za-z0-9_-]{40,})$/); if(m){Share.pendingJoin={id:m[1],key:m[2]}; history.replaceState(null,'',location.pathname+location.search+'#start');}}
+function treeTitle(){const h=homePerson(); const t=trees()[0]; return t?t.name:(h?'Släkten kring '+fullName(h):'Släktträd');}
+function askName(){return new Promise(res=>{modal(`<h3>Vad heter du?</h3><p class="muted" style="margin-top:-4px">Namnet syns för de andra när du publicerar, så att de vet vem som ändrat.</p>
+  <label class="f"><span>Ditt namn</span><input class="t" id="anName" placeholder="t.ex. Adam"></label>
+  <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>Fortsätt</button></div>`,(ov,close)=>{const i=ov.querySelector('#anName'); i.focus();
+  const done=v=>{close(); res(v);}; ov.querySelector('[data-x]').onclick=()=>done(''); ov.querySelector('[data-ok]').onclick=()=>{const v=i.value.trim(); if(!v){i.focus();return;} done(v);}; i.onkeydown=e=>{if(e.key==='Enter') ov.querySelector('[data-ok]').click();};});});}
+function shareTreeModal(){
+  if(!Share.enabled()){toast('Delning är inte påslagen på den här sidan.');return;}
+  if(Store.demo){toast('Stäng exemplet först – exemplet kan inte delas.');return;}
+  const t=Share.cur(), others=Object.entries(Share.st.trees).filter(([id])=>id!==Share.st.active);
+  const n=Share.recount(), names=Share.changedNames();
+  const otherList=`${others.length||t?`<div class="sgroup"><div class="slab">Byt arkiv</div>
+      ${t?'<button class="btn sm" data-sw="">← Mitt lokala arkiv (inte delat)</button> ':''}${others.map(([id,o])=>`<button class="btn sm" data-sw="${id}">${esc(o.name||'Delat träd')}</button>`).join(' ')}</div>`:''}`;
+  modal(t?`<h3>Delat släktträd</h3>
+    <p class="muted" style="margin-top:-4px;line-height:1.5">Alla med länken kan se och ändra. Ändringar syns för de andra först när de publiceras. Trädet är krypterat – inte ens servern kan läsa det.</p>
+    <label class="f"><span>Länk att skicka till släkten</span><div class="row-inline"><input class="t" id="shLink" readonly value="${esc(Share.link())}"><button class="btn" id="shCopy">Kopiera</button></div></label>
+    <div class="sh-state">${Share.newer?'<b>Det finns en ny version.</b> Hämta den innan du fortsätter.':n?`<b>${n} ${n===1?'ändring':'ändringar'} att publicera</b>${names.length?`<div class="small muted" style="margin-top:4px">${names.slice(0,8).map(esc).join(', ')}${names.length>8?' …':''}</div>`:''}`:`Allt är publicerat (version ${t.version}).`}</div>
+    <div class="sh-acts">${Share.newer?'<button class="btn primary" id="shPull">Hämta senaste</button>':''}<button class="btn ${Share.newer?'':'primary'}" id="shPub" ${n?'':'disabled'}>Publicera ändringar</button>${n?'<button class="btn ghost" id="shDiscard">Släng mina ändringar</button>':''}</div>
+    <p class="small muted">Skicka länken bara till dem som ska ha tillgång. Den som har länken kan inte uteslutas i efterhand – då får du skapa ett nytt delat träd.</p>
+    ${otherList}
+    <div class="foot"><button class="btn" data-x>Stäng</button></div>`
+  :`<h3>Dela släktträdet</h3>
+    <p style="line-height:1.55">Du får en länk som du skickar till släkten. Alla med länken kan titta och lägga till uppgifter. Deras ändringar syns för de andra när de trycker <b>Publicera</b>.</p>
+    <ul class="sh-list"><li>🔒 Trädet krypteras i din webbläsare. Nyckeln finns bara i länken – varken servern eller någon annan kan läsa det.</li><li>👥 Ingen behöver konto eller lösenord.</li><li>💾 Ditt nuvarande arkiv blir startpunkten. Ditt lokala arkiv finns kvar orört.</li></ul>
+    ${Object.keys(ALL.persons).length?'':'<p class="muted">Arkivet är tomt – lägg in några personer först.</p>'}
+    ${otherList}
+    <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" id="shCreate" ${Object.keys(ALL.persons).length?'':'disabled'}>Skapa delningslänk</button></div>`,
+  (ov,close)=>{const q=x=>ov.querySelector(x);
+    q('[data-x]').onclick=close;
+    ov.querySelectorAll('[data-sw]').forEach(b=>b.onclick=()=>{close(); Share.switchTo(b.dataset.sw||null); toast(b.dataset.sw?'Bytte till det delade trädet.':'Du är i ditt lokala arkiv.');});
+    const cp=q('#shCopy'); if(cp) cp.onclick=async()=>{const i=q('#shLink'); i.select(); try{await navigator.clipboard.writeText(i.value);}catch(e){document.execCommand('copy');} cp.textContent='Kopierad ✓';};
+    const pb=q('#shPub'); if(pb) pb.onclick=async()=>{pb.disabled=true; pb.textContent='Publicerar…'; const ok=await Share.publish(); close(); if(ok) shareTreeModal();};
+    const pl=q('#shPull'); if(pl) pl.onclick=async()=>{pl.disabled=true; await Share.pull(); close(); shareTreeModal();};
+    const dc=q('#shDiscard'); if(dc) dc.onclick=()=>{close(); confirmBox('Släng dina ändringar?','Allt du ändrat sedan senaste publiceringen försvinner.','Släng',()=>Share.discard());};
+    const cr=q('#shCreate'); if(cr) cr.onclick=async()=>{ if(!Share.st.name){const nm=await askName(); if(!nm) return; Share.st.name=nm; Share.save();}
+      cr.disabled=true; cr.textContent='Krypterar och laddar upp…';
+      try{await Share.create(); close(); shareTreeModal(); toast('Klart! Kopiera länken och skicka den till släkten.',5000);}
+      catch(e){cr.disabled=false; cr.textContent='Skapa delningslänk'; toast('Kunde inte skapa delningen: '+(e.message||e),7000);} };
+  });
+}
+{const sb=$('#shareBtn'); if(sb) sb.onclick=shareTreeModal; const st=$('#status'); if(st) st.onclick=()=>{ if(Share.newer) Share.pull(); else if(Share.enabled()) shareTreeModal(); };}
 Store.init();

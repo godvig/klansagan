@@ -151,3 +151,34 @@ describe('components (separate trees)', () => {
     expect(cs).toEqual(['abc', 'xy', 'z']);
   });
 });
+
+describe('sharing: merge and encryption', () => {
+  const base = { persons: { a: { id: 'a', given: 'Anna', updatedAt: '1' }, b: { id: 'b', given: 'Bo', updatedAt: '1' }, c: { id: 'c', given: 'Cia', updatedAt: '1' } } };
+  const bh = core.hashArchive(base);
+  it('keeps changes made on either side and merges deletions', () => {
+    const mine = { persons: { ...base.persons, a: { id: 'a', given: 'Anna Maria', updatedAt: '2' }, n: { id: 'n', given: 'Ny' } } };
+    const theirs = { persons: { a: base.persons.a, b: { id: 'b', given: 'Bosse', updatedAt: '2' } } }; // c deleted
+    const { data, conflicts } = core.merge3(bh, mine, theirs);
+    expect(data.persons.a.given).toBe('Anna Maria');
+    expect(data.persons.b.given).toBe('Bosse');
+    expect(data.persons.c).toBeUndefined();
+    expect(data.persons.n.given).toBe('Ny');
+    expect(conflicts).toEqual([]);
+  });
+  it('lets the newer edit win when both changed the same person', () => {
+    const mine = { persons: { ...base.persons, a: { id: 'a', given: 'Mitt', updatedAt: '3' } } };
+    const theirs = { persons: { ...base.persons, a: { id: 'a', given: 'Deras', updatedAt: '2' } } };
+    const r = core.merge3(bh, mine, theirs);
+    expect(r.data.persons.a.given).toBe('Mitt');
+    expect(r.conflicts).toEqual(['persons:a']);
+  });
+  it('round-trips encrypted data and rejects the wrong key', async () => {
+    const key = core.newKey();
+    const payload = await core.encryptJSON(base, key);
+    expect(payload.startsWith('k1.')).toBe(true);
+    expect(payload).not.toContain('Anna');
+    expect(await core.decryptJSON(payload, key)).toEqual(base);
+    await expect(core.decryptJSON(payload, core.newKey())).rejects.toThrow();
+    expect(await core.writeSecret(key)).toBe(await core.writeSecret(key));
+  });
+});
