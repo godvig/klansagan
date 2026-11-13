@@ -20,7 +20,7 @@ The interface is in Swedish for now, and it understands Swedish sources (househo
 
 ## Live demo
 
-**[Open the example](https://godvig.github.io/klansagan/#exempel)**: the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. The example lives in memory only and is never saved. [Open an empty archive](https://godvig.github.io/klansagan/) to start with your own family.
+**[Open the example](https://klansagan.godvig.com/#exempel)**: the Swedish royal House of Vasa, from Gustav Vasa (1496) to Queen Christina and Charles X Gustav, with coronations, marriages, places and sources. The example lives in memory only and is never saved. [Open an empty archive](https://klansagan.godvig.com/) to start with your own family.
 
 ## Quick start
 
