@@ -131,14 +131,13 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
+Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Landing page for new visitors
-2. Comment threads per person
-3. Browser tests in CI; split `app.js` into modules
-4. Locked tree, step 2: add a branch by clicking someone outside it
-5. "On this day" on the start page; family book as PDF
+1. Comment threads per person
+2. Browser tests in CI; split `app.js` into modules
+3. Locked tree, step 2: add a branch by clicking someone outside it
+4. "On this day" on the start page; family book as PDF
 
 **Later:** life path on the map, photo gallery on the person card, read-only share links with protection for living people, "what's new since your last visit", English UI.
 

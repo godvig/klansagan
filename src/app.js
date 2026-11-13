@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.25';
+const APP_VERSION='2026-11-13.26';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -367,7 +367,7 @@ function ageAt(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(b&&d) re
 function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.replace(/\s/g,'')+')':'');}
 
 /* ============ Router ============ */
-const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
+const VIEWS={om:renderAbout,start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
 const NAVMAP={personkort:'personer',dubbletter:'personer'};
 /** The "Mer" button names the page you're on when that page lives in its menu. */
 function updateMoreBtn(){const mb=$('#moreBtn'); if(!mb) return; const desk=!matchMedia('(max-width:1100px)').matches, onA=document.querySelector(desk?'#morePop a.on:not(.mob-only)':'#morePop a.on'), inMore=!!onA; mb.classList.toggle('on',inMore); mb.querySelector('span').firstChild.textContent=inMore?onA.querySelector('b').textContent:'Mer';}
@@ -1955,19 +1955,61 @@ function heroArt(){
     parts.push(`<path d="${arc({innerRadius:r0,outerRadius:r1,startAngle:-Math.PI/2+j*span,endAngle:-Math.PI/2+(j+1)*span})}" fill="${cols[q]}" fill-opacity="${(0.9-g*0.13).toFixed(2)}" stroke="${cssv('--card')}" stroke-width="1.5"/>`);}}
   return `<svg viewBox="-200 -200 400 230" width="88%"><g>${parts.join('')}<circle r="30" fill="${cssv('--accent')}"/></g></svg>`;
 }
+/* ============ Presentation (first visit, and "Om Släktsagan") ============ */
+const REPO_URL='https://github.com/godvig/slaktsagan';
+function landingMore(){
+  const F=[
+    ['🌳','Ett träd som rör sig','Klicka på någon så glider släkten på plats runt hen. Anor, ättlingar, kusiner och ingifta – utan att linjerna trasslar.'],
+    ['🔗','Hur är vi släkt?','Välj två personer så får du svaret på svenska – ”farmors kusins dotter” – och vägen mellan dem lyser upp i trädet.'],
+    ['🎙','Röstminnen','Spela in farmor när hon berättar, direkt i telefonen, och koppla inspelningen till personen eller till ett foto.'],
+    ['👥','Hela släkten hjälper till','Skicka en länk. Alla kan fylla i det de vet och publicera – ändringarna slås ihop och de 30 senaste versionerna sparas.'],
+    ['📜','Källor från kyrkböckerna','Klistra in en hänvisning från ArkivDigital eller Riksarkivet så blir volym, bild och sida rätt – med länk till bilden.'],
+    ['🖼','Bilder på rätt person','Dra en bild till ett kort eller fota med mobilen. Ansiktet hamnar i mitten av sig självt.'],
+    ['🗺','Karta och tidslinje','Se var släkten levde och vad som hände i världen samtidigt.'],
+    ['↶','Ångra allt','Råkade du ta bort fel person eller läsa in fel fil? Ett klick, så är allt som förut.'],
+  ];
+  return `<section class="land-sec land-video"><div class="lv-text"><h2>Se den i rörelse</h2><p>Gustav Vasas ättlingar – och hur Sigrid och Władysław IV är släkt. Exemplet Vasaätten finns inbyggt, så du kan prova allt utan att skriva in en enda person.</p><button class="btn primary" onclick="loadDemo()">👑 Öppna exemplet</button></div>
+      <video class="lv-video" src="docs/media/demo.mp4" poster="docs/media/demo-poster.jpg" muted loop playsinline preload="none" aria-label="Kort film: trädet glider mellan personer och släktvägen lyser upp"></video></section>
+    <section class="land-sec"><h2>Det här kan Släktsagan</h2><div class="feat-grid">${F.map(([i,t,d])=>`<div class="feat"><span class="ic">${i}</span><b>${t}</b><p>${d}</p></div>`).join('')}</div></section>
+    <section class="land-sec trust"><h2>Din släkt, dina uppgifter</h2><div class="trust-grid">
+      <div><b>Sparas hos dig</b><p>Allt ligger i din webbläsare. Inget konto, ingen reklam, ingen spårning – och appen fungerar utan internet.</p></div>
+      <div><b>Krypterat när du delar</b><p>Delar du trädet krypteras det på din dator. Servern ser bara oläsbar data – nyckeln finns bara i länken du skickar.</p></div>
+      <div><b>Ta med dig allt</b><p>Exportera till GEDCOM, som alla släktprogram läser, eller spara en säkerhetskopia med bilder och röstminnen.</p></div>
+    </div></section>
+    <footer class="land-foot">Släktsagan byggs av <a href="https://godvig.github.io" target="_blank" rel="noopener">Adam Englund</a> · <a href="${REPO_URL}" target="_blank" rel="noopener">Öppen källkod på GitHub</a> (AGPL-3.0) · <a href="${REPO_URL}/issues" target="_blank" rel="noopener">Tipsa om en idé</a></footer>`;
+}
+/** Start the film only when it scrolls into view, so the start page stays light. */
+function bindLanding(v){
+  const vid=v.querySelector('.lv-video'); if(!vid) return;
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){ vid.controls=true; return; }
+  if(!('IntersectionObserver' in window)){ vid.preload='auto'; vid.play().catch(()=>{}); return; }
+  new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) vid.play().catch(()=>{vid.controls=true;}); else vid.pause(); }),{threshold:.35}).observe(vid);
+}
+function renderAbout(){
+  const v=$('#view'), has=Object.keys(ALL.persons).length;
+  v.innerHTML=`<div class="start about"><div class="hero"><div>
+      <h1>Om Släktsagan</h1>
+      <p>Släktträd, bilder, röstminnen, källor, tidslinje och karta – och en länk som låter hela släkten hjälpa till. Gratis, utan konto, och allt sparas automatiskt.</p>
+      <div class="badges"><span>Inget konto</span><span>Fungerar offline</span><span>Krypterad delning</span><span>Öppen källkod</span></div>
+      <div class="hero-links">${has?'<a href="#trad">🌳 Till ditt släktträd</a>':'<a href="#start">Kom igång →</a>'}<a href="${REPO_URL}" target="_blank" rel="noopener">Källkoden på GitHub ↗</a></div>
+    </div><div class="hero-art">${heroArt()}</div></div>${landingMore()}<p class="muted small" style="text-align:center;margin-top:-8px">Version ${esc(APP_VERSION)}</p></div>`;
+  bindLanding(v);
+}
 function renderStart(){
   const v=$('#view'); const all=Object.values(S.persons);
   const ed=Store.canEdit;
   if(!all.length){
     v.innerHTML=`<div class="start"><div class="hero"><div>
-      <h1>Välkommen till Släktsagan</h1>
-      <p>Här samlar du släkten på ett ställe: släktträd, bilder, källor, tidslinje och karta. Allt sparas automatiskt. Välj hur du vill börja.</p>
+      <h1>Släktens saga, samlad på ett ställe</h1>
+      <p>Släktträd, bilder, röstminnen, källor, tidslinje och karta – och en länk som låter hela släkten hjälpa till. Gratis, utan konto, och allt sparas automatiskt. Välj hur du vill börja.</p>
+      <div class="badges"><span>Inget konto</span><span>Fungerar offline</span><span>Krypterad delning</span><span>Öppen källkod</span></div>
     </div><div class="hero-art">${heroArt()}</div></div>
     <div class="choices">
-      ${ed?`<a class="choice primary" href="#import"><span class="ic">📄</span><b>Jag har en släktlista</b><span>Läs in en Excel- eller CSV-fil. Du ser allt innan något sparas.</span><span class="go">Läs in fil →</span></a>
+      ${ed?`<a class="choice primary" href="#import"><span class="ic">📄</span><b>Jag har redan släktdata</b><span>Läs in en GEDCOM-fil från Disgen, MyHeritage, Ancestry eller Geni – eller en Excel-lista. Du ser allt innan något sparas.</span><span class="go">Läs in fil →</span></a>
       <button class="choice" onclick="openPersonModal()"><span class="ic">✏️</span><b>Börja med mig själv</b><span>Skriv in dig själv och lägg sedan till föräldrar, mor- och farföräldrar.</span><span class="go">Lägg till första personen →</span></button>`:''}
       <button class="choice" onclick="loadDemo()"><span class="ic">👑</span><b>Titta på ett exempel</b><span>Vasaätten, från Gustav Vasa till drottning Kristina. Exemplet sparas inte.</span><span class="go">Visa exemplet →</span></button>
-    </div></div>`;
+    </div>${landingMore()}</div>`;
+    bindLanding(v);
     return;
   }
   const home=homePerson()||P(ui.focus);

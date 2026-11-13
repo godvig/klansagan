@@ -693,3 +693,26 @@ body.dragging-files #view::after{content:'Släpp bilden på en person';position:
 .cite-links{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px;font-size:12.5px}
 .cite-links a{color:var(--accent)}
 .linkbtn{border:none;background:none;padding:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline;text-underline-offset:2px}
+
+/* Presentation page (first visit, #om) */
+.hero .badges{display:flex;flex-wrap:wrap;gap:6px;margin:-6px 0 4px}
+.hero .badges span{font-size:12.5px;padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--accent) 10%,var(--card));color:var(--accent);font-weight:600}
+.land-sec{margin:56px 0 0}
+.land-sec h2{font-family:var(--serif);font-size:30px;margin:0 0 18px}
+.land-video{display:grid;grid-template-columns:1fr 1.6fr;gap:32px;align-items:center}
+.land-video p{color:var(--ink2);line-height:1.6;margin:0 0 16px}
+.lv-video{width:100%;border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--line);background:var(--card);aspect-ratio:16/9;object-fit:cover}
+.feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.feat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px}
+.feat .ic{font-size:24px;display:block;margin-bottom:8px}
+.feat b{font-family:var(--serif);font-size:17px;display:block;margin-bottom:6px}
+.feat p{margin:0;color:var(--ink2);font-size:14px;line-height:1.55}
+.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.trust-grid div{border-left:3px solid var(--accent);padding:4px 0 4px 16px}
+.trust-grid b{font-size:16px}
+.trust-grid p{margin:6px 0 0;color:var(--ink2);font-size:14px;line-height:1.55}
+.land-foot{margin:56px 0 28px;padding-top:18px;border-top:1px solid var(--line);text-align:center;color:var(--ink3);font-size:13.5px}
+.land-foot a{color:var(--accent)}
+@media (max-width:1100px){.feat-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){.land-video{grid-template-columns:1fr}.trust-grid{grid-template-columns:1fr}.land-sec{margin-top:40px}.land-sec h2{font-size:25px}}
+@media (max-width:520px){.feat-grid{grid-template-columns:1fr}.hero h1{font-size:32px}}
