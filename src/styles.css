@@ -506,3 +506,58 @@ button.status:hover{background:rgba(127,110,80,.12)}
 .hrow.cur{background:var(--paper2);border-radius:8px}
 .hrow .hv{font-family:var(--serif);font-weight:600;color:var(--ink2);min-width:34px}
 .hrow .hb{flex:1;min-width:0;line-height:1.45}
+
+/* ===================== Mobile ===================== */
+#nav .ni{display:none;width:22px;height:22px}
+.mob-only{display:none!important}
+@media (max-width:700px){
+  .mob-only{display:revert!important}
+  .desk-only{display:none!important}
+  :root{--tabbar:calc(58px + env(safe-area-inset-bottom))}
+  body{overflow-x:hidden}
+  /* header: logo, view, search, share, status, settings */
+  header{height:52px;gap:6px;padding:0 10px;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+  .hdr-right{gap:6px;flex:1;min-width:0;justify-content:flex-end}
+  .search{flex:1;min-width:0}.search input{width:100%;min-width:0}
+  .viewbtn{padding:0 9px}.viewbtn .vname,.viewbtn .vlabel{display:none}
+  .sharebtn span,.setbtn span{display:none}
+  .setbtn{padding:0 9px}
+  .status{padding:5px 4px}
+  .status.dirty span,.status.new span{display:inline}
+  .simplepill{display:none!important}
+  /* bottom tab bar */
+  #nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;gap:0;margin:0;height:var(--tabbar);padding:4px 4px env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(60,40,20,.08)}
+  #nav>a,#nav>.morebtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 2px;border-radius:10px;font-size:11px;font-weight:600;color:var(--ink3);background:none}
+  #nav .ni{display:block}
+  #nav>a.on,#nav>.morebtn.on{color:var(--accent);background:var(--paper2)}
+  [data-theme=wood] #nav{background:var(--card)}
+  [data-theme=wood] #nav>a,[data-theme=wood] #nav>.morebtn{color:var(--ink3)}
+  [data-theme=wood] #nav>a.on,[data-theme=wood] #nav>.morebtn.on{color:var(--accent);background:var(--paper2)}
+  .morepop{left:8px!important;right:8px;top:auto!important;bottom:calc(var(--tabbar) + 8px);min-width:0;padding:8px}
+  .morepop a{padding:12px 14px}
+  main{padding-bottom:var(--tabbar)}
+  #panel{bottom:var(--tabbar)}
+  .toast{bottom:calc(var(--tabbar) + 12px);width:max-content;max-width:calc(100vw - 24px);white-space:normal}
+  /* tree and fan toolbars: name + a few buttons, the rest behind "Visa" */
+  .tree-tools{top:8px;left:8px;right:8px;gap:6px;padding:6px 8px}
+  .tree-tools .fname{flex:1;min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tree-tools:not(.tt-tree) .fname{flex-basis:100%}
+  .map-side{max-height:34%}
+  .tt-tree:not(.open)>*:not(.fname):not(#tOpts):not(#tMe){display:none!important}
+  .tree-tools.open>*{flex:none}
+  .tree-tools .btn.sm{min-height:34px}
+  .fan-legend{display:none}
+  #fanNote{max-width:calc(100% - 24px)!important}
+  /* lists and forms */
+  table.list th:nth-child(n+3),table.list td:nth-child(n+3){display:none}
+  .ov{padding:8px;align-items:flex-end}
+  .modal{padding:18px 16px;border-radius:16px 16px 12px 12px;max-height:calc(100vh - 16px);overflow:auto}
+  .modal .foot{position:sticky;bottom:-18px;background:var(--card);padding:10px 0 4px;margin-bottom:-4px}
+  .modal .foot .btn{flex:1;min-height:42px}
+  input.t,select.t,textarea.t{font-size:16px}  /* stops iOS from zooming into fields */
+  .btn{min-height:36px}
+  .choices{grid-template-columns:1fr}
+  .treecards{grid-template-columns:1fr}
+  .hero h1{font-size:28px}
+  .cropwrap{justify-content:center}
+}

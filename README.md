@@ -51,6 +51,7 @@ To import your own family, start from [`examples/klansagan-import-example.xlsx`]
 - **Import:** Excel, CSV or cells pasted from Excel. Columns are mapped automatically, with Swedish and English headers.
 - **Export:** GEDCOM 5.5.1 (MyHeritage, Ancestry, Gramps, Disgen…), CSV and a JSON backup. The tree, fan chart and person cards print as PDF (A3/A4) or PNG.
 - **Collaboration:** when hosted as a Claude artifact, invited relatives edit the same tree live, and every change records who made it.
+- **Works on phones:** a bottom tab bar, a compact tree toolbar, person details as a sheet, touch zoom and pan.
 - **Easy to use:** a start page with three clear choices and a *simple mode* (big text, only Start, Tree and People) that a link can switch on with `?enkelt`. Mark yourself as "me" and kinship is counted from you. Light by default, dark mode on request.
 - **Call names (tilltalsnamn):** mark the name a person went by. It is underlined Swedish-style, and you can show short names everywhere (call name, or the first given name).
 - **Photos framed on the face:** profile photos are centred on the face automatically (MediaPipe face detection, loaded on demand) and can be dragged and zoomed by hand.

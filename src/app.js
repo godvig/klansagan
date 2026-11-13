@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.8';
+const APP_VERSION='2026-11-13.9';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -254,7 +254,7 @@ function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.rep
 /* ============ Router ============ */
 const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
 const NAVMAP={personkort:'personer',dubbletter:'personer'};
-function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; followSelection(); const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); {const mb=$('#moreBtn'); if(mb){const inMore=!!document.querySelector('#morePop a.on'); mb.classList.toggle('on',inMore); mb.firstChild.textContent=inMore?document.querySelector('#morePop a.on b').textContent+' ':'Mer '; $('#morePop').classList.remove('open');}} $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
+function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; followSelection(); if(matchMedia('(max-width:700px)').matches) ui.sel=null; /* on phones the person sheet would cover the new tab */ const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); {const mb=$('#moreBtn'); if(mb){const inMore=!!document.querySelector('#morePop a.on'); mb.classList.toggle('on',inMore); mb.querySelector('span').firstChild.textContent=inMore?document.querySelector('#morePop a.on b').textContent:'Mer'; $('#morePop').classList.remove('open');}} $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
 window.addEventListener('hashchange',route);
 let lastView=null;
 function renderAll(force){
@@ -468,8 +468,9 @@ function renderTree(fresh){
   const F=P(ui.focus);
   if(!$('#treeSvg')||fresh){
     v.innerHTML=`<div id="treeWrap"><svg id="treeSvg"><defs><clipPath id="avclip"><rect x="12" y="10" width="60" height="80" rx="6"/></clipPath></defs><g class="vp"></g></svg>
-      <div class="tree-tools">
+      <div class="tree-tools tt-tree">
         <span class="fname" id="tfName"></span>
+        <button class="btn sm mob-only" id="tOpts" aria-expanded="false">Visa ▾</button>
         <span id="tTrees" class="ctl"></span>
         <span class="ctl">Anor <select id="tAnc">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.ancGen?'selected':''}>${n}</option>`).join('')}</select></span>
         <span class="ctl">Ättlingar <select id="tDesc">${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===ui.descGen?'selected':''}>${n}</option>`).join('')}</select></span>
@@ -493,6 +494,7 @@ function renderTree(fresh){
     $('#tMe').onclick=()=>{const h=homePerson(); if(!h){toast('Välj vem du är under Inställningar eller med ”Det här är jag” på ditt personkort.',5000);return;} treeGoTo(h.id);};
     $('#tSel').onclick=()=>{const id=ui.sel&&ui.sel.type==='person'?ui.sel.id:ui.focus; treeGoTo(id);};
     $('#tfName').onclick=()=>treeGoTo(ui.focus);
+    $('#tOpts').onclick=e=>{const tt=e.target.closest('.tree-tools'); const o=tt.classList.toggle('open'); e.target.setAttribute('aria-expanded',o); e.target.textContent=o?'Stäng ▴':'Visa ▾';};
     $('#tLock').onclick=()=>{ui.treeLock=!ui.treeLock; toast(ui.treeLock?'Trädet är låst. Klicka på vem du vill och läs – trädet står kvar.':'Trädet är upplåst. Ett klick på en person bygger om trädet kring den personen.',4500); renderTree();};
     $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'klansagan-tree');
     const svg=d3.select('#treeSvg');
@@ -1482,7 +1484,7 @@ function applySimple(on,save=true){ui.simple=!!on; document.body.classList.toggl
 try{const q=new URLSearchParams(location.search); if(q.has('enkelt')){applySimple(true,false); document.documentElement.dataset.size='lg';} else applySimple(localStorage.getItem('sa-enkelt')==='1',false);}catch(e){}
 {const b=$('#simpleExit'); if(b) b.onclick=()=>{applySimple(false); ui.treeKey=null; renderAll(true); toast('Alla funktioner visas igen. Enkelt läge hittar du under Inställningar.',4500);};}
 {const b=$('#settingsBtn'); if(b) b.onclick=settingsModal;}
-{const mb=$('#moreBtn'), mp=$('#morePop'); if(mb&&mp){mb.onclick=e=>{e.stopPropagation(); mp.classList.toggle('open'); const r=mb.getBoundingClientRect(); mp.style.left=r.left+'px'; mp.style.top=(r.bottom+6)+'px';}; document.addEventListener('click',()=>mp.classList.remove('open'));}}
+{const mb=$('#moreBtn'), mp=$('#morePop'); if(mb&&mp){mb.onclick=e=>{e.stopPropagation(); mp.classList.toggle('open'); const r=mb.getBoundingClientRect(); if(matchMedia('(max-width:700px)').matches){mp.style.left='';mp.style.top='';} else {mp.style.left=r.left+'px'; mp.style.top=(r.bottom+6)+'px';}}; document.addEventListener('click',()=>mp.classList.remove('open'));}}
 function settingsModal(){
   const h=homePerson(), lg=document.documentElement.dataset.size==='lg';
   const opt=(name,val,cur,label,hint)=>`<label class="sopt"><input type="radio" name="${name}" value="${val}" ${val===cur?'checked':''}><span><b>${label}</b>${hint?`<small>${hint}</small>`:''}</span></label>`;
