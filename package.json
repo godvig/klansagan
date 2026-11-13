@@ -1,12 +1,12 @@
 {
-  "name": "klansagan",
+  "name": "slaktsagan",
   "version": "0.5.0",
   "description": "Build your family history together: family tree, fan chart, sources, timeline, map and life stories in the browser.",
   "license": "AGPL-3.0-only",
   "author": "Adam Englund (https://github.com/godvig)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/godvig/klansagan.git"
+    "url": "https://github.com/godvig/slaktsagan.git"
   },
   "homepage": "https://klansagan.godvig.com/",
   "keywords": [

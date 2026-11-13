@@ -1,4 +1,4 @@
--- Klansagan: version history.
+-- Släktsagan: version history.
 -- Each version gets a small encrypted summary (who published, when, what changed),
 -- so the history can be listed without downloading every full version.
 

@@ -1,4 +1,4 @@
--- Klansagan: encrypted photos for shared trees.
+-- Släktsagan: encrypted photos for shared trees.
 -- Each photo is stored once, encrypted in the browser with the tree's key, and only
 -- referenced from the tree data ("kl:<id>"). Publishing a tree then never re-sends photos.
 

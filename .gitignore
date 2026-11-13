@@ -5,5 +5,6 @@ coverage/
 # Personal family data never belongs in the repo
 private/
 *.local.*
+slaktsagan-*.json
 klansagan-*.json
 kinsaga-*.json

@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Klansagan core — pure, DOM-free logic shared by the app and the test suite.
+ * Släktsagan core — pure, DOM-free logic shared by the app and the test suite.
  *
  * Everything here works on plain person objects of the shape used in the app:
  *   { id, given, surname, sex: 'M'|'K'|'', birthDate, deathDate, birthPlace,

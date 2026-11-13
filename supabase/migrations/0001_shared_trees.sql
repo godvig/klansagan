@@ -1,4 +1,4 @@
--- Klansagan: shared family trees, end-to-end encrypted.
+-- Släktsagan: shared family trees, end-to-end encrypted.
 --
 -- The server stores only ciphertext. The key lives in the share link's #fragment,
 -- which browsers never send to a server, so neither Supabase nor the site owner

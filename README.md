@@ -1,16 +1,18 @@
-# Klansagan
+# Släktsagan
 
-[![CI](https://github.com/godvig/klansagan/actions/workflows/ci.yml/badge.svg)](https://github.com/godvig/klansagan/actions/workflows/ci.yml)
+[![CI](https://github.com/godvig/slaktsagan/actions/workflows/ci.yml/badge.svg)](https://github.com/godvig/slaktsagan/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-2f5d50.svg)](LICENSE)
 ![No build step](https://img.shields.io/badge/build-none-8b8174.svg)
 
-**Build your family history together.** Klansagan is a browser-based genealogy workbench: family tree, fan chart, sources, timeline, map and auto-written life stories. It runs from a single static page, needs no account and keeps your data in your own hands.
+**Build your family history together.** Släktsagan is a browser-based genealogy workbench: family tree, fan chart, sources, timeline, map and auto-written life stories. It runs from a single static page, needs no account and keeps your data in your own hands.
 
-Most genealogy tools are either subscription platforms that own your tree, or desktop programs that look like 2005 and can't be shared. Klansagan is for the person who does the research for the whole family. You document every fact with its source, then share **the part of the tree each relative cares about**. Cousins on dad's side don't have to scroll through mum's side.
+*Släktsagan* is Swedish for "the family saga" (*släkt* = family, relatives). The repository is `slaktsagan` because GitHub names can't contain å/ä/ö.
+
+Most genealogy tools are either subscription platforms that own your tree, or desktop programs that look like 2005 and can't be shared. Släktsagan is for the person who does the research for the whole family. You document every fact with its source, then share **the part of the tree each relative cares about**. Cousins on dad's side don't have to scroll through mum's side.
 
 The interface is in Swedish for now, and it understands Swedish sources (household examination rolls, parishes, patronymics). An English UI is next on the [roadmap](#roadmap).
 
-![Klansagan demo: clicking through the House of Vasa, the tree glides to each new person, then the relationship calculator lights up how Sigrid and Władysław IV are related](docs/screenshots/demo.gif)
+![Släktsagan demo: clicking through the House of Vasa, the tree glides to each new person, then the relationship calculator lights up how Sigrid and Władysław IV are related](docs/screenshots/demo.gif)
 
 *Click someone and the family rearranges around them; ask how two people are related and the chain lights up in the tree. Try it on the [House of Vasa example](https://klansagan.godvig.com/#exempel).*
 
@@ -29,14 +31,14 @@ The interface is in Swedish for now, and it understands Swedish sources (househo
 There is no build step. Serve the folder with any static web server:
 
 ```bash
-git clone https://github.com/godvig/klansagan.git
-cd klansagan
+git clone https://github.com/godvig/slaktsagan.git
+cd slaktsagan
 python3 -m http.server 8000      # or: npx serve .
 ```
 
 Open <http://localhost:8000>. Opening `index.html` directly from disk won't work, because the map data is loaded with `fetch`.
 
-To import your own family, start from [`examples/klansagan-import-example.xlsx`](examples/klansagan-import-example.xlsx). It has one row per person, and parents are referenced by id or by name.
+To import your own family, start from [`examples/slaktsagan-import-example.xlsx`](examples/slaktsagan-import-example.xlsx). It has one row per person, and parents are referenced by id or by name.
 
 ## Features
 
@@ -139,6 +141,6 @@ Done recently: encrypted sharing with publish and merge, version history, photo 
 
 ## License
 
-[AGPL-3.0](LICENSE) © Adam Englund. You can use, study and modify Klansagan freely. If you run a modified version as a network service, you must share your source code too.
+[AGPL-3.0](LICENSE) © Adam Englund. You can use, study and modify Släktsagan freely. If you run a modified version as a network service, you must share your source code too.
 
 Fonts: [Fraunces](https://github.com/undercasetype/Fraunces) and [IBM Plex Sans](https://github.com/IBM/plex), both under the SIL Open Font License 1.1 (see `fonts/`). Map data: [Natural Earth](https://www.naturalearthdata.com) (public domain) via [world-atlas](https://github.com/topojson/world-atlas). The House of Vasa example is compiled from public historical sources (Svenskt biografiskt lexikon, Svenskt kvinnobiografiskt lexikon, the Royal Court). Dates follow the Julian calendar that Sweden used until 1753.

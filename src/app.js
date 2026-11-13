@@ -1,5 +1,5 @@
 "use strict";
-/* Klansagan — app shell. Pure logic lives in src/core.js (window.KinCore). */
+/* Släktsagan — app shell. Storage keys keep the old 'klansagan-' prefix so saved and shared trees keep working. Pure logic lives in src/core.js (window.KinCore). */
 const {yearOf,dateKey,MONTHS,fmtDate,whenText,gedDate,genitive,slugify,parseDelimited,nrm,lev,dupScore}=window.KinCore;
 const computeHidden=v=>KinCore.computeHidden(ALL.persons,v);
 const blood=(a,b)=>KinCore.blood(a,b,P);
@@ -572,7 +572,7 @@ function renderTree(fresh){
     $('#tfName').onclick=()=>treeGoTo(ui.focus);
     $('#tOpts').onclick=e=>{const tt=e.target.closest('.tree-tools'); const o=tt.classList.toggle('open'); e.target.setAttribute('aria-expanded',o); e.target.textContent=o?'Stäng ▴':'Visa ▾';};
     $('#tLock').onclick=()=>{ui.treeLock=!ui.treeLock; toast(ui.treeLock?'Trädet är låst. Klicka på vem du vill och läs – trädet står kvar.':'Trädet är upplåst. Ett klick på en person bygger om trädet kring den personen.',4500); renderTree();};
-    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'klansagan-tree');
+    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'slaktsagan-tree');
     const svg=d3.select('#treeSvg');
     treeZoom=d3.zoom().scaleExtent([.15,2.5]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform));
     svg.call(treeZoom).on('dblclick.zoom',null);
@@ -1553,7 +1553,7 @@ function renderImport(){
   drop.ondrop=e=>{e.preventDefault();drop.classList.remove('over'); if(e.dataTransfer.files[0]) readImportFile(e.dataTransfer.files[0]);};
   fi.onchange=()=>fi.files[0]&&readImportFile(fi.files[0]);
   $('#impPasteBtn').onclick=()=>{const t=$('#impPaste').value; if(!t.trim()) return; setImportRows(parseDelimited(t));};
-  $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('klansagan-import-template.csv','\ufeff'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
+  $('#tplDl').onclick=e=>{e.preventDefault(); saveFile('slaktsagan-import-template.csv','\ufeff'+['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar','1;Erik;Larsson;M;1798-03-02;Rättvik;1861-11-20;Rättvik;Bonde;;;2;Rättvik C:9;','2;Kerstin;Olsdotter;K;1801;Leksand;1870;Rättvik;;;;1;;','3;Lars;Ersson;M;1826-05-14;Rättvik;1889;Rättvik;Bonde;1;2;;Rättvik AI:15 sid 45;'].join('\r\n'));};
   if($('#restore')) $('#restore').onchange=e=>{const f=e.target.files[0]; if(!f) return; f.text().then(t=>{let o; try{o=JSON.parse(t);}catch(x){toast('Filen är inte giltig JSON');return;} const objs=[...Object.values(o.persons||{}),...Object.values(o.places||{}),...Object.values(o.sources||{}),...Object.values(o.views||{})].filter(x=>x&&x.id&&KIND[x.kind]); if(!objs.length){toast('Hittade inga poster i filen');return;} confirmBox('Återställ '+objs.length+' poster?','Poster med samma id ersätts av versionen i filen.','Återställ',()=>Store.putMany(objs).then(()=>toast('Återställt ✓')));});};
   if($('#wipe')) $('#wipe').onclick=()=>modal(`<h3>Töm hela arkivet?</h3><p>Alla ${Object.keys(ALL.persons).length} personer, ${Object.keys(S.sources).length} källor och ${Object.keys(S.places).length} platser tas bort. Exportera en säkerhetskopia först! Skriv <b>TÖM</b> för att bekräfta.</p><input class="t" id="wipeIn"><div class="foot" style="margin-top:12px"><button class="btn" data-x>Avbryt</button><button class="btn primary" style="background:var(--err);border-color:var(--err)" data-ok>Töm arkivet</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close; ov.querySelector('[data-ok]').onclick=async()=>{if(ov.querySelector('#wipeIn').value.trim().toUpperCase()!=='TÖM')return; close(); ui.sel=null; ui.focus=null; const all=[...Object.values(ALL.persons),...Object.values(ALL.places),...Object.values(ALL.sources),...Object.values(ALL.views)]; for(const o of all) Store.del(o.kind,o.id,{silent:true}); renderAll(); toast('Arkivet är tömt');};});
   if(imp.rows.length) renderImportStep2();
@@ -1681,15 +1681,15 @@ async function doExport0(kind){
   const stamp=new Date().toISOString().slice(0,10);
   if(kind==='json'){ const inl=async col=>{const o=clone(ALL[col]); for(const d of Object.values(o)) {const map={}; for(const m of d.media||[]){ if(blobId(m)){const old=m.url; m.url=await blobUrl(m); map[old]=m.url;} delete m.thumb; } for(const m of d.media||[]) if(m.forImg&&map[m.forImg]) m.forImg=map[m.forImg];} return o;};
     const [persons,places,sources]=await Promise.all([inl('persons'),inl('places'),inl('sources')]);
-    saveFile(`klansagan-${stamp}.json`,JSON.stringify({app:'Klansagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); }
+    saveFile(`slaktsagan-${stamp}.json`,JSON.stringify({app:'Släktsagan',version:1,exported:new Date().toISOString(),persons,places,sources,views:ALL.views},null,1)); }
   if(kind==='csv'){
     const ids={}; Object.values(S.persons).forEach((p,i)=>ids[p.id]=i+1);
     const c=v=>{v=String(v??''); return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
     const lines=['Id;Förnamn;Efternamn;Kön;Född;Födelseort;Död;Dödsort;Yrke;Far;Mor;Make/maka;Källa;Anteckningar'];
     for(const p of Object.values(S.persons)) lines.push([ids[p.id],p.given,p.surname,p.sex,p.birthDate,placeName(p.birthPlace),p.deathDate,placeName(p.deathPlace),p.occupation,ids[p.fatherId]||'',ids[p.motherId]||'',(p.spouseIds||[]).map(x=>ids[x]).filter(Boolean).join(','),(p.citations||[]).map(x=>S.sources[x.sourceId]?.title).filter(Boolean).join(' | '),p.notes].map(c).join(';'));
-    saveFile(`klansagan-people-${stamp}.csv`,'\ufeff'+lines.join('\r\n'));
+    saveFile(`slaktsagan-people-${stamp}.csv`,'\ufeff'+lines.join('\r\n'));
   }
-  if(kind==='ged'){ saveFile(`klansagan-${stamp}.ged.txt`,toGedcom()); toast('Ta bort ”.txt” i filnamnet innan du läser in den i ett släktprogram.',5000); }
+  if(kind==='ged'){ saveFile(`slaktsagan-${stamp}.ged.txt`,toGedcom()); toast('Ta bort ”.txt” i filnamnet innan du läser in den i ett släktprogram.',5000); }
 }
 function toGedcom(){
   const L=[]; const add=(lvl,tag,val)=>{val=val==null?'':String(val).replace(/\r?\n/g,' '); L.push(lvl+' '+tag+(val?' '+val:''));};
@@ -1699,7 +1699,7 @@ function toGedcom(){
   const getFam=(h,w)=>{const k=famKey(h,w); return fams[k]=fams[k]||{id:'@F'+(Object.keys(fams).length+1)+'@',h,w,c:[]};};
   for(const p of Object.values(S.persons)){ if(p.fatherId||p.motherId) getFam(P(p.fatherId)?p.fatherId:'',P(p.motherId)?p.motherId:'').c.push(p.id); }
   for(const p of Object.values(S.persons)) for(const s of partners(p)){ const [h,w]=p.sex==='K'?[s.id,p.id]:[p.id,s.id]; if(!fams[famKey(h,w)]&&!fams[famKey(w,h)]) getFam(h,w); }
-  add(0,'HEAD'); add(1,'SOUR','KLANSAGAN'); add(2,'NAME','Klansagan'); add(1,'GEDC'); add(2,'VERS','5.5.1'); add(2,'FORM','LINEAGE-LINKED'); add(1,'CHAR','UTF-8'); add(1,'DATE',gedDate(new Date().toISOString().slice(0,10)));
+  add(0,'HEAD'); add(1,'SOUR','SLAKTSAGAN'); add(2,'NAME','Släktsagan'); add(1,'GEDC'); add(2,'VERS','5.5.1'); add(2,'FORM','LINEAGE-LINKED'); add(1,'CHAR','UTF-8'); add(1,'DATE',gedDate(new Date().toISOString().slice(0,10)));
   const TAG={Dop:'BAPM',Konfirmation:'CONF',Begravning:'BURI',Utvandring:'EMIG',Invandring:'IMMI',Bosatt:'RESI',Yrke:'OCCU',Bouppteckning:'PROB',Militärtjänst:'_MILT'};
   const cites=(p,lvl,about)=>{for(const c of (p.citations||[]).filter(c=>c.about===about)) if(sid[c.sourceId]){add(lvl,'SOUR',sid[c.sourceId]); if(c.detail) add(lvl+1,'PAGE',c.detail);}};
   for(const p of Object.values(S.persons)){
@@ -1752,7 +1752,7 @@ function settingsModal(){
     <div class="sgroup"><div class="slab">Utseende</div>
       ${opt('th','wood',themeName(),'Trä','Varm träbrun – standard')}${opt('th','light',themeName(),'Ljust','')}${opt('th','dark',themeName(),'Mörkt','')}
       <label class="sopt"><input type="checkbox" id="setLg" ${lg?'checked':''}><span><b>Större text</b></span></label></div>
-    ${PWA.can()?`<div class="sgroup"><div class="slab">App</div><button class="btn" id="setInstall">📲 Installera Klansagan som app</button><div class="hint">Lägger en ikon på hemskärmen eller i programmenyn. Appen öppnas i eget fönster och fungerar även utan internet.</div></div>`:''}
+    ${PWA.can()?`<div class="sgroup"><div class="slab">App</div><button class="btn" id="setInstall">📲 Installera Släktsagan som app</button><div class="hint">Lägger en ikon på hemskärmen eller i programmenyn. Appen öppnas i eget fönster och fungerar även utan internet.</div></div>`:''}
     <div class="sgroup"><div class="slab">Enkelt läge</div>
       <label class="sopt"><input type="checkbox" id="setSimple" ${ui.simple?'checked':''}><span><b>Visa bara det viktigaste</b><small>Stor text och bara Start, Träd och Personer. Bra för den som inte vill krångla – till exempel farmor. Länk som öppnar i enkelt läge: lägg till <code>?enkelt</code> i adressen.</small></span></label></div>
     ${allPersonsDatalist()}
@@ -1791,7 +1791,7 @@ function renderStart(){
   const ed=Store.canEdit;
   if(!all.length){
     v.innerHTML=`<div class="start"><div class="hero"><div>
-      <h1>Välkommen till Klansagan</h1>
+      <h1>Välkommen till Släktsagan</h1>
       <p>Här samlar du släkten på ett ställe: släktträd, bilder, källor, tidslinje och karta. Allt sparas automatiskt. Välj hur du vill börja.</p>
     </div><div class="hero-art">${heroArt()}</div></div>
     <div class="choices">
@@ -1953,7 +1953,7 @@ function renderFan(fresh){
       <div class="fan-legend" id="fanLegend"></div></div>`;
     $('#fanGen').onchange=e=>{ui.fanGen=+e.target.value; ui.fanKey=null; renderFan();};
     $('#fanFit').onclick=()=>{ui.fanKey=null; renderFan();};
-    $('#fanPrint').onclick=()=>printChart($('#fanSvg'),'Solfjäder för '+$('#fanName').textContent,'klansagan-fan');
+    $('#fanPrint').onclick=()=>printChart($('#fanSvg'),'Solfjäder för '+$('#fanName').textContent,'slaktsagan-fan');
     const svg=d3.select('#fanSvg'); fanZoom=d3.zoom().scaleExtent([.2,4]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform)); svg.call(fanZoom).on('dblclick.zoom',null);
     ui.fanKey=null;
   }
@@ -2227,7 +2227,7 @@ async function svgSnapshot(svgEl,title){
   const NS='http://www.w3.org/2000/svg';
   const bg=document.createElementNS(NS,'rect'); bg.setAttribute('x',bb.x-M); bg.setAttribute('y',bb.y-M-TH); bg.setAttribute('width',w); bg.setAttribute('height',h); bg.setAttribute('fill',paper); clone.insertBefore(bg,clone.firstChild);
   const t=document.createElementNS(NS,'text'); t.setAttribute('x',bb.x); t.setAttribute('y',bb.y-M-TH+30); t.setAttribute('style',`font-family:Georgia,serif;font-size:22px;font-weight:600;fill:${ink}`); t.textContent=title; clone.appendChild(t);
-  const t2=document.createElementNS(NS,'text'); t2.setAttribute('x',bb.x+bb.width); t2.setAttribute('y',bb.y-M-TH+30); t2.setAttribute('style',`font-family:Helvetica,Arial,sans-serif;font-size:11px;fill:${ink3};text-anchor:end`); t2.textContent='Klansagan · '+fmtDate(new Date().toISOString().slice(0,10)); clone.appendChild(t2);
+  const t2=document.createElementNS(NS,'text'); t2.setAttribute('x',bb.x+bb.width); t2.setAttribute('y',bb.y-M-TH+30); t2.setAttribute('style',`font-family:Helvetica,Arial,sans-serif;font-size:11px;fill:${ink3};text-anchor:end`); t2.textContent='Släktsagan · '+fmtDate(new Date().toISOString().slice(0,10)); clone.appendChild(t2);
   for(const im of clone.querySelectorAll('image')){const href=im.getAttribute('href'); const d=await toDataURL(href); if(d) im.setAttribute('href',d); else im.remove();}
   const xml=new XMLSerializer().serializeToString(clone);
   const url=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml;charset=utf-8'}));
@@ -2284,8 +2284,8 @@ async function personPdf(p){
     const evs=lifeEvents(p); if(evs.length){head('Händelser'); for(const e of evs) para(`${fmtDate(e.date)||'–'}  ${e.type}${e.placeId?', '+placeName(e.placeId):''}${e.withId&&P(e.withId)?', med '+fullName(P(e.withId)):''}${e.desc?' — '+e.desc:''}`);}
     const cs=(p.citations||[]).filter(c=>S.sources[c.sourceId]); if(cs.length){head('Källor'); for(const c of cs){const s=S.sources[c.sourceId]; para(`• ${s.title}${[c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.archive,s.ref].filter(Boolean).length?' ('+[c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.archive,s.ref].filter(Boolean).join(', ')+')':''}`,9.5);}}
     if(p.notes){head('Anteckningar'); para(p.notes,10);}
-    const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140,130,115); doc.text(pdfT(`Klansagan · ${fullName(p)} · sida ${i} av ${n}`),M,297-8);}
-    await saveFile(`klansagan-${(fullName(p)).toLowerCase().replace(/[^a-z0-9åäö]+/g,'-')}.pdf`,doc.output('blob'));
+    const n=doc.getNumberOfPages(); for(let i=1;i<=n;i++){doc.setPage(i); doc.setFontSize(8); doc.setTextColor(140,130,115); doc.text(pdfT(`Släktsagan · ${fullName(p)} · sida ${i} av ${n}`),M,297-8);}
+    await saveFile(`slaktsagan-${(fullName(p)).toLowerCase().replace(/[^a-z0-9åäö]+/g,'-')}.pdf`,doc.output('blob'));
   }catch(e){toast('Kunde inte skapa PDF: '+(e.message||e));}
 }
 
@@ -2767,8 +2767,8 @@ const PWA={prompt:null,
   ios:()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),
   can(){return !this.standalone()&&(!!this.prompt||this.ios());},
   async install(){
-    if(this.prompt){this.prompt.prompt(); const r=await this.prompt.userChoice.catch(()=>null); this.prompt=null; if(r&&r.outcome==='accepted') toast('Klansagan finns nu på din hemskärm.'); renderAll(); return;}
-    if(this.ios()) modal(`<h3>Lägg Klansagan på hemskärmen</h3><ol class="ios-steps"><li>Tryck på <b>Dela</b>-knappen <span class="ios-share">⬆︎</span> längst ner i Safari.</li><li>Välj <b>Lägg till på hemskärmen</b>.</li><li>Tryck <b>Lägg till</b>. Nu öppnas Klansagan som en egen app.</li></ol><div class="foot"><button class="btn primary" data-x>Klar</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close;});
+    if(this.prompt){this.prompt.prompt(); const r=await this.prompt.userChoice.catch(()=>null); this.prompt=null; if(r&&r.outcome==='accepted') toast('Släktsagan finns nu på din hemskärm.'); renderAll(); return;}
+    if(this.ios()) modal(`<h3>Lägg Släktsagan på hemskärmen</h3><ol class="ios-steps"><li>Tryck på <b>Dela</b>-knappen <span class="ios-share">⬆︎</span> längst ner i Safari.</li><li>Välj <b>Lägg till på hemskärmen</b>.</li><li>Tryck <b>Lägg till</b>. Nu öppnas Klansagan som en egen app.</li></ol><div class="foot"><button class="btn primary" data-x>Klar</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close;});
   }};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault(); PWA.prompt=e; if(Store.loaded) renderAll();});
 window.addEventListener('appinstalled',()=>{PWA.prompt=null;});
