@@ -117,12 +117,24 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-- [ ] **English UI** with a language switcher and English kinship terms ("first cousin once removed")
-- [ ] **Hosted collaboration without Claude:** invite links and magic-link login on a managed backend
-- [ ] GEDCOM import
-- [ ] Research log and to-do per person ("searched Hanebo AI:20, nothing found")
-- [ ] Change history with restore
-- [ ] Installable offline app (PWA)
+Done recently: encrypted sharing with publish and merge, version history, photo storage, phone layout, installable offline app (PWA).
+
+**Next, in order**
+1. Thumbnails, so trees with hundreds of photos stay fast
+2. Voice memories: record a story and attach it to a person or photo
+3. Animated tree: cards glide to their new places when you change focus
+4. Kinship calculator highlights the path in the tree
+5. Performance: whole archive in IndexedDB, partial re-rendering, self-hosted fonts
+
+**Later**
+- Undo/redo everywhere; warning before leaving with unpublished changes
+- Drop or take a photo straight onto a tree card; photo gallery on the person card
+- GEDCOM import
+- Swedish source templates (Riksarkivet, ArkivDigital)
+- Life path on the map, played in date order
+- Family book as PDF; "on this day" on the start page
+- Read-only share links and key rotation; comment threads per person; "what's new since your last visit"
+- Landing page for new visitors; English UI
 
 ## License
 
