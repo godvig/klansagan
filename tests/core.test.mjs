@@ -182,3 +182,39 @@ describe('sharing: merge and encryption', () => {
     expect(await core.writeSecret(key)).toBe(await core.writeSecret(key));
   });
 });
+
+describe('createHistory', () => {
+  const doc = (id, given) => ({ kind: 'person', id, given });
+  it('groups changes, undoes newest first and redoes in order', () => {
+    const h = core.createHistory();
+    h.record({ kind: 'person', id: 'a', before: null, after: doc('a', 'Ada') }, 'Ny person');
+    h.record({ kind: 'person', id: 'b', before: doc('b', 'Bo'), after: doc('b', 'Bosse') });
+    h.close();
+    const u = h.undo();
+    expect(u.group.label).toBe('Ny person');
+    expect(u.apply.map(x => x.id)).toEqual(['b', 'a']);
+    expect(u.apply[0].doc.given).toBe('Bo');
+    expect(u.apply[1].doc).toBeNull();
+    expect(h.canUndo()).toBe(false);
+    const r = h.redo();
+    expect(r.apply.map(x => [x.id, x.doc.given])).toEqual([['a', 'Ada'], ['b', 'Bosse']]);
+  });
+  it('keeps the first "before" when one document changes twice in an action', () => {
+    const h = core.createHistory();
+    h.record({ kind: 'person', id: 'a', before: doc('a', 'A1'), after: doc('a', 'A2') });
+    h.record({ kind: 'person', id: 'a', before: doc('a', 'A2'), after: doc('a', 'A3') });
+    const u = h.undo();
+    expect(u.apply).toHaveLength(1);
+    expect(u.apply[0].doc.given).toBe('A1');
+    expect(h.redo().apply[0].doc.given).toBe('A3');
+  });
+  it('drops the redo stack on a new change and caps its length', () => {
+    const h = core.createHistory({ limit: 3 });
+    for (let i = 0; i < 5; i++) { h.record({ kind: 'person', id: 'p' + i, before: null, after: doc('p' + i, 'x') }); h.close(); }
+    expect(h.size().undo).toBe(3);
+    h.undo();
+    expect(h.canRedo()).toBe(true);
+    h.record({ kind: 'person', id: 'z', before: null, after: doc('z', 'z') });
+    expect(h.canRedo()).toBe(false);
+  });
+});

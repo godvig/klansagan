@@ -411,7 +411,52 @@
     return b64u(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('klansagan-write'))));
   }
 
-  const api = { yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
+  /**
+   * @typedef {{kind:string,id:string,before:any,after:any}} DocChange
+   * @typedef {{label:(string|null),changes:DocChange[]}} HistGroup
+   */
+  /**
+   * Undo/redo history of document changes. Changes recorded close together form one
+   * user action (a group); undo returns what to write back, newest change first.
+   * Several changes to the same document within a group keep the first "before".
+   * @param {{limit?:number}} [opts]
+   */
+  function createHistory({ limit = 60 } = {}) {
+    /** @type {HistGroup[]} */ const undo = [];
+    /** @type {HistGroup[]} */ const redo = [];
+    /** @type {HistGroup|null} */ let open = null;
+    return {
+      /** @param {DocChange} ch @param {string} [label] */
+      record(ch, label) {
+        if (!open) { open = { label: label || null, changes: [] }; undo.push(open); if (undo.length > limit) undo.shift(); redo.length = 0; }
+        const ex = open.changes.find(c => c.kind === ch.kind && c.id === ch.id);
+        if (ex) ex.after = ch.after; else open.changes.push({ ...ch });
+        if (label && !open.label) open.label = label;
+      },
+      /** Name the action being recorded (or the next one). @param {string} l */
+      label(l) { if (open) open.label = l; },
+      close() { if (open && !open.changes.length) undo.pop(); open = null; },
+      isOpen: () => !!open,
+      canUndo: () => undo.length > 0,
+      canRedo: () => redo.length > 0,
+      peekUndo: () => undo[undo.length - 1] || null,
+      peekRedo: () => redo[redo.length - 1] || null,
+      /** @returns {{group:HistGroup, apply:{kind:string,id:string,doc:any}[]}|null} */
+      undo() {
+        this.close(); const g = undo.pop(); if (!g) return null; redo.push(g);
+        return { group: g, apply: g.changes.slice().reverse().map(c => ({ kind: c.kind, id: c.id, doc: c.before })) };
+      },
+      /** @returns {{group:HistGroup, apply:{kind:string,id:string,doc:any}[]}|null} */
+      redo() {
+        this.close(); const g = redo.pop(); if (!g) return null; undo.push(g);
+        return { group: g, apply: g.changes.map(c => ({ kind: c.kind, id: c.id, doc: c.after })) };
+      },
+      clear() { undo.length = 0; redo.length = 0; open = null; },
+      size: () => ({ undo: undo.length, redo: redo.length }),
+    };
+  }
+
+  const api = { createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;
