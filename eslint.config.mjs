@@ -18,6 +18,10 @@ export default [
     },
   },
   {
+    files: ['sw.js'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: { ...globals.serviceworker } },
+  },
+  {
     files: ['tests/**/*.mjs', 'eslint.config.mjs'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
   },

@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.9';
+const APP_VERSION='2026-11-13.10';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -1498,6 +1498,7 @@ function settingsModal(){
     <div class="sgroup"><div class="slab">Utseende</div>
       ${opt('th','wood',themeName(),'Trä','Varm träbrun – standard')}${opt('th','light',themeName(),'Ljust','')}${opt('th','dark',themeName(),'Mörkt','')}
       <label class="sopt"><input type="checkbox" id="setLg" ${lg?'checked':''}><span><b>Större text</b></span></label></div>
+    ${PWA.can()?`<div class="sgroup"><div class="slab">App</div><button class="btn" id="setInstall">📲 Installera Klansagan som app</button><div class="hint">Lägger en ikon på hemskärmen eller i programmenyn. Appen öppnas i eget fönster och fungerar även utan internet.</div></div>`:''}
     <div class="sgroup"><div class="slab">Enkelt läge</div>
       <label class="sopt"><input type="checkbox" id="setSimple" ${ui.simple?'checked':''}><span><b>Visa bara det viktigaste</b><small>Stor text och bara Start, Träd och Personer. Bra för den som inte vill krångla – till exempel farmor. Länk som öppnar i enkelt läge: lägg till <code>?enkelt</code> i adressen.</small></span></label></div>
     ${allPersonsDatalist()}
@@ -1509,6 +1510,7 @@ function settingsModal(){
     ov.querySelectorAll('[name=nm]').forEach(i=>i.onchange=()=>{ui.nameMode=i.value; try{localStorage.setItem('sa-names',i.value);}catch(e){} ui.treeKey=null; renderAll(true);});
     ov.querySelectorAll('[name=th]').forEach(i=>i.onchange=()=>{applyTheme(i.value); try{localStorage.setItem('sa-tema',i.value);}catch(e){} mapState.drawn=false; renderAll();});
     q('#setLg').onchange=e=>applySize(e.target.checked);
+    {const ib=q('#setInstall'); if(ib) ib.onclick=()=>{close(); PWA.install();};}
     q('#setSimple').onchange=e=>{applySimple(e.target.checked); if(e.target.checked){applySize(true); q('#setLg').checked=true;} ui.treeKey=null; renderAll(true);};
   });
 }
@@ -1568,7 +1570,7 @@ function renderStart(){
       <h1>${home?'Släkten kring '+esc(fullName(home)):'Ditt släktarkiv'}</h1>
       <p>${all.length} personer${years.length?`, från ${Math.min(...years)} till ${Math.max(...years)}`:''}. ${home&&anc?`Du har hittat ${anc} anor till ${esc(shortName(home))}, ${maxGen} generationer bakåt.`:''}${home&&!anc&&descendantsOf(home.id).size?`${descendantsOf(home.id).size} ättlingar till ${esc(shortName(home))}.`:''}</p>
       <div class="acts"><button class="btn primary" onclick="goHome()">Öppna släktträdet</button>${home?`<button class="btn" onclick="openCard('${home.id}')">Personkort</button>`:''}${ed?'<button class="btn" onclick="openPersonModal()">+ Ny person</button>':''}<button class="btn" onclick="shareModal(activeView())">🔗 Dela med släkten</button>${demoActive()?'<button class="btn" onclick="exitDemo()">Stäng exemplet</button>':''}</div>
-      <div class="hero-links">${demoActive()?'':'<a href="#" onclick="loadDemo();return false">👑 Titta på exemplet Vasaätten</a>'}${ui.simple?'<a href="#" onclick="applySimple(false);renderAll(true);return false">Visa alla funktioner</a>':'<a href="#" onclick="applySimple(true);applySize(true);renderAll(true);return false">Enkelt läge</a>'}<a href="#" onclick="settingsModal();return false">Inställningar</a></div>
+      <div class="hero-links">${demoActive()?'':'<a href="#" onclick="loadDemo();return false">👑 Titta på exemplet Vasaätten</a>'}${ui.simple?'<a href="#" onclick="applySimple(false);renderAll(true);return false">Visa alla funktioner</a>':'<a href="#" onclick="applySimple(true);applySize(true);renderAll(true);return false">Enkelt läge</a>'}<a href="#" onclick="settingsModal();return false">Inställningar</a>${PWA.can()?'<a href="#" onclick="PWA.install();return false">📲 Installera som app</a>':''}</div>
     </div><div class="hero-art">${heroArt()}</div></div>
     ${treesSection()}
     <div class="tiles">${tiles.map(([h,ic,t,d])=>`<a class="tile" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>
@@ -2485,4 +2487,18 @@ function shareTreeModal(){
   });
 }
 {const sb=$('#shareBtn'); if(sb) sb.onclick=shareTreeModal; const st=$('#status'); if(st) st.onclick=()=>{ if(Share.newer) Share.pull(); else if(Share.enabled()) shareTreeModal(); };}
+/* ============ Install as an app (PWA) ============ */
+const PWA={prompt:null,
+  standalone:()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true,
+  ios:()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),
+  can(){return !this.standalone()&&(!!this.prompt||this.ios());},
+  async install(){
+    if(this.prompt){this.prompt.prompt(); const r=await this.prompt.userChoice.catch(()=>null); this.prompt=null; if(r&&r.outcome==='accepted') toast('Klansagan finns nu på din hemskärm.'); renderAll(); return;}
+    if(this.ios()) modal(`<h3>Lägg Klansagan på hemskärmen</h3><ol class="ios-steps"><li>Tryck på <b>Dela</b>-knappen <span class="ios-share">⬆︎</span> längst ner i Safari.</li><li>Välj <b>Lägg till på hemskärmen</b>.</li><li>Tryck <b>Lägg till</b>. Nu öppnas Klansagan som en egen app.</li></ol><div class="foot"><button class="btn primary" data-x>Klar</button></div>`,(ov,close)=>{ov.querySelector('[data-x]').onclick=close;});
+  }};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault(); PWA.prompt=e; if(Store.loaded) renderAll();});
+window.addEventListener('appinstalled',()=>{PWA.prompt=null;});
+if('serviceWorker' in navigator&&location.protocol==='https:'&&window.top===window&&Store.mode!=='db'&&!/claude\.(ai|site)|claudeusercontent/.test(location.hostname)){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('Service worker',e)));
+}
 Store.init();

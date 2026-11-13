@@ -561,3 +561,7 @@ button.status:hover{background:rgba(127,110,80,.12)}
   .hero h1{font-size:28px}
   .cropwrap{justify-content:center}
 }
+.ios-steps{line-height:1.7;padding-left:20px;margin:6px 0 14px}
+.ios-share{display:inline-block;border:1px solid var(--line2);border-radius:5px;padding:0 5px;font-size:12px}
+/* installed app: leave room for the phone's status bar */
+@media (display-mode: standalone){ header{padding-top:env(safe-area-inset-top);height:calc(52px + env(safe-area-inset-top))} }
