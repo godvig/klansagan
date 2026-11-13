@@ -42,7 +42,7 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.12';
+const APP_VERSION='2026-11-13.14';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
@@ -254,7 +254,7 @@ function personLabel(p){const ls=lifespan(p); return fullName(p)+(ls?' ('+ls.rep
 /* ============ Router ============ */
 const VIEWS={start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
 const NAVMAP={personkort:'personer',dubbletter:'personer'};
-function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; followSelection(); if(matchMedia('(max-width:700px)').matches) ui.sel=null; /* on phones the person sheet would cover the new tab */ const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); {const mb=$('#moreBtn'); if(mb){const inMore=!!document.querySelector('#morePop a.on'); mb.classList.toggle('on',inMore); mb.querySelector('span').firstChild.textContent=inMore?document.querySelector('#morePop a.on b').textContent:'Mer'; $('#morePop').classList.remove('open');}} $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
+function route(){const h=location.hash.slice(1); if(h.startsWith('vy-')){ui.pendingView=h.slice(3); location.replace('#trad'); return;} if(h==='exempel'){ui.pendingDemo=true; location.replace('#trad'); return;} ui.view=VIEWS[h]?h:'start'; followSelection(); if(matchMedia('(max-width:700px)').matches&&!ui.keepSel) ui.sel=null; ui.keepSel=false; /* on phones the person sheet would cover the new tab */ const nv=NAVMAP[ui.view]||ui.view; document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===nv)); {const mb=$('#moreBtn'); if(mb){const inMore=!!document.querySelector('#morePop a.on'); mb.classList.toggle('on',inMore); mb.querySelector('span').firstChild.textContent=inMore?document.querySelector('#morePop a.on b').textContent:'Mer'; $('#morePop').classList.remove('open');}} $('#view').scrollTop=0; ui.treeKey=null; mapState.drawn=false; renderAll(true);}
 window.addEventListener('hashchange',route);
 let lastView=null;
 function renderAll(force){
@@ -281,6 +281,23 @@ function followSelection(){
   if(ui.view==='slaktskap'){const h=homePerson(); ui.relB=id; if(!ui.relA||ui.relA===id) ui.relA=h&&h.id!==id?h.id:null;}
 }
 function setFocus(id){ui.focus=id; try{localStorage.setItem('sa-focus',id)}catch(e){} }
+/* Phone bottom sheet: tap or drag the handle up to expand, down to shrink or close. */
+/** On phones: shrink the sheet to a small strip so the page behind it (e.g. the map) shows. */
+function sheetMini(){ if(!matchMedia('(max-width:700px)').matches) return; ui.keepSel=true; const pn=$('#panel'); pn.classList.remove('expanded'); pn.classList.add('mini'); pn.scrollTop=0; }
+function bindSheet(pn){
+  const h=pn.querySelector('.sheet-handle'); if(!h) return;
+  const lbl=()=>{h.querySelector('span').textContent=pn.classList.contains('expanded')?'Visa mindre':'Visa mer'; h.setAttribute('aria-label',h.querySelector('span').textContent);};
+  const setExp=on=>{ if(on&&pn.classList.contains('mini')){pn.classList.remove('mini'); lbl(); return;} pn.classList.toggle('expanded',on); if(!on) pn.scrollTop=0; lbl();};
+  lbl();
+  let y0=null, moved=false;
+  h.onpointerdown=e=>{y0=e.clientY; moved=false; h.setPointerCapture(e.pointerId);};
+  h.onpointermove=e=>{if(y0!=null&&Math.abs(e.clientY-y0)>8) moved=true;};
+  h.onpointerup=e=>{ if(y0==null) return; const dy=e.clientY-y0; y0=null;
+    if(!moved) return setExp(!pn.classList.contains('expanded'));
+    if(dy<-30) setExp(true);
+    else if(dy>30){ if(pn.classList.contains('expanded')) setExp(false); else if(!pn.classList.contains('mini')) {pn.classList.add('mini'); lbl();} else select(null); } };
+  const top=pn.querySelector('.ph .top h3'); if(top) top.onclick=()=>{ if(matchMedia('(max-width:700px)').matches&&!pn.classList.contains('expanded')) setExp(true); };
+}
 function select(type,id){ui.sel=id?{type,id}:null; renderAll();}
 function showPerson(id,{focus}={}){if(focus) setFocus(id); select('person',id);}
 /* Clicking a name in the side panel moves the current view to that person. */
@@ -644,12 +661,16 @@ function renderPersons(){
 /* ============ PANEL ============ */
 function renderPanel(){
   const pn=$('#panel');
-  if(!ui.sel){pn.classList.remove('open');pn.innerHTML='';return;}
+  if(!ui.sel){pn.classList.remove('open','expanded','mini');pn.innerHTML='';ui.sheetFor=null;return;}
   pn.classList.add('open');
+  // on phones a newly picked person opens as a small sheet; the same person keeps its size
+  const selKey=ui.sel.type+':'+ui.sel.id; if(ui.sheetFor!==selKey){ui.sheetFor=selKey; pn.classList.remove('expanded','mini'); pn.scrollTop=0;}
   const st=pn.scrollTop;
   if(ui.sel.type==='person') pn.innerHTML=personPanel(P(ui.sel.id));
   else if(ui.sel.type==='place') pn.innerHTML=placePanel(S.places[ui.sel.id]);
   else if(ui.sel.type==='source') pn.innerHTML=sourcePanel(S.sources[ui.sel.id]);
+  pn.insertAdjacentHTML('afterbegin','<button class="sheet-handle" aria-label="Visa mer"><i></i><span></span></button>');
+  bindSheet(pn);
   pn.scrollTop=st;
   bindPanel();
 }
@@ -1010,6 +1031,7 @@ function placePanel(pl){
 function bindPlacePanel(pl){
   $('#panel').querySelectorAll('[data-pact]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.pact;
+    if(a==='map'||a==='move') sheetMini();
     if(a==='map'){ if(pl.lat==null&&E.canEdit) ui.placing=pl.id; mapState.focusPlace=pl.id; if(ui.view!=='karta') location.hash='karta'; else renderMap(); }
     if(a==='move'){ui.placing=pl.id; if(ui.view!=='karta') location.hash='karta'; else renderMap();}
     if(a==='edit') placeModal(pl);
