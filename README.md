@@ -87,6 +87,7 @@ index.html          markup shell, loads D3 + topojson from CDN
 src/core.js         pure logic: dates, GEDCOM dates, kinship terms, views, duplicate scoring
 src/app.js          UI: views, panels, import/export, storage adapters
 src/styles.css      design tokens (light + dark), layout
+fonts/              Fraunces + IBM Plex Sans (woff2, SIL OFL), served from the site itself
 data/world-50m.json Natural Earth countries (via world-atlas) for the map
 examples/           fictional import files
 tests/              Vitest suite for src/core.js
@@ -95,10 +96,11 @@ tests/              Vitest suite for src/core.js
 - **No framework, no bundler.** The app is vanilla JavaScript with [D3](https://d3js.org) for the tree, fan chart, timeline and map. [SheetJS](https://sheetjs.com) and [jsPDF](https://github.com/parallax/jsPDF) load lazily, only when you import or print.
 - **Data model:** four document kinds (`person`, `place`, `source`, `view`) stored as flat JSON documents. Relationships live on the person (`fatherId`, `motherId`, `spouseIds`), and events and citations are embedded.
 - **Storage adapters:**
-  - `localStorage` when the app runs standalone, such as on GitHub Pages.
+  - IndexedDB when the app runs standalone, such as on GitHub Pages: the archive text and photos, with no 5 MB cap (archives from older versions are moved over from `localStorage` automatically). Edits made just before a tab closes are also written synchronously as an emergency copy, so nothing is lost.
   - A realtime document store with per-user attribution when it runs as a Claude artifact.
   
   The rest of the app only sees an in-memory store.
+- **Cheap redraws:** every data change bumps a revision counter; the tree and person list compare it with what they last drew, so selecting someone only moves a highlight instead of rebuilding hundreds of cards (77 ms → 5 ms on a 1,500-person archive).
 - **Views** filter the store before rendering. All writes, exports and merges always operate on the full, unfiltered data, so hiding something can never orphan or overwrite it.
 - **Pure core:** everything that has a right answer (kinship terms, date handling, duplicate scoring, view filtering) lives in `src/core.js` and is unit tested.
 
@@ -123,12 +125,9 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, phone layout, installable offline app (PWA).
+Done recently: encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
-**Next, in order**
-1. Performance: whole archive in IndexedDB, partial re-rendering, self-hosted fonts
-
-**Later**
+**Next**
 - Undo/redo everywhere; warning before leaving with unpublished changes
 - Drop or take a photo straight onto a tree card; photo gallery on the person card
 - GEDCOM import
@@ -142,4 +141,4 @@ Done recently: encrypted sharing with publish and merge, version history, photo 
 
 [AGPL-3.0](LICENSE) © Adam Englund. You can use, study and modify Klansagan freely. If you run a modified version as a network service, you must share your source code too.
 
-Map data: [Natural Earth](https://www.naturalearthdata.com) (public domain) via [world-atlas](https://github.com/topojson/world-atlas). The House of Vasa example is compiled from public historical sources (Svenskt biografiskt lexikon, Svenskt kvinnobiografiskt lexikon, the Royal Court). Dates follow the Julian calendar that Sweden used until 1753.
+Fonts: [Fraunces](https://github.com/undercasetype/Fraunces) and [IBM Plex Sans](https://github.com/IBM/plex), both under the SIL Open Font License 1.1 (see `fonts/`). Map data: [Natural Earth](https://www.naturalearthdata.com) (public domain) via [world-atlas](https://github.com/topojson/world-atlas). The House of Vasa example is compiled from public historical sources (Svenskt biografiskt lexikon, Svenskt kvinnobiografiskt lexikon, the Royal Court). Dates follow the Julian calendar that Sweden used until 1753.

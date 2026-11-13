@@ -42,13 +42,16 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.18';
+const APP_VERSION='2026-11-13.19';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
 let HIDDEN=new Set();
 const activeView=()=>(ui.viewId&&ALL.views[ui.viewId])||null;
+/** Bumped whenever the data shown can have changed, so views can skip redrawing when nothing did. */
+let DATA_REV=0;
 function applyView(){
+  DATA_REV++;
   const v=activeView(); HIDDEN=v?computeHidden(v):new Set();
   const o={}; for(const id in ALL.persons) if(!HIDDEN.has(id)) o[id]=ALL.persons[id];
   S.persons=o; S.places=ALL.places; S.sources=ALL.sources; S.views=ALL.views;
@@ -76,7 +79,11 @@ const Store={
     }else{
       this.mode='local';
       if(Share.pendingJoin){const j=Share.pendingJoin; Share.pendingJoin=null; await Share.join(j.id,j.key);}
-      this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
+      await this.loadLocal(); this.loaded=true; purgeLegacyDemo(); applyView();
+      // IndexedDB is asynchronous and may not finish while a page closes, so unsaved edits
+      // also get a synchronous emergency copy that the next start picks up.
+      const flush=()=>{ if(!this._dirty) return; try{localStorage.setItem('klansagan-unsaved',JSON.stringify({k:Share.lsKey(),data:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}}));}catch(e){} this.saveNow(); };
+      addEventListener('pagehide',flush); document.addEventListener('visibilitychange',()=>{ if(document.hidden) flush(); });
       Share.updateStatus(); Share.startPolling();
       renderAll();
       migrateInline().then(ch=>{ if(ch){ Share.updateStatus(); renderAll(); } return backfillThumbs(); });
@@ -94,18 +101,44 @@ const Store={
       this.loaded=true; if(!this._purged){this._purged=true; purgeLegacyDemo();} applyView(); renderAll();
     },err=>{clearTimeout(timer); setStatus('err','Kunde inte läsa data ('+err.code+')'); this.loaded=true; renderAll();});
   },
-  loadLocal(){
-    try{const k=Share.lsKey(); const raw=localStorage.getItem(k)||(k==='klansagan-v1'?(localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1')):null); ALL.persons={};ALL.places={};ALL.sources={};ALL.views={}; if(raw){const o=JSON.parse(raw); ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{};}}catch(e){}
+  /* The archive text lives in IndexedDB (no 5 MB cap like localStorage). Older versions kept it
+     in localStorage: it is moved over the first time and the old copy removed once the new one is safe.
+     If IndexedDB is unavailable (some private modes), localStorage is still used. */
+  backend:'idb',
+  async loadLocal(){
+    const k=Share.lsKey(); ALL.persons={};ALL.places={};ALL.sources={};ALL.views={};
+    const use=o=>{ if(!o) return; ALL.persons=o.persons||{}; ALL.places=o.places||{}; ALL.sources=o.sources||{}; ALL.views=o.views||{}; };
+    let o=null;
+    if(this.backend==='idb' && typeof indexedDB!=='undefined'){
+      try{ o=await IDB.aget(k); }catch(e){ console.warn('IndexedDB unavailable, using localStorage',e); this.backend='ls'; }
+    } else this.backend='ls';
+    const legacy=()=>{try{const raw=localStorage.getItem(k)||(k==='klansagan-v1'?(localStorage.getItem('kinsaga-v1')||localStorage.getItem('slaktarkivet-v1')):null); return raw?JSON.parse(raw):null;}catch(e){return null;}};
+    try{const u=JSON.parse(localStorage.getItem('klansagan-unsaved')||'null'); if(u&&u.k===k&&u.data){ o=u.data; if(this.backend==='idb'){ await IDB.aput(k,o); } else localStorage.setItem(k,JSON.stringify(o)); localStorage.removeItem('klansagan-unsaved'); }}catch(e){}
+    if(o){ use(o); return; }
+    const old=legacy(); use(old);
+    if(old&&this.backend==='idb'){ // move it over, then free the old space
+      try{ await IDB.aput(k,old); const back=await IDB.aget(k);
+        if(back&&Object.keys(back.persons||{}).length===Object.keys(old.persons||{}).length){ for(const x of [k,'kinsaga-v1','slaktarkivet-v1']) if(x===k||k==='klansagan-v1') try{localStorage.removeItem(x);}catch(e){} }
+      }catch(e){ console.warn('Could not move the archive to IndexedDB',e); this.backend='ls'; }
+    }
+  },
+  async writeArchive(k,data){
+    if(this.backend==='idb'){ try{ await IDB.aput(k,data); try{localStorage.removeItem('klansagan-unsaved');}catch(e){} return; }catch(e){ console.warn('IndexedDB write failed, falling back',e); this.backend='ls'; } }
+    localStorage.setItem(k,JSON.stringify(data));
   },
   saveLocal(){
     if(this.demo) return;
     clearTimeout(this._lt);
-    this._lt=setTimeout(()=>this.saveNow(),250);
+    this._dirty=true; this._lt=setTimeout(()=>this.saveNow(),250);
   },
   saveNow(){
-    clearTimeout(this._lt);
-    try{localStorage.setItem(Share.lsKey(),JSON.stringify({persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}));}catch(e){toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000);}
-    Share.changed();
+    clearTimeout(this._lt); this._dirty=false;
+    const data={persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views}, k=Share.lsKey();
+    // IndexedDB copies the object when the write starts (structured clone), so later edits can't sneak in half-done
+    const p=this.writeArchive(k,data).catch(()=>toast('Webbläsarens lagring är full – ta bort några bilder eller exportera en säkerhetskopia.',6000));
+    this._saving=p; Share.changed();
+    if(!this._persistAsked&&Object.keys(ALL.persons).length&&navigator.storage&&navigator.storage.persist){this._persistAsked=true; navigator.storage.persisted().then(y=>y||navigator.storage.persist()).catch(()=>{});}
+    return p;
   },
   async write(id,fn){
     const prev=this.chains[id]||Promise.resolve();
@@ -189,11 +222,17 @@ function avImg(p,A=1){const m=avatarMedia(p); if(!m) return ''; const c=cropPct(
    referenced from the data as "kl:<id>". In a shared tree they are also stored on the
    server, each one encrypted with the tree's key, and fetched when first needed. */
 const BLOB={}, BLOB_WAIT=new Set();
+/* IndexedDB, two stores: "blobs" (photos, voice memories) and "archive" (the text of each
+   archive: the local one and every shared tree, keyed like the old localStorage keys). */
 const IDB={_db:null,
-  open(){return this._db||(this._db=new Promise((ok,bad)=>{const r=indexedDB.open('klansagan',1); r.onupgradeneeded=()=>r.result.createObjectStore('blobs'); r.onsuccess=()=>ok(r.result); r.onerror=()=>bad(r.error);}));},
-  async tx(mode,fn){const db=await this.open(); return new Promise((ok,bad)=>{const t=db.transaction('blobs',mode); const st=t.objectStore('blobs'); const out=fn(st); t.oncomplete=()=>ok(out?out.result:undefined); t.onerror=()=>bad(t.error);});},
+  open(){return this._db||(this._db=new Promise((ok,bad)=>{const r=indexedDB.open('klansagan',2);
+    r.onupgradeneeded=()=>{const db=r.result; for(const n of ['blobs','archive']) if(!db.objectStoreNames.contains(n)) db.createObjectStore(n);};
+    r.onsuccess=()=>{const db=r.result; db.onversionchange=()=>{db.close(); IDB._db=null;}; ok(db);}; r.onerror=()=>bad(r.error); r.onblocked=()=>bad(new Error('blocked'));}));},
+  async tx(mode,fn,store='blobs'){const db=await this.open(); return new Promise((ok,bad)=>{const t=db.transaction(store,mode); const st=t.objectStore(store); const out=fn(st); t.oncomplete=()=>ok(out?out.result:undefined); t.onerror=()=>bad(t.error); t.onabort=()=>bad(t.error||new Error('aborted'));});},
   get(id){return this.tx('readonly',st=>st.get(id));},
   put(id,v){return this.tx('readwrite',st=>st.put(v,id));},
+  aget(k){return this.tx('readonly',st=>st.get(k),'archive');},
+  aput(k,v){return this.tx('readwrite',st=>st.put(v,k),'archive');},
 };
 const PIXEL='data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 const blobId=m=>m&&typeof m.url==='string'&&m.url.startsWith('kl:')?m.url.slice(3):null;
@@ -210,7 +249,7 @@ async function loadBlobs(){
   for(const id of ids){ try{const v=await IDB.get(id); if(v){BLOB[id]=v; got++; BLOB_WAIT.delete(id);} else missing.push(id);}catch(e){missing.push(id);} }
   if(missing.length&&Share.cur()){ try{ got+=await Share.fetchBlobs(missing); }catch(e){console.warn('Kunde inte hämta bilder',e);} }
   missing.forEach(id=>{ if(!BLOB[id]) setTimeout(()=>BLOB_WAIT.delete(id),30000); else BLOB_WAIT.delete(id); });
-  if(got){ renderAll(); if(ui.sel) select(ui.sel.type,ui.sel.id); }
+  if(got){ DATA_REV++; renderAll(); if(ui.sel) select(ui.sel.type,ui.sel.id); }
 }
 /** Make sure a media item's image is loaded, and return a usable URL. */
 async function blobUrl(m){const id=blobId(m); if(!id) return m.url; if(BLOB[id]) return BLOB[id];
@@ -549,6 +588,18 @@ function renderTree(fresh){
   const av0=activeView(); $('#tView').innerHTML=av0?`<span class="vchip">Vy: <b>${esc(av0.name)}</b> · ${HIDDEN.size} dolda <button class="btn sm ghost" onclick="setActiveView(null)">Visa alla</button></span>`:'';
   const svg=d3.select('#treeSvg'), g=svg.select('g.vp');
   const showSp=ui.showPartners!==false;
+  // Nothing in the tree changed (only the selection, or the panel): mark the selected card and move the camera, no redraw.
+  if(ui.relHL&&!ui.relHL.n) ui.relHL.n=ui.relHLn=(ui.relHLn||0)+1;
+  const sig=[F&&F.id,ui.ancGen,ui.descGen,ui.kinDeg,showSp,ui.cardSize,ui.nameMode,ui.relHL?ui.relHL.n:0,DATA_REV,Store.canEdit,themeName(),$('#treeSvg').clientWidth>700].join('|');
+  if(!fresh&&ui.treeSig===sig&&ui.treeKey!=null&&!ui.treeAnchor&&ui.treePos&&!g.select('g[data-k]').empty()){
+    const sel0=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
+    g.selectAll('g.card').classed('sel',function(){return this.getAttribute('data-k')===sel0;});
+    if(ui.treePan){const n=ui.treePos.get(ui.treePan); ui.treePan=null;
+      if(n){const el0=svg.node(), t=d3.zoomTransform(el0); svg.transition().duration(400).call(treeZoom.transform,d3.zoomIdentity.translate(el0.clientWidth/2-n.x*t.k,el0.clientHeight/2-n.y*t.k).scale(t.k));}}
+    if(ui.treeZoomTo){const id=ui.treeZoomTo; ui.treeZoomTo=null; setTimeout(()=>treeGoTo(id),0);}
+    return;
+  }
+  ui.treeSig=sig;
   setCardSize(ui.cardSize==='small'); let LY=treeLayout(F,showSp);
   if((ui.cardSize||'auto')==='auto'&&LY.nodes.length>40){setCardSize(true); LY=treeLayout(F,showSp);}
   const {nodes,links,aRoot}=LY;
@@ -688,9 +739,14 @@ function renderTree(fresh){
 }
 
 /* ============ PERSONS ============ */
-function renderPersons(){
+function renderPersons(fresh){
   const v=$('#view'); const all=Object.values(S.persons);
-  if(!all.length){v.innerHTML=emptyState();return;}
+  if(!all.length){v.innerHTML=emptyState();ui.plSig=null;return;}
+  // Only the selection changed: move the highlight instead of rebuilding a list that can have thousands of rows.
+  const sig=[DATA_REV,ui.plQuery,ui.plFilter,ui.plSort,ui.focus,ui.nameMode,Store.canEdit].join('|');
+  if(!fresh&&ui.plSig===sig&&v.querySelector('table.m-persons')){const sel=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
+    v.querySelectorAll('tr.sel').forEach(r=>r.classList.remove('sel')); if(sel){const r=v.querySelector(`tr[data-id="${CSS.escape(sel)}"]`); if(r) r.classList.add('sel');} return;}
+  ui.plSig=sig;
   const flt={
     alla:()=>true,
     kalla:p=>!(p.citations||[]).length,
@@ -2589,7 +2645,7 @@ const Share={
       const data={persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}};
       this.st.trees[id]={key,version:v.version,base:KinCore.hashArchive(data),joined:new Date().toISOString(),name:'',uploaded:Object.fromEntries([...blobRefs(data)].map(b=>[b,1]))};
       this.st.active=id; this.save();
-      localStorage.setItem('klansagan-tree-'+id,JSON.stringify(data));
+      await Store.writeArchive('klansagan-tree-'+id,data);
       setTimeout(()=>{const n=Object.keys(data.persons).length; toast(`Du är med i ett delat släktträd – ${n} personer. Dina ändringar syns för de andra när du publicerar.`,7000);},600);
     }catch(e){ const msg=e&&e.name==='OperationError'?'länken verkar vara fel eller ofullständig. Kopiera hela länken igen.':(e.message||e); setTimeout(()=>toast('Kunde inte öppna det delade trädet: '+msg,8000),600); }
   },
@@ -2645,7 +2701,7 @@ const Share={
     Object.assign(ALL,{persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}});
     applyView(); Store.saveNow(); ui.treeKey=null; ui.sel=null; renderAll(true); this.updateStatus();
     toast(`Trädet ser nu ut som i version ${ver}. Tryck Publicera för att alla ska få det.`,7000,{label:'Publicera',fn:()=>this.publish()});},
-  switchTo(id){Store.saveNow(); this.st.active=id||null; this.newer=false; this.save(); Store.loadLocal(); applyView(); ui.focus=null; ui.sel=null; ui.treeKey=null; this.updateStatus(); renderAll(true); if(id) this.check(true);},
+  async switchTo(id){await Store.saveNow(); this.st.active=id||null; this.newer=false; this.save(); await Store.loadLocal(); applyView(); ui.focus=null; ui.sel=null; ui.treeKey=null; this.updateStatus(); renderAll(true); if(id) this.check(true);},
   startPolling(){ if(this._poll) return; this._poll=setInterval(()=>this.check(true),60000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) this.check(true);}); if(this.cur()) setTimeout(()=>this.check(true),1500); },
 };
 {const m=location.hash.match(/^#dela-([0-9a-f-]{36})\.([A-Za-z0-9_-]{40,})$/); if(m){Share.pendingJoin={id:m[1],key:m[2]}; history.replaceState(null,'',location.pathname+location.search+'#start');}}

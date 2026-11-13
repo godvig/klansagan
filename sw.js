@@ -2,8 +2,9 @@
    - Pages: network first, so a new version shows up as soon as you are online.
    - Own files and libraries from CDNs: served from cache, refreshed in the background.
    - Supabase (shared trees) is never cached: that data is always fetched live. */
-const CACHE = 'klansagan-v1';
-const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'klansagan-v2';
+const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
+  'fonts/ibm-plex-sans-latin-400-normal.woff2', 'fonts/ibm-plex-sans-latin-500-normal.woff2', 'fonts/ibm-plex-sans-latin-600-normal.woff2', 'fonts/fraunces-latin-opsz-normal.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -29,7 +30,7 @@ self.addEventListener('fetch', e => {
   }
 
   const ours = url.origin === location.origin;
-  const lib = /cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|fonts\.(googleapis|gstatic)\.com/.test(url.hostname);
+  const lib = /cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net/.test(url.hostname);
   if (!ours && !lib) return;
   e.respondWith(caches.open(CACHE).then(async c => {
     const hit = await c.match(req);
