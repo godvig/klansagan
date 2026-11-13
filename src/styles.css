@@ -489,3 +489,20 @@ button.status:hover{background:rgba(127,110,80,.12)}
 .sh-list li{margin:6px 0}
 [data-theme=wood] header #status.dirty,[data-theme=wood] header #status.new{background:#f0d9a8;color:#5a3d12}
 [data-theme=wood] header #status.dirty i,[data-theme=wood] header #status.new i{background:#b7791f}
+
+/* ---- Tree lines: clearer families ---- */
+.link{stroke:#9c8463;stroke-width:2;stroke-linejoin:round}
+.link.sp{stroke:#7a5a3e;stroke-width:2.4;stroke-dasharray:none}
+.link.sp.far{stroke-dasharray:5 4;opacity:.75}
+.link.dot{fill:#7a5a3e;stroke:var(--paper);stroke-width:1.5}
+.link.fam1{stroke:#8a5a2b}.link.dot.fam1{fill:#8a5a2b}
+.link.fam2{stroke:#3f7a6a}.link.dot.fam2{fill:#3f7a6a}
+.link.fam3{stroke:#5b6fa3}.link.dot.fam3{fill:#5b6fa3}
+.link.fam4{stroke:#9a4f6a}.link.dot.fam4{fill:#9a4f6a}
+.link.fam5{stroke:#7d7a2e}.link.dot.fam5{fill:#7d7a2e}
+[data-theme=dark] .link{stroke:#8d7b62}
+.hlist{max-height:420px;overflow:auto;margin:6px 0}
+.hrow{display:flex;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--line)}
+.hrow.cur{background:var(--paper2);border-radius:8px}
+.hrow .hv{font-family:var(--serif);font-weight:600;color:var(--ink2);min-width:34px}
+.hrow .hb{flex:1;min-width:0;line-height:1.45}

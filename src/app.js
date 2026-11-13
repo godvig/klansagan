@@ -42,8 +42,8 @@ const HIST=[
 const ALL={persons:{},places:{},sources:{},views:{}};
 const S={persons:{},places:ALL.places,sources:ALL.sources,views:ALL.views};
 const KIND={person:'persons',place:'places',source:'sources',view:'views'};
-const APP_VERSION='2026-11-13.5';
-const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:10,descGen:10,kinDeg:10,plFilter:'alla',plSort:'namn',plQuery:'',
+const APP_VERSION='2026-11-13.7';
+const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 try{const f=localStorage.getItem('sa-focus'); if(f) ui.focus=f; const v=localStorage.getItem('sa-viewid'); if(v) ui.viewId=v;}catch(e){}
 let HIDDEN=new Set();
@@ -324,11 +324,23 @@ function treeLayout(F,showSp){
   const anc=(p,depth)=>{const n={p,children:[]}; if(depth<ui.ancGen){for(const rel of ['father','mother']){const q=P(p[rel+'Id']); if(q) n.children.push(anc(q,depth+1)); else if(Store.canEdit&&!p[rel+'Id']&&depth<2) n.children.push({ghost:rel,of:p.id,children:[]});}} return n;};
   const aRoot=d3.hierarchy(anc(F,0));
   d3.tree().nodeSize([1,ROW]).separation((a,b)=>(CW+18)*(a.parent===b.parent?1:1.12))(aRoot);
-  aRoot.each(n=>{n.y=-n.depth*ROW; if(n.depth>0){nodes.push(n); links.push({type:'anc',s:n.parent,t:n});}});
+  aRoot.each(n=>{n.y=-n.depth*ROW; if(n.depth>0) nodes.push(n);});
+  // parents are drawn as a couple: a line between them, a dot in the middle, one line down to the child
+  aRoot.each(n=>{ const ps=n.children||[]; if(!ps.length) return; const tgt=n.depth===0?{x:0,y:0}:n;
+    if(ps.length===2){const [a,b]=ps[0].x<ps[1].x?ps:[ps[1],ps[0]]; const ghost=!a.data.p||!b.data.p;
+      links.push({type:'cp',x1:a.x+CW/2,x2:b.x-CW/2,y:a.y,dash:ghost});
+      links.push({type:'desc',s:{x:(a.x+b.x)/2,y:a.y,mid:true},t:tgt});}
+    else links.push({type:'desc',s:{x:ps[0].x,y:ps[0].y},t:tgt}); });
   // focus partners: man to the left, woman to the right
-  const parts=showSp?partners(F):[]; const pPos={}; let li=0, ri=0;
-  parts.forEach(sp=>{const left=sp.sex==='M'&&F.sex!=='M'; const x=left?-(++li)*(CW+34):(++ri)*(CW+34);
-    const n={data:{p:sp,partner:true},x,y:0}; nodes.push(n); pPos[sp.id]=n; links.push({type:'cp',x1:x<0?x+CW/2:CW/2,x2:x<0?-CW/2:x-CW/2,y:0});});
+  // Partners alternate sides (first one to the right for a man, left for a woman), so each
+  // couple gets its own gap and its own junction for their children.
+  const PG=CW+34;
+  const parts=showSp?partners(F).sort((a,b)=>children(b.id).filter(c=>c.fatherId===F.id||c.motherId===F.id).length-children(a.id).filter(c=>c.fatherId===F.id||c.motherId===F.id).length):[];
+  const pPos={}, junc={}; const sideCount={'-1':0,'1':0}; const first=F.sex==='K'?-1:1;
+  parts.forEach((sp,i)=>{const side=i%2===0?first:-first; const k=++sideCount[side]; const x=side*k*PG;
+    const n={data:{p:sp,partner:true},x,y:0}; nodes.push(n); pPos[sp.id]=n;
+    const inner=x-side*PG; links.push({type:'cp',x1:inner+side*CW/2,x2:x-side*CW/2,y:0,dash:k>1});
+    junc[sp.id]=x-side*PG/2;});
   const shown=new Set([F.id]); aRoot.each(n=>{if(n.data.p) shown.add(n.data.p.id);}); parts.forEach(q=>shown.add(q.id));
   // a person with partners and (step)children, down to depth maxD
   const mk=(p,dd,maxD)=>{shown.add(p.id);
@@ -346,19 +358,34 @@ function treeLayout(F,showSp){
     if(own&&i>=0) return {x:pn.spx[i]-(CW+CG)/2,y:pn.y,mid:true};
     if(!own&&i>=0) return {x:pn.spx[i],y:pn.y};
     return {x:pn.x,y:pn.y};};
-  // descendants of the focus person
-  let rootKids=[]; if(ui.descGen>0){rootKids=children(F.id); if(showSp) for(const q of parts) for(const c of children(q.id)) if(!rootKids.includes(c)) rootKids.push(c);}
-  rootKids=rootKids.filter(c=>!shown.has(c.id)); rootKids.forEach(c=>shown.add(c.id));
-  const dRoot=d3.hierarchy({p:F,sps:[],children:rootKids.map(c=>mk(c,1,ui.descGen))});
-  d3.tree().nodeSize([1,ROW]).separation(sepF)(dRoot);
-  const withKids=parts.find(q=>children(F.id).some(c=>c.fatherId===q.id||c.motherId===q.id))||parts[0];
-  const shift=withKids?pPos[withKids.id].x/2:0;
-  dRoot.each(n=>{if(n.depth>0) expand(n,n.x+shift,n.depth*ROW);});
-  dRoot.each(n=>{if(n.depth===0) return;
-    if(n.parent.depth===0){const c=n.data.p, own=c.fatherId===F.id||c.motherId===F.id, other=own?(c.fatherId===F.id?c.motherId:c.fatherId):null;
-      let s0={x:0,y:0}; if(other&&pPos[other]) s0={x:pPos[other].x/2,y:0,mid:true}; else if(!own){const q=pPos[c.fatherId]||pPos[c.motherId]; if(q) s0={x:q.x,y:0};}
-      links.push({type:'desc',s:s0,t:n});}
-    else links.push({type:'desc',s:srcOf(n),t:n});});
+  // descendants of the focus person: one block per couple, centred under that couple's junction
+  {const groups=new Map();
+   if(ui.descGen>0){
+     const add=(key,c)=>{if(shown.has(c.id)) return; shown.add(c.id); if(!groups.has(key)) groups.set(key,[]); groups.get(key).push(c);};
+     for(const c of children(F.id)){const other=c.fatherId===F.id?c.motherId:c.fatherId; add(other&&pPos[other]?other:'',c);}
+     if(showSp) for(const q of parts) for(const c of children(q.id)) add('step:'+q.id,c);}
+   const blocks=[...groups.entries()].map(([key,kids])=>{
+     const q=key.startsWith('step:')?key.slice(5):key;
+     const jx=key.startsWith('step:')?pPos[q].x:(q?junc[q]:0);
+     const h=d3.hierarchy({root:true,sps:[],children:kids.map(c=>mk(c,1,ui.descGen))});
+     d3.tree().nodeSize([1,ROW]).separation(sepF)(h);
+     const bn=h.descendants().filter(n=>n.depth>0), kx=bn.filter(n=>n.depth===1).map(n=>n.x);
+     return {key,jx,mid:!!q&&!key.startsWith('step:'),bn,ideal:jx-(Math.min(...kx)+Math.max(...kx))/2};
+   }).sort((a,b)=>a.jx-b.jx);
+   const right={};
+   for(const bl of blocks){
+     const ext={}; for(const n of bl.bn){const w=W(n.data); const e=ext[n.depth]||(ext[n.depth]=[n.x-w/2,n.x+w/2]); e[0]=Math.min(e[0],n.x-w/2); e[1]=Math.max(e[1],n.x+w/2);}
+     let sh=bl.ideal; for(const [d,e] of Object.entries(ext)) if(right[d]!==undefined) sh=Math.max(sh,right[d]+SEP*2-e[0]);
+     for(const [d,e] of Object.entries(ext)) right[d]=e[1]+sh;
+     bl.sh=sh;}
+   // centre the whole set of blocks under the focus row if they were pushed aside
+   if(blocks.length>1){const lo=Math.min(...blocks.map(b=>b.sh+Math.min(...b.bn.filter(n=>n.depth===1).map(n=>n.x)))), hi=Math.max(...blocks.map(b=>b.sh+Math.max(...b.bn.filter(n=>n.depth===1).map(n=>n.x))));
+     const jlo=Math.min(...blocks.map(b=>b.jx)), jhi=Math.max(...blocks.map(b=>b.jx)); const adj=((jlo+jhi)/2)-((lo+hi)/2);
+     const can=blocks.every(b=>Math.abs(b.sh+adj-b.ideal)<=Math.abs(b.sh-b.ideal)+Math.abs(adj)); if(can) blocks.forEach(b=>b.sh+=adj);}
+   for(const bl of blocks){
+     for(const n of bl.bn){ expand(n,n.x+bl.sh,n.depth*ROW);
+       if(n.depth===1) links.push({type:'desc',s:{x:bl.jx,y:0,mid:bl.mid},t:n,fam:'f:'+bl.key});
+       else links.push({type:'desc',s:srcOf(n),t:n}); }}}
   // side branches. Siblings may bring their descendants; further out, branches stop at the focus's generation.
   {const occ={}, GAPX=SEP*2;
    const occAdd=(r,l,rr)=>{const o=occ[r]||(occ[r]=[l,rr]); if(l<o[0]) o[0]=l; if(rr>o[1]) o[1]=rr;};
@@ -389,14 +416,20 @@ function treeLayout(F,showSp){
   // give each family its own lane in the gap between two rows, so lines never merge
   {const G=new Map();
    for(const l of links){ if(l.type==='cp') continue;
-     const top=l.type==='anc'?l.t.y:l.s.y, key=l.type==='anc'?l.s:(l.s.x+'|'+l.s.y);
+     if(l.type==='dot') continue;
+    const top=l.type==='anc'?l.t.y:l.s.y, key=l.type==='anc'?l.s:(l.s.x+'|'+l.s.y);
      let g=G.get(key); if(!g){g={top,lo:Infinity,hi:-Infinity,ls:[]}; G.set(key,g);}
      g.lo=Math.min(g.lo,l.s.x,l.t.x); g.hi=Math.max(g.hi,l.s.x,l.t.x); g.ls.push(l);}
    const byGap={}; for(const g of G.values()) (byGap[g.top]=byGap[g.top]||[]).push(g);
    for(const gs of Object.values(byGap)){ gs.sort((a,b)=>a.lo-b.lo); const lanes=[];
      for(const g of gs){let i=lanes.findIndex(r=>r<g.lo-14); if(i<0){i=lanes.length; lanes.push(0);} lanes[i]=g.hi; g.lane=i;}
-     const nL=lanes.length, step=nL>1?Math.min(9,(ROW-CH-14)/(nL-1)):0;
+     const nL=lanes.length, step=nL>1?Math.min(13,(ROW-CH-12)/(nL-1)):0;
+     // colour a family's lines only where they run alongside another family's
+     let ci=0; for(const g of gs){const crowd=gs.some(o=>o!==g&&o.lo<g.hi+30&&o.hi>g.lo-30); const f=crowd?(ci++%5)+1:0; for(const l of g.ls) l.fam=f;}
      for(const g of gs){const my=g.top+ROW/2+(g.lane-(nL-1)/2)*step; for(const l of g.ls) l.my=my;}}}
+  // junction dots where a couple's line to their children starts
+  const dots=new Map(); for(const l of links) if(l.type==='desc'&&l.s.mid) dots.set(l.s.x+'|'+l.s.y,{x:l.s.x,y:l.s.y,fam:l.fam});
+  links.push(...[...dots.values()].map(d=>({type:'dot',...d})));
   return {nodes,links,aRoot};
 }
 let treeZoom=null;
@@ -467,13 +500,14 @@ function renderTree(fresh){
   // links
   const lp=l=>{
     if(l.type==='cp') return `M${l.x1},${l.y}H${l.x2}`;
+    if(l.type==='dot') return `M${l.x-4},${l.y}a4,4 0 1,0 8,0a4,4 0 1,0 -8,0`;
     if(l.type==='anc') return `M${l.s.x},${l.s.y-CH/2}V${l.my}H${l.t.x}V${l.t.y+CH/2}`;
     return `M${l.s.x},${l.s.mid?l.s.y:l.s.y+CH/2}V${l.my}H${l.t.x}V${l.t.y-CH/2}`;
   };
   g.selectAll('*').remove();
   // generation labels
   for(let d=1; d<=ui.ancGen; d++){ if(aRoot.descendants().some(n=>n.depth===d&&n.data.p)){ const xs=aRoot.descendants().filter(n=>n.depth===d).map(n=>n.x); g.append('text').attr('class','gen-label').attr('x',Math.min(...xs)-CW/2).attr('y',-d*(CH+56)-CH/2-8).text(['','Föräldrar','Farföräldrar & morföräldrar','Farfars- och morfarsföräldrar','Generation 4','Generation 5','Generation 6'][d]||('Generation '+d)); } }
-  g.selectAll('path.link').data(links).join('path').attr('class',l=>'link'+(l.type==='cp'?' sp':'')).attr('d',lp);
+  g.selectAll('path.link').data(links).join('path').attr('class',l=>'link'+(l.type==='cp'?' sp'+(l.dash?' far':''):'')+(l.type==='dot'?' dot':'')+(l.fam?' fam'+l.fam:'')).attr('d',lp);
   const sel=ui.sel&&ui.sel.type==='person'?ui.sel.id:null;
   const cards=g.selectAll('g.node').data(nodes).join('g').attr('transform',n=>`translate(${n.x-CW/2},${n.y-CH/2})`);
   cards.each(function(n){
@@ -2209,7 +2243,7 @@ function loadDemo(){
   Store.demo={saved:{persons:ALL.persons,places:ALL.places,sources:ALL.sources,views:ALL.views},focus:ui.focus,viewId:ui.viewId};
   const m=a=>Object.fromEntries(a.map(o=>[o.id,clone(o)]));
   ALL.persons=m(persons); ALL.places=m(places); ALL.sources=m(sources); ALL.views={};
-  ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=10; ui.descGen=10; ui.treeKey=null; ui.sel=null;
+  ui.viewId=null; ui.focus='p_gustav1'; ui.ancGen=2; ui.descGen=3; ui.treeKey=null; ui.sel=null;
   applyView();
   toast('Det här är ett exempel. Inget sparas – dina egna uppgifter ligger kvar orörda.',5000);
   if(location.hash!=='#trad') location.hash='trad'; else renderAll(true);
@@ -2346,10 +2380,13 @@ const Share={
         await migrateInline();
         const data=this.archive();
         await this.uploadBlobs(data,(i,n)=>{if(i===1||i===n||i%10===0) toast(`Laddar upp bilder… ${i} av ${n}`,4000);});
-        const payload=await KinCore.encryptJSON({...data,meta:{by:this.st.name,at:new Date().toISOString()}},t.key);
+        const at=new Date().toISOString(), names=this.changedNames();
+        const payload=await KinCore.encryptJSON({...data,meta:{by:this.st.name,at}},t.key);
         if(payload.length>20000000) throw new Error('Trädet är för stort att publicera (för många eller för stora bilder).');
+        const meta=await KinCore.encryptJSON({by:this.st.name,at,n:this.recount(),names:names.slice(0,12),persons:Object.keys(data.persons).length},t.key);
         try{
-          const v=await this.rpc('kl_publish',{tree:this.st.active,base_version:t.version,write_secret:await KinCore.writeSecret(t.key),payload});
+          const args={tree:this.st.active,base_version:t.version,write_secret:await KinCore.writeSecret(t.key),payload};
+          let v; try{ v=await this.rpc('kl_publish2',{...args,meta}); }catch(e2){ if(!/kl_publish2|function|404|PGRST202/i.test(e2.message)) throw e2; v=await this.rpc('kl_publish',args); }
           t.version=v; t.base=KinCore.hashArchive(data); this.newer=false; this.save(); this.updateStatus();
           toast(`Publicerat! Version ${v} syns nu för alla med länken.`,4500); return true;
         }catch(e){ if(e.code!=='conflict') throw e; this.busy=false; await this.pull(true); this.busy=true; }
@@ -2360,11 +2397,32 @@ const Share={
   },
   async discard(){const t=this.cur(); if(!t) return; const v=await this.fetchVersion(this.st.active,t.key,t.version);
     Object.assign(ALL,{persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}}); applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus(); toast('Dina opublicerade ändringar är borttagna.');},
+  async history(){const t=this.cur(); const rows=await this.rpc('kl_history',{tree:this.st.active})||[];
+    for(const r of rows){ r.info=null; if(r.meta) try{r.info=await KinCore.decryptJSON(r.meta,t.key);}catch(e){} } return rows;},
+  /** Make an older version the working copy. It goes live for everyone when published. */
+  async restore(ver){const t=this.cur(); const v=await this.fetchVersion(this.st.active,t.key,ver);
+    Object.assign(ALL,{persons:v.data.persons||{},places:v.data.places||{},sources:v.data.sources||{},views:v.data.views||{}});
+    applyView(); Store.saveNow(); ui.treeKey=null; ui.sel=null; renderAll(true); this.updateStatus();
+    toast(`Trädet ser nu ut som i version ${ver}. Tryck Publicera för att alla ska få det.`,7000,{label:'Publicera',fn:()=>this.publish()});},
   switchTo(id){Store.saveNow(); this.st.active=id||null; this.newer=false; this.save(); Store.loadLocal(); applyView(); ui.focus=null; ui.sel=null; ui.treeKey=null; this.updateStatus(); renderAll(true); if(id) this.check(true);},
   startPolling(){ if(this._poll) return; this._poll=setInterval(()=>this.check(true),60000); document.addEventListener('visibilitychange',()=>{if(!document.hidden) this.check(true);}); if(this.cur()) setTimeout(()=>this.check(true),1500); },
 };
 {const m=location.hash.match(/^#dela-([0-9a-f-]{36})\.([A-Za-z0-9_-]{40,})$/); if(m){Share.pendingJoin={id:m[1],key:m[2]}; history.replaceState(null,'',location.pathname+location.search+'#start');}}
 function treeTitle(){const h=homePerson(); const t=trees()[0]; return t?t.name:(h?'Släkten kring '+fullName(h):'Släktträd');}
+async function historyModal(){
+  const t=Share.cur(); if(!t) return;
+  modal(`<h3>Versionshistorik</h3><p class="muted" style="margin-top:-4px">De 30 senaste publiceringarna. Du kan gå tillbaka till en tidigare version om något blivit fel.</p><div id="hList" class="hlist"><p class="muted">Hämtar…</p></div><div class="foot"><button class="btn" data-x>Stäng</button></div>`,
+  async(ov,close)=>{ov.querySelector('[data-x]').onclick=close; const box=ov.querySelector('#hList');
+    let rows; try{rows=await Share.history();}catch(e){box.innerHTML=`<p class="muted">Kunde inte hämta historiken${/kl_history|PGRST202|function/i.test(e.message)?' – kör filen 0003_history.sql i Supabase först.':'.'}</p>`; return;}
+    const dt=d=>new Date(d).toLocaleString('sv-SE',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    box.innerHTML=rows.map((r,i)=>{const m=r.info||{}; const nm=m.names||[];
+      return `<div class="hrow${r.version===t.version?' cur':''}"><div class="hv">v${r.version}</div><div class="hb"><b>${esc(m.by||(r.version===1?'Skapad':'Okänd'))}</b> <span class="muted small">${esc(dt(r.created_at))}</span>
+        <div class="small">${r.version===1&&!r.meta?'Trädet delades.':m.n?`${m.n} ${m.n===1?'ändring':'ändringar'}${nm.length?': '+nm.map(esc).join(', ')+(m.n>nm.length?' …':''):''}`:'—'}</div></div>
+        <div class="ha">${i===0?'<span class="tag">Senaste</span>':`<button class="btn sm" data-rv="${r.version}">Återställ</button>`}</div></div>`;}).join('')||'<p class="muted">Inga versioner.</p>';
+    box.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>{const v=+b.dataset.rv; close();
+      confirmBox(`Gå tillbaka till version ${v}?`,'Trädet blir som det var då. Det blir en ny version först när du publicerar, och inget försvinner ur historiken.','Återställ',async()=>{try{await Share.restore(v);}catch(e){toast('Kunde inte hämta versionen: '+(e.message||e),6000);}});});
+  });
+}
 function askName(){return new Promise(res=>{modal(`<h3>Vad heter du?</h3><p class="muted" style="margin-top:-4px">Namnet syns för de andra när du publicerar, så att de vet vem som ändrat.</p>
   <label class="f"><span>Ditt namn</span><input class="t" id="anName" placeholder="t.ex. Adam"></label>
   <div class="foot"><button class="btn" data-x>Avbryt</button><button class="btn primary" data-ok>Fortsätt</button></div>`,(ov,close)=>{const i=ov.querySelector('#anName'); i.focus();
@@ -2381,6 +2439,7 @@ function shareTreeModal(){
     <label class="f"><span>Länk att skicka till släkten</span><div class="row-inline"><input class="t" id="shLink" readonly value="${esc(Share.link())}"><button class="btn" id="shCopy">Kopiera</button></div></label>
     <div class="sh-state">${Share.newer?'<b>Det finns en ny version.</b> Hämta den innan du fortsätter.':n?`<b>${n} ${n===1?'ändring':'ändringar'} att publicera</b>${names.length?`<div class="small muted" style="margin-top:4px">${names.slice(0,8).map(esc).join(', ')}${names.length>8?' …':''}</div>`:''}`:`Allt är publicerat (version ${t.version}).`}</div>
     <div class="sh-acts">${Share.newer?'<button class="btn primary" id="shPull">Hämta senaste</button>':''}<button class="btn ${Share.newer?'':'primary'}" id="shPub" ${n?'':'disabled'}>Publicera ändringar</button>${n?'<button class="btn ghost" id="shDiscard">Släng mina ändringar</button>':''}</div>
+    <p><button class="btn sm" id="shHist">🕓 Versionshistorik</button></p>
     <p class="small muted">Skicka länken bara till dem som ska ha tillgång. Den som har länken kan inte uteslutas i efterhand – då får du skapa ett nytt delat träd.</p>
     ${otherList}
     <div class="foot"><button class="btn" data-x>Stäng</button></div>`
@@ -2396,6 +2455,7 @@ function shareTreeModal(){
     const cp=q('#shCopy'); if(cp) cp.onclick=async()=>{const i=q('#shLink'); i.select(); try{await navigator.clipboard.writeText(i.value);}catch(e){document.execCommand('copy');} cp.textContent='Kopierad ✓';};
     const pb=q('#shPub'); if(pb) pb.onclick=async()=>{pb.disabled=true; pb.textContent='Publicerar…'; const ok=await Share.publish(); close(); if(ok) shareTreeModal();};
     const pl=q('#shPull'); if(pl) pl.onclick=async()=>{pl.disabled=true; await Share.pull(); close(); shareTreeModal();};
+    const hs=q('#shHist'); if(hs) hs.onclick=()=>{close(); historyModal();};
     const dc=q('#shDiscard'); if(dc) dc.onclick=()=>{close(); confirmBox('Släng dina ändringar?','Allt du ändrat sedan senaste publiceringen försvinner.','Släng',()=>Share.discard());};
     const cr=q('#shCreate'); if(cr) cr.onclick=async()=>{ if(!Share.st.name){const nm=await askName(); if(!nm) return; Share.st.name=nm; Share.save();}
       cr.disabled=true; cr.textContent='Krypterar och laddar upp…';
