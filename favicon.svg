@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">
+  <style>
+    .a{stroke:#6b4a30}.b{stroke:#b07a3f}.c{stroke:#8f6a3a}
+    @media (prefers-color-scheme: dark){.a{stroke:#f1e2c4}.b{stroke:#d3ad73}.c{stroke:#c49464}}
+  </style>
+  <g fill="none" stroke-width="2.8">
+    <circle class="a" cx="10" cy="10.5" r="6.2"/>
+    <circle class="b" cx="18" cy="10.5" r="6.2"/>
+    <circle class="c" cx="14" cy="17.5" r="6.2"/>
+    <path class="b" d="M15.6 4.9a6.2 6.2 0 0 1 -1.6 11.2"/>
+  </g>
+</svg>
