@@ -1,10 +1,10 @@
 /* Släktsagan · modal.js — Modals and the add/edit person dialog. */
-import { P, ensurePlace, fullName, partners, personLabel, placeName } from './domain.js?v=41';
-import { personByLabel, personOptions, placeOptions } from './panel.js?v=41';
-import { renderAll, setFocus } from './router.js?v=41';
-import { S, ui } from './state.js?v=41';
-import { Store } from './store.js?v=41';
-import { clone, esc, toast, uid } from './util.js?v=41';
+import { P, ensurePlace, fullName, partners, personLabel, placeName } from './domain.js?v=42';
+import { personByLabel, personOptions, placeOptions } from './panel.js?v=42';
+import { renderAll, setFocus } from './router.js?v=42';
+import { S, ui } from './state.js?v=42';
+import { Store } from './store.js?v=42';
+import { clone, esc, toast, uid } from './util.js?v=42';
 
 /* ============ Modal ============ */
 function modal(html,onMount){
@@ -42,6 +42,7 @@ function openPersonModal(p,ctx){
     <label class="f"><span>Födelseort</span><input class="t" id="mBP" list="dlPlaces" value="${esc(placeName(p.birthPlace))}" placeholder="Församling eller ort"></label></div>
     <div class="row2"><label class="f"><span>Död (datum)</span><input class="t" id="mDD" value="${esc(p.deathDate||'')}"></label>
     <label class="f"><span>Dödsort</span><input class="t" id="mDP" list="dlPlaces" value="${esc(placeName(p.deathPlace))}"></label></div>
+    <label class="chk small" style="margin:-4px 0 8px"><input type="checkbox" id="mDec" ${p.deceased?'checked':''}> Avliden, datum okänt <span class="muted">– annars kan personen räknas som levande och döljas för den som har läslänken</span></label>
     ${placeOptions()}
     ${ctx.rel==='father'||ctx.rel==='mother'?'':`<div class="row2"><label class="f"><span>Far</span><input class="t" id="mF" list="dlPersons2" value="${pl(p.fatherId)}" placeholder="${p.fatherId&&!P(p.fatherId)?'Dold i den här vyn – lämna tomt':'Sök befintlig person'}"></label>
     <label class="f"><span>Mor</span><input class="t" id="mM" list="dlPersons2" value="${pl(p.motherId)}" placeholder="${p.motherId&&!P(p.motherId)?'Dold i den här vyn – lämna tomt':'Sök befintlig person'}"></label></div>
@@ -60,7 +61,7 @@ function openPersonModal(p,ctx){
       if(q('#mExisting')&&q('#mExisting').value.trim()){target=personByLabel(q('#mExisting').value); if(!target){toast('Hittade ingen sådan person – välj i listan.');return;} target=clone(target);}
       if(!target){
         const g=q('#mG').value.trim(),s=q('#mS').value.trim(); if(!g&&!s){q('#mG').focus();toast('Skriv minst ett namn.');return;}
-        Object.assign(p,{given:g,callName:q('#mCall').value,surname:s,sex:q('#mSex').value,occupation:q('#mO').value.trim(),birthDate:q('#mBD').value.trim(),deathDate:q('#mDD').value.trim()});
+        Object.assign(p,{given:g,callName:q('#mCall').value,surname:s,sex:q('#mSex').value,occupation:q('#mO').value.trim(),birthDate:q('#mBD').value.trim(),deathDate:q('#mDD').value.trim()}); if(q('#mDec').checked&&!p.deathDate) p.deceased=true; else delete p.deceased;
         const bp=ensurePlace(q('#mBP').value),dp=ensurePlace(q('#mDP').value);
         if(bp.created) Store.put(bp.created,{silent:true}); if(dp.created&&dp.created!==bp.created) Store.put(dp.created,{silent:true});
         p.birthPlace=bp.id; p.deathPlace=dp.id;

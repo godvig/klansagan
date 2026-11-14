@@ -1,17 +1,17 @@
 /* Släktsagan · tree.js — The family tree: layout, drawing, animation and the kinship highlight. */
-import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=41';
-import { pickImageFor } from './media.js?v=41';
-import { openPersonModal } from './modal.js?v=41';
-import { openCount } from './panel.js?v=41';
-import { printChart } from './print.js?v=41';
-import { relation } from './relationship.js?v=41';
-import { emptyState, renderAll, select, setFocus } from './router.js?v=41';
-import { linkModal, treeOf, trees } from './start.js?v=41';
-import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=41';
-import { Store } from './store.js?v=41';
-import { themeName } from './theme.js?v=41';
-import { $, esc, toast } from './util.js?v=41';
-import { hideModal } from './views.js?v=41';
+import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=42';
+import { pickImageFor } from './media.js?v=42';
+import { openPersonModal } from './modal.js?v=42';
+import { openCount } from './panel.js?v=42';
+import { printChart } from './print.js?v=42';
+import { relation } from './relationship.js?v=42';
+import { emptyState, renderAll, select, setFocus } from './router.js?v=42';
+import { linkModal, treeOf, trees } from './start.js?v=42';
+import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=42';
+import { Store } from './store.js?v=42';
+import { themeName } from './theme.js?v=42';
+import { $, esc, toast } from './util.js?v=42';
+import { hideModal } from './views.js?v=42';
 
 /* ============ TREE ============ */
 const KIN_LEVELS=['Inga','Syskon','Kusiner','Sysslingar','Tremänningar','Fyrmänningar','Femmänningar','Sexmänningar','Sjumänningar','Åttamänningar','Niomänningar'];

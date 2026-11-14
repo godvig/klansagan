@@ -27,6 +27,11 @@ export function fakeServer() {
         const head = Math.max(...Object.keys(ver[a.tree]).map(Number)); if (head !== a.base_version) return [400, { message: 'conflict' }];
         ver[a.tree][head + 1] = a.payload; if (a.meta) meta[a.tree + '|' + (head + 1)] = a.meta; return [200, head + 1];
       }
+      case 'kl_rekey': {
+        if (trees[a.tree] !== h(a.write_secret)) return [400, { message: 'forbidden' }];
+        const head = Math.max(...Object.keys(ver[a.tree]).map(Number)); if (head !== a.base_version) return [400, { message: 'conflict' }];
+        ver[a.tree][head + 1] = a.payload; if (a.meta) meta[a.tree + '|' + (head + 1)] = a.meta; trees[a.tree] = a.new_write_hash; return [200, head + 1];
+      }
       default: return [404, { message: 'unknown ' + fn }];
     }
   };

@@ -144,6 +144,8 @@ All test data is synthetic. Offline, point `E2E_LIB_DIR` at local copies of the 
 
 Everyone with the link can edit a local working copy and **publish** when ready. If two people publish in parallel, the second publish merges document by document (three-way merge); when both changed the same person, the newer edit wins. The server keeps the last 30 versions. Leaving the page with unpublished edits asks first, coming back to them shows a reminder with a Publish button, and so does sitting on them for ten minutes.
 
+**Two links: edit and read-only.** A shared tree has two keys. The edit link carries both; the read-only link carries only the read key. Publishing needs a secret derived from the editor key, so a read-only link can't publish. Living people (no death date, born less than 105 years ago, or with no dates to go on) are split out before encryption: readers get their name, birth year and family links, while their dates, places, photos, voice memories, notes and sources, along with all comments, are encrypted a second time with the editor key. A reader can't recover them even from the raw payload. Either link can be replaced: the old one stops working at once, and editors keep the old keys so history still opens. Trees shared before this existed keep their single link until someone presses **Skapa läslänk**.
+
 Photos are kept in IndexedDB on each device and, in a shared tree, uploaded once each as separate encrypted blobs, so publishing never re-sends them.
 
 To run your own: create a Supabase project, run the files in `supabase/migrations/` in order in the SQL editor, and put the project URL and publishable key in `src/config.js`. The publishable key is public by design: the tables are closed and only the `kl_*` functions are exposed.
@@ -152,7 +154,7 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 Done recently: a family book as PDF, undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, browser tests in CI, the app split into ES modules, a locked tree that grows to include whoever you pick, "On this day", encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
-**Next:** read-only share links with protection for living people, "what's new since your last visit", life path on the map, photo gallery on the person card, English UI.
+**Next:** "what's new since your last visit", life path on the map, photo gallery on the person card, English UI.
 
 ## License
 

@@ -337,3 +337,46 @@ describe('onThisDay', () => {
     expect(core.onThisDay(ps, new Date(2027, 1, 28), { days: 0 }).map((x) => x.personId)).toEqual(['d']);
   });
 });
+
+describe('read-only links: living people', () => {
+  const persons = {
+    old: { id: 'old', given: 'Anna', birthDate: '1890-02-01' },
+    dead: { id: 'dead', given: 'Per', birthDate: '1950-01-01', deathDate: '2010-05-05', deathPlace: 'pl_d', citations: [{ id: 'c1', sourceId: 's_pub' }] },
+    kid: { id: 'kid', given: 'Lisa', surname: 'Ek', birthDate: '1985-11-19', birthPlace: 'pl_home', notes: 'Bor på Storgatan', fatherId: 'dead',
+      media: [{ url: 'kl:photo123' }], citations: [{ id: 'c2', sourceId: 's_priv' }] },
+    nodate: { id: 'nodate', given: 'Okänd' },
+    gran: { id: 'gran', given: 'Gamla' },
+    gkid: { id: 'gkid', motherId: 'gran', birthDate: '1880' },
+    marked: { id: 'marked', given: 'Olle', birthDate: '1960', deceased: true },
+  };
+  const data = { persons, places: { pl_d: { id: 'pl_d', name: 'Dödsort' }, pl_home: { id: 'pl_home', name: 'Hemort' } },
+    sources: { s_pub: { id: 's_pub' }, s_priv: { id: 's_priv' } }, views: {}, comments: { cm: { id: 'cm', personId: 'dead', text: 'Moster vet' } } };
+
+  it('decides who is living', () => {
+    expect(core.isLiving(persons.old, persons, 2026)).toBe(false);
+    expect(core.isLiving(persons.dead, persons, 2026)).toBe(false);
+    expect(core.isLiving(persons.kid, persons, 2026)).toBe(true);
+    expect(core.isLiving(persons.nodate, persons, 2026)).toBe(true);
+    expect(core.isLiving(persons.gran, persons, 2026)).toBe(false); // child born 1880
+    expect(core.isLiving(persons.marked, persons, 2026)).toBe(false);
+  });
+
+  it('gives readers only name and birth year of the living, and no comments', () => {
+    const { pub, priv } = core.splitForReaders(data, 2026);
+    expect(pub.persons.kid).toEqual({ kind: 'person', id: 'kid', given: 'Lisa', surname: 'Ek', sex: '', birthDate: '1985', fatherId: 'dead', motherId: '', spouseIds: [], living: true });
+    expect(JSON.stringify(pub)).not.toMatch(/Storgatan|1985-11-19|photo123|Hemort|s_priv|Moster/);
+    expect(pub.persons.dead).toEqual(persons.dead);
+    expect(Object.keys(pub.places)).toEqual(['pl_d']);
+    expect(Object.keys(pub.sources)).toEqual(['s_pub']);
+    expect(pub.comments).toBeUndefined();
+    expect(priv.persons.kid).toEqual(persons.kid);
+    expect(priv.comments.cm.text).toBe('Moster vet');
+    expect(core.joinPrivate(pub, priv)).toEqual({ ...data, views: {} });
+  });
+
+  it('tags keys so photos under different keys never collide', async () => {
+    const a = await core.keyTag(core.newKey()), b = await core.keyTag(core.newKey());
+    expect(a).toMatch(/^[0-9a-f]{8}$/); expect(a).not.toBe(b);
+    expect(await core.sha256hex('x')).toBe('2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881');
+  });
+});

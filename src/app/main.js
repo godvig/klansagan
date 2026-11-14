@@ -1,43 +1,43 @@
 /* Släktsagan · main.js — starts the app: wires the header, routes and loads the archive.
    Every other module only declares things; everything that runs on load is here, in order. */
-import { Unpub } from './backup.js?v=41';
-import { fullName, lifespan, placeName, sexColor } from './domain.js?v=41';
-import { mapState, renderMap } from './map.js?v=41';
-import { photoTo } from './media.js?v=41';
-import { PWA } from './pwa.js?v=41';
-import { renderAll, route, setFocus, showPerson, updateMoreBtn } from './router.js?v=41';
-import { Share, shareTreeModal } from './share.js?v=41';
-import { S, ui } from './state.js?v=41';
-import { Hist, Store } from './store.js?v=41';
-import { applySimple, applySize, applyTheme, settingsModal } from './theme.js?v=41';
-import { $, esc, norm, toast } from './util.js?v=41';
-import { openViewMenu } from './views.js?v=41';
-import * as util from './util.js?v=41';
-import * as state from './state.js?v=41';
-import * as store from './store.js?v=41';
-import * as domain from './domain.js?v=41';
-import * as router from './router.js?v=41';
-import * as tree from './tree.js?v=41';
-import * as persons from './persons.js?v=41';
-import * as panel from './panel.js?v=41';
-import * as media from './media.js?v=41';
-import * as modal from './modal.js?v=41';
-import * as places from './places.js?v=41';
-import * as timeline from './timeline.js?v=41';
-import * as map from './map.js?v=41';
-import * as importexport from './importexport.js?v=41';
-import * as theme from './theme.js?v=41';
-import * as start from './start.js?v=41';
-import * as fan from './fan.js?v=41';
-import * as card from './card.js?v=41';
-import * as dups from './dups.js?v=41';
-import * as relationship from './relationship.js?v=41';
-import * as print from './print.js?v=41';
-import * as views from './views.js?v=41';
-import * as demo from './demo.js?v=41';
-import * as share from './share.js?v=41';
-import * as backup from './backup.js?v=41';
-import * as pwa from './pwa.js?v=41';
+import { Unpub } from './backup.js?v=42';
+import { fullName, lifespan, placeName, sexColor } from './domain.js?v=42';
+import { mapState, renderMap } from './map.js?v=42';
+import { photoTo } from './media.js?v=42';
+import { PWA } from './pwa.js?v=42';
+import { renderAll, route, setFocus, showPerson, updateMoreBtn } from './router.js?v=42';
+import { Share, shareTreeModal } from './share.js?v=42';
+import { S, ui } from './state.js?v=42';
+import { Hist, Store } from './store.js?v=42';
+import { applySimple, applySize, applyTheme, settingsModal } from './theme.js?v=42';
+import { $, esc, norm, toast } from './util.js?v=42';
+import { openViewMenu } from './views.js?v=42';
+import * as util from './util.js?v=42';
+import * as state from './state.js?v=42';
+import * as store from './store.js?v=42';
+import * as domain from './domain.js?v=42';
+import * as router from './router.js?v=42';
+import * as tree from './tree.js?v=42';
+import * as persons from './persons.js?v=42';
+import * as panel from './panel.js?v=42';
+import * as media from './media.js?v=42';
+import * as modal from './modal.js?v=42';
+import * as places from './places.js?v=42';
+import * as timeline from './timeline.js?v=42';
+import * as map from './map.js?v=42';
+import * as importexport from './importexport.js?v=42';
+import * as theme from './theme.js?v=42';
+import * as start from './start.js?v=42';
+import * as fan from './fan.js?v=42';
+import * as card from './card.js?v=42';
+import * as dups from './dups.js?v=42';
+import * as relationship from './relationship.js?v=42';
+import * as print from './print.js?v=42';
+import * as views from './views.js?v=42';
+import * as demo from './demo.js?v=42';
+import * as share from './share.js?v=42';
+import * as backup from './backup.js?v=42';
+import * as pwa from './pwa.js?v=42';
 
 /** For the browser console and the browser tests: everything, under one name. */
 const app = Object.freeze(Object.assign({}, util, state, store, domain, router, tree, persons, panel, media, modal, places, timeline, map, importexport, theme, start, fan, card, dups, relationship, print, views, demo, share, backup, pwa));
@@ -97,7 +97,7 @@ $('#home').addEventListener('click',e=>{e.preventDefault(); ui.sel=null; if(loca
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.placing){ui.placing=null; if(ui.view==='karta') renderMap();}});
 window.addEventListener('resize',()=>{clearTimeout(window._rz); window._rz=setTimeout(()=>{ui.treeKey=null; mapState.drawn=false; renderAll();},200);});
 route();
-{const m=location.hash.match(/^#dela-([0-9a-f-]{36})\.([A-Za-z0-9_-]{40,})$/); if(m){Share.pendingJoin={id:m[1],key:m[2]}; history.replaceState(null,'',location.pathname+location.search+'#start');}}
+{const m=location.hash.match(/^#(dela|visa)-([0-9a-f-]{36})\.([A-Za-z0-9_-]{40,})(?:\.([A-Za-z0-9_-]{40,}))?$/); if(m){Share.pendingJoin={id:m[2],r:m[3],e:m[4]||'',kind:m[1]==='visa'?'read':'edit'}; history.replaceState(null,'',location.pathname+location.search+'#start');}}
 addEventListener('beforeunload',e=>{ if(Unpub.count()){ e.preventDefault(); e.returnValue=''; } });
 {const sb=$('#shareBtn'); if(sb) sb.onclick=shareTreeModal; const st=$('#status'); if(st) st.onclick=()=>{ if(Share.newer) Share.pull(); else if(Share.enabled()) shareTreeModal(); };}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault(); PWA.prompt=e; if(Store.loaded) renderAll();});

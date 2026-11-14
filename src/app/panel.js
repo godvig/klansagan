@@ -1,16 +1,16 @@
 /* Släktsagan · panel.js — The side panel for a person: facts, family, events, sources, questions and voice memories. */
-import { P, PIXEL, ageAt, avImg, avatarUrl, blobUrl, children, ensurePlace, fullHtml, fullName, homePerson, initials, isAudio, isImg, lifeEvents, lifespan, partners, personLabel, placeName, setHome, sexColor, shortName, siblings, storeBlob, thumbUrl } from './domain.js?v=41';
-import { bindMedia, deletePerson, photoModal } from './media.js?v=41';
-import { confirmBox, modal, openPersonModal } from './modal.js?v=41';
-import { bindPlacePanel, bindSourcePanel, placePanel, sourcePanel } from './places.js?v=41';
-import { bindSheet, followPerson, renderAll, select, setFocus } from './router.js?v=41';
-import { Share, askName } from './share.js?v=41';
-import { linkModal } from './start.js?v=41';
-import { ALL, S, ui } from './state.js?v=41';
-import { Hist, Store } from './store.js?v=41';
-import { openCard } from './theme.js?v=41';
-import { $, EVENT_TYPES, SOURCE_TYPES, clone, esc, fmtDate, norm, toast, uid } from './util.js?v=41';
-import { fillNames, hideModal } from './views.js?v=41';
+import { P, PIXEL, ageAt, avImg, avatarUrl, blobUrl, children, ensurePlace, fullHtml, fullName, homePerson, initials, isAudio, isImg, lifeEvents, lifespan, partners, personLabel, placeName, setHome, sexColor, shortName, siblings, storeBlob, thumbUrl } from './domain.js?v=42';
+import { bindMedia, deletePerson, photoModal } from './media.js?v=42';
+import { confirmBox, modal, openPersonModal } from './modal.js?v=42';
+import { bindPlacePanel, bindSourcePanel, placePanel, sourcePanel } from './places.js?v=42';
+import { bindSheet, followPerson, renderAll, select, setFocus } from './router.js?v=42';
+import { Share, askName } from './share.js?v=42';
+import { linkModal } from './start.js?v=42';
+import { ALL, S, ui } from './state.js?v=42';
+import { Hist, Store } from './store.js?v=42';
+import { openCard } from './theme.js?v=42';
+import { $, EVENT_TYPES, SOURCE_TYPES, clone, esc, fmtDate, norm, toast, uid } from './util.js?v=42';
+import { fillNames, hideModal } from './views.js?v=42';
 
 /* ============ PANEL ============ */
 function renderPanel(){
@@ -53,6 +53,7 @@ function personPanel(p){
       ${ed?`<button class="btn sm" data-act="edit">Redigera</button><button class="btn sm ghost danger" data-act="delp">Ta bort</button>`:''}
     </div></div>
   ${p.updatedBy&&Store.user?`<div class="sec small muted" style="padding:8px 20px">Senast ändrad ${esc(fmtDate((p.updatedAt||'').slice(0,10)))} av <span data-uid="${esc(p.updatedBy)}">…</span></div>`:''}
+  ${p.living&&Share.readOnly()?'<div class="sec small muted" style="padding:10px 20px">🔒 Personen lever. Med en läslänk visas bara namn och födelseår – datum, orter, bilder och anteckningar ser bara de som kan redigera.</div>':''}
   <div class="sec"><h4>Fakta</h4><dl class="facts">
     <dt>Född</dt><dd>${esc(p.birthDate||'–')}${p.birthPlace?` <a href="#" data-place="${p.birthPlace}">${esc(placeName(p.birthPlace))}</a>`:''}</dd>
     <dt>Död</dt><dd>${esc(p.deathDate||'–')}${p.deathPlace?` <a href="#" data-place="${p.deathPlace}">${esc(placeName(p.deathPlace))}</a>`:''}</dd>
@@ -98,6 +99,7 @@ function ago(iso){ if(!iso) return ''; const d=(Date.now()-Date.parse(iso))/1000
   return fmtDate(iso.slice(0,10)); }
 const myName=()=>Share.st.name||'';
 function commentSection(p){
+  if(Share.readOnly()) return '';
   const all=commentsFor(p.id), roots=all.filter(c=>!c.replyTo), ed=Store.canEdit, nOpen=roots.filter(c=>!c.resolved).length;
   const one=(c,reply)=>`<div class="cm${c.resolved?' done':''}${reply?' reply':''}" data-cm="${c.id}">
       <span class="cm-av" style="background:${nameColor(c.by)}">${esc((c.by||'?').trim().charAt(0).toUpperCase()||'?')}</span>

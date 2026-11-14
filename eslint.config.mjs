@@ -42,6 +42,6 @@ export default [
     // browser tests: Node code, plus the app's globals inside page.evaluate callbacks
     files: ['e2e/**/*.mjs'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node, ...globals.browser,
-      app: 'readonly' } },
+      app: 'readonly', KinCore: 'readonly' } },
   },
 ];

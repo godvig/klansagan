@@ -412,6 +412,84 @@
     return b64u(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('klansagan-write'))));
   }
 
+  /** Hex SHA-256, the form the server stores a write secret in. @param {string} s */
+  async function sha256hex(s) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
+    return Array.from(h, b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  /**
+   * Short public tag for a key. Photos are stored under "<tag>_<id>", so a photo encrypted
+   * with one key never collides with the same photo encrypted with another.
+   * @param {string} key
+   */
+  async function keyTag(key) { return (await sha256hex('tag:' + key)).slice(0, 8); }
+
+  /* ------------------------------------------------ Read-only links and living people */
+
+  /**
+   * Is this person probably alive? Used to decide what readers of a read-only link may see.
+   * Errs on the side of "alive": no death date, no death place, not marked deceased, and
+   * either born less than 105 years ago or with no birth year to go on. Without a birth year
+   * we estimate one from parents (+20) and children (−15); someone whose child was born
+   * 120 years ago is not alive.
+   * @param {any} p @param {Record<string,any>} persons @param {number} nowYear
+   */
+  function isLiving(p, persons, nowYear) {
+    if (!p || p.deceased || p.deathDate || p.deathPlace) return false;
+    if ((p.events || []).some((/** @type {any} */ e) => e.type === 'Död' || e.type === 'Begravning')) return false;
+    let by = yearOf(p.birthDate);
+    if (!by) {
+      const all = Object.values(persons || {});
+      const ests = /** @type {number[]} */ ([]);
+      for (const k of ['fatherId', 'motherId']) { const q = persons[p[k]]; const y = q && yearOf(q.birthDate); if (y) ests.push(y + 20); }
+      for (const c of all) if (c.fatherId === p.id || c.motherId === p.id) { const y = yearOf(c.birthDate); if (y) ests.push(y - 15); }
+      if (ests.length) by = Math.min(...ests);
+    }
+    return !by || nowYear - by < 105;
+  }
+
+  /** The few fields a reader may see about a living person: name, birth year, family links. */
+  function redactLiving(/** @type {any} */ p) {
+    const y = yearOf(p.birthDate);
+    /** @type {any} */ const r = { kind: 'person', id: p.id, given: p.given || '', surname: p.surname || '', sex: p.sex || '',
+      birthDate: y ? String(y) : '', fatherId: p.fatherId || '', motherId: p.motherId || '', spouseIds: (p.spouseIds || []).slice(), living: true };
+    if (p.callName) r.callName = p.callName;
+    if (p.home) r.home = true;
+    if (p.createdAt) r.createdAt = p.createdAt;
+    return r;
+  }
+
+  /**
+   * Split an archive into what readers may see and what only editors may see.
+   * pub: everyone; living people reduced to name and birth year, no comments, and only
+   * places and sources that someone not living refers to. priv: the full documents for
+   * living people, the places and sources only they refer to, and all comments.
+   * @param {any} data @param {number} nowYear
+   */
+  function splitForReaders(data, nowYear) {
+    const persons = data.persons || {};
+    /** @type {any} */ const pub = { persons: {}, places: {}, sources: {}, views: { ...(data.views || {}) } };
+    /** @type {any} */ const priv = { persons: {}, places: {}, sources: {}, comments: { ...(data.comments || {}) } };
+    const usedPl = new Set(), usedSrc = new Set();
+    for (const p of Object.values(persons)) {
+      if (isLiving(p, persons, nowYear)) { priv.persons[p.id] = p; pub.persons[p.id] = redactLiving(p); continue; }
+      pub.persons[p.id] = p;
+      for (const id of [p.birthPlace, p.deathPlace, ...(p.events || []).map((/** @type {any} */ e) => e.placeId)]) if (id) usedPl.add(id);
+      for (const c of p.citations || []) if (c.sourceId) usedSrc.add(c.sourceId);
+    }
+    for (const [col, used] of /** @type {[string, Set<string>][]} */ ([['places', usedPl], ['sources', usedSrc]]))
+      for (const [id, o] of Object.entries(data[col] || {})) (used.has(id) ? pub : priv)[col][id] = o;
+    return { pub, priv };
+  }
+
+  /** Put the editors' part back on top of the readers' part. @param {any} pub @param {any} priv */
+  function joinPrivate(pub, priv) {
+    /** @type {any} */ const out = {};
+    for (const c of COLS) out[c] = { ...((pub && pub[c]) || {}), ...((priv && priv[c]) || {}) };
+    return out;
+  }
+
   /* --------------------------------------------------------------- On this day */
 
   /**
@@ -438,7 +516,7 @@
     const out = /** @type {any[]} */ ([]); const seen = new Set();
     for (const p of Object.values(persons)) {
       const b = exact(p.birthDate), dd = exact(p.deathDate);
-      const living = !p.deathDate && !!b && today.getFullYear() - b.y < 105;
+      const living = !p.deathDate && !p.deceased && !!b && today.getFullYear() - b.y < 105;
       const add = (/** @type {any} */ x, /** @type {string} */ kind, /** @type {any} */ extra = {}) => { if (!x) return; const { n, y } = next(x); if (n <= days && y > x.y) out.push({ kind, personId: p.id, year: x.y, years: y - x.y, inDays: n, living, ...extra }); };
       add(b, 'birth'); add(dd, 'death');
       for (const e of p.events || []) if (e.type === 'Vigsel') {
@@ -760,7 +838,7 @@
     };
   }
 
-  const api = { onThisDay, COLS, parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
+  const api = { onThisDay, COLS, parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret, sha256hex, keyTag, isLiving, redactLiving, splitForReaders, joinPrivate };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;

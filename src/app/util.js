@@ -1,6 +1,6 @@
 /* Släktsagan · util.js — Small helpers: DOM, escaping, ids, dates, toasts. */
-import { P } from './domain.js?v=41';
-import { ALL } from './state.js?v=41';
+import { P } from './domain.js?v=42';
+import { ALL } from './state.js?v=42';
 
 /* Släktsagan — app shell. Storage keys keep the old 'klansagan-' prefix so saved and shared trees keep working. Pure logic lives in src/core.js (window.KinCore). */
 const {yearOf,dateKey,MONTHS,fmtDate,whenText,gedDate,genitive,slugify,parseDelimited,nrm,lev,dupScore}=window.KinCore;

@@ -1,10 +1,10 @@
 /* Släktsagan · domain.js — Family logic on top of the store: names, places, relatives, ancestors, blobs and thumbnails. */
-import { loadImg } from './media.js?v=41';
-import { renderAll, select, setFocus } from './router.js?v=41';
-import { Share } from './share.js?v=41';
-import { ALL, S, applyView, bumpRev, ui } from './state.js?v=41';
-import { Store } from './store.js?v=41';
-import { NOW_Y, clone, dateKey, esc, norm, toast, uid, yearOf } from './util.js?v=41';
+import { loadImg } from './media.js?v=42';
+import { renderAll, select, setFocus } from './router.js?v=42';
+import { Share } from './share.js?v=42';
+import { ALL, S, applyView, bumpRev, ui } from './state.js?v=42';
+import { Store } from './store.js?v=42';
+import { NOW_Y, clone, dateKey, esc, norm, toast, uid, yearOf } from './util.js?v=42';
 
 /* ============ Domain helpers ============ */
 const P=id=>S.persons[id];
@@ -17,7 +17,7 @@ const givenHtml=p=>{const g=p.given||''; if(!p.callName) return esc(g); const ws
   return i<0?esc(g)+` <span class="muted">(${esc(p.callName)})</span>`:ws.map((w,j)=>j===i?`<u class="tn" title="Tilltalsnamn">${esc(w)}</u>`:esc(w)).join(' ');};
 const fullHtml=p=>ui.nameMode==='call'?esc(fullName(p)):([givenHtml(p),esc(p.surname||'')].filter(Boolean).join(' ')||'Namnlös');
 const initials=p=>{const w=[p.given,p.surname].filter(Boolean).join(' ').split(/\s+/).filter(x=>/^[A-ZÅÄÖÉŁ]/i.test(x)&&!/^(av|von|de)$/i.test(x)); return ((w[0]||'?')[0]+(w.length>1&&!/^[IVX]+$/.test(w[1])?w[1][0]:'')).toUpperCase();};
-function lifespan(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(!b&&!d) return ''; return (b||'?')+' – '+(d||(b&&NOW_Y-b<105?'':'?'));}
+function lifespan(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(!b&&!d) return p.deceased?'†':''; return (b||'?')+' – '+(d||(p.deceased?'?':b&&NOW_Y-b<105?'':'?'));}
 const sexColor=p=>p&&p.sex==='M'?'var(--male)':p&&p.sex==='K'?'var(--female)':'var(--unk)';
 const placeName=id=>id&&S.places[id]?S.places[id].name:'';
 function children(id){return Object.values(S.persons).filter(c=>c.fatherId===id||c.motherId===id).sort((a,b)=>(dateKey(a.birthDate)||9999)-(dateKey(b.birthDate)||9999));}
