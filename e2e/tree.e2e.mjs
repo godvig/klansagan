@@ -15,14 +15,14 @@ test('clicking a card keeps it in place while the tree rearranges around it', as
   const card = () => page.locator(`#treeSvg g.card[data-k="${k}"] rect.bg`);
   const before = await card().boundingBox();
   await card().click({ position: { x: before.width - 30, y: 18 } });
-  await expect.poll(() => page.evaluate(() => ui.focus)).toBe(k);
+  await expect.poll(() => page.evaluate(() => app.ui.focus)).toBe(k);
   const after = await card().boundingBox();
   expect(Math.abs(after.x - before.x) + Math.abs(after.y - before.y)).toBeLessThan(2);
 });
 
 test('the kinship path lights up in the tree', async ({ page }) => {
   await example(page, 'slaktskap');
-  await page.evaluate(() => { ui.relA = 'p_sigrid'; ui.relB = 'p_wladyslaw'; renderRel(); });
+  await page.evaluate(() => { app.ui.relA = 'p_sigrid'; app.ui.relB = 'p_wladyslaw'; app.renderRel(); });
   await expect(page.locator('#view')).toContainText('halvkusins son');
   await page.click('#relTree');
   await expect(page.locator('#relBanner')).toContainText('Władysław IV');
@@ -33,17 +33,17 @@ test('the kinship path lights up in the tree', async ({ page }) => {
 
 test('undo and redo an edit with the keyboard', async ({ page }) => {
   await example(page);
-  await page.evaluate(() => { const q = clone(P('p_karl9')); q.occupation = 'Testkung'; Store.put(q); });
+  await page.evaluate(() => { const q = app.clone(app.P('p_karl9')); q.occupation = 'Testkung'; app.Store.put(q); });
   await page.keyboard.press('Control+z');
-  await expect.poll(() => page.evaluate(() => P('p_karl9').occupation)).not.toBe('Testkung');
+  await expect.poll(() => page.evaluate(() => app.P('p_karl9').occupation)).not.toBe('Testkung');
   await page.keyboard.press('Control+Shift+z');
-  await expect.poll(() => page.evaluate(() => P('p_karl9').occupation)).toBe('Testkung');
+  await expect.poll(() => page.evaluate(() => app.P('p_karl9').occupation)).toBe('Testkung');
 });
 
 test('deleting a person with all their links is one undo step', async ({ page }) => {
   await example(page);
-  await page.evaluate(() => deletePerson('p_johan3'));
-  await expect.poll(() => page.evaluate(() => !!P('p_johan3'))).toBe(false);
+  await page.evaluate(() => app.deletePerson('p_johan3'));
+  await expect.poll(() => page.evaluate(() => !!app.P('p_johan3'))).toBe(false);
   await page.click('#undoBtn');
-  await expect.poll(() => page.evaluate(() => Object.values(ALL.persons).filter((p) => p.fatherId === 'p_johan3').length)).toBe(3);
+  await expect.poll(() => page.evaluate(() => Object.values(app.ALL.persons).filter((p) => p.fatherId === 'p_johan3').length)).toBe(3);
 });

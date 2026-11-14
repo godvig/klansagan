@@ -92,16 +92,26 @@ To import your own family, start from [`examples/slaktsagan-import-example.xlsx`
 ```
 index.html          markup shell, loads D3 + topojson from CDN
 src/core.js         pure logic: dates, GEDCOM parsing and dates, kinship terms, views, duplicate scoring, undo history
-src/app.js          UI: views, panels, import/export, storage adapters
+src/app/            the UI as ES modules, one per area:
+  main.js           everything that runs on load: header wiring, routing, start-up
+  state.js          the archive in memory, the filtered view of it, UI state
+  store.js          saving and loading, undo/redo, IndexedDB / artifact database
+  tree.js fan.js    the family tree and the fan chart
+  panel.js media.js the person panel, photos, voice memories, questions
+  share.js          end-to-end encrypted sharing, publish and merge
+  importexport.js   GEDCOM and Excel/CSV import, GEDCOM/CSV/JSON export
+  …                 timeline, map, start page, relationship, duplicates, print, views
 src/styles.css      design tokens (light + dark), layout
 fonts/              Fraunces + IBM Plex Sans (woff2, SIL OFL), served from the site itself
 data/world-50m.json Natural Earth countries (via world-atlas) for the map
 examples/           fictional import files
 tests/              Vitest suite for src/core.js
+e2e/                Playwright browser tests
+scripts/bump.mjs    bumps the asset version everywhere for a release
 ```
 
-- **No framework, no bundler.** The app is vanilla JavaScript with [D3](https://d3js.org) for the tree, fan chart, timeline and map. [SheetJS](https://sheetjs.com) and [jsPDF](https://github.com/parallax/jsPDF) load lazily, only when you import or print.
-- **Data model:** four document kinds (`person`, `place`, `source`, `view`) stored as flat JSON documents. Relationships live on the person (`fatherId`, `motherId`, `spouseIds`), and events and citations are embedded.
+- **No framework, no bundler.** The app is vanilla JavaScript, split into ES modules that the browser loads directly (every import carries the release's `?v=` so a browser never mixes two releases; `npm run bump` moves them all), with [D3](https://d3js.org) for the tree, fan chart, timeline and map. [SheetJS](https://sheetjs.com) and [jsPDF](https://github.com/parallax/jsPDF) load lazily, only when you import or print.
+- **Data model:** five document kinds (`person`, `place`, `source`, `view`, `comment`) stored as flat JSON documents. Relationships live on the person (`fatherId`, `motherId`, `spouseIds`), and events and citations are embedded.
 - **Storage adapters:**
   - IndexedDB when the app runs standalone, such as on GitHub Pages: the archive text and photos, with no 5 MB cap (archives from older versions are moved over from `localStorage` automatically). Edits made just before a tab closes are also written synchronously as an emergency copy, so nothing is lost.
   - A realtime document store with per-user attribution when it runs as a Claude artifact.
@@ -138,12 +148,12 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
+Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, browser tests in CI, the app split into ES modules, encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
 **Next, in order**
-1. Split `app.js` into modules
-2. Locked tree, step 2: add a branch by clicking someone outside it
-3. "On this day" on the start page; family book as PDF
+1. Locked tree, step 2: add a branch by clicking someone outside it
+2. "On this day" on the start page
+3. Family book as PDF
 
 **Later:** life path on the map, photo gallery on the person card, read-only share links with protection for living people, "what's new since your last visit", English UI.
 

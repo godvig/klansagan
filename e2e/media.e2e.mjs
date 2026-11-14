@@ -11,22 +11,22 @@ test('an image dropped on a tree card becomes the profile photo', async ({ page 
     const el = document.querySelector(`#treeSvg g.card[data-k="${pid}"] rect.bg`);
     for (const t of ['dragenter', 'dragover', 'drop']) el.dispatchEvent(new DragEvent(t, { bubbles: true, cancelable: true, dataTransfer: dt }));
   }, [pid, url]);
-  await expect.poll(() => page.evaluate((pid) => !!avatarUrl(P(pid)), pid), { timeout: 15000 }).toBe(true);
-  expect(await page.evaluate((pid) => !!P(pid).media[0].thumb, pid)).toBe(true);
+  await expect.poll(() => page.evaluate((pid) => !!app.avatarUrl(app.P(pid)), pid), { timeout: 15000 }).toBe(true);
+  expect(await page.evaluate((pid) => !!app.P(pid).media[0].thumb, pid)).toBe(true);
 });
 
 test('a voice memory can be recorded, saved and played', async ({ page, context }) => {
   await context.grantPermissions(['microphone']);
   await importExample(page);
-  const pid = await page.evaluate(() => Object.keys(ALL.persons)[0]);
-  await page.evaluate((pid) => { location.hash = 'trad'; select('person', pid); }, pid);
+  const pid = await page.evaluate(() => Object.keys(app.ALL.persons)[0]);
+  await page.evaluate((pid) => { location.hash = 'trad'; app.select('person', pid); }, pid);
   await page.click('[data-act=record]');
   await page.click('#recBtn');
   await page.waitForTimeout(2200);
   await page.click('#recBtn');
   await page.fill('#recT', 'Farmor berättar');
   await page.click('.ov [data-ok]');
-  await expect.poll(() => page.evaluate((pid) => (P(pid).media || []).filter(isAudio).map((m) => [m.caption, m.duration > 0]), pid)).toEqual([['Farmor berättar', true]]);
+  await expect.poll(() => page.evaluate((pid) => (app.P(pid).media || []).filter(app.isAudio).map((m) => [m.caption, m.duration > 0]), pid)).toEqual([['Farmor berättar', true]]);
   await page.click('.vm [data-play]');
   await expect.poll(() => page.evaluate(() => { const a = document.querySelector('.vm audio'); return !!a && a.currentTime > 0; })).toBe(true);
 });

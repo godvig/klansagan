@@ -4,7 +4,7 @@ test('on a phone the tabs sit at the bottom and a person opens as a sheet', asyn
   await example(page);
   const nav = await page.locator('#nav').boundingBox(), vp = page.viewportSize();
   expect(nav.y + nav.height).toBeGreaterThan(vp.height - 5);
-  await page.evaluate(() => select('person', 'p_karl9'));
+  await page.evaluate(() => app.select('person', 'p_karl9'));
   const panel = page.locator('#panel');
   await expect(panel).toHaveClass(/open/);
   const box = await panel.boundingBox();

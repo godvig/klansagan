@@ -62,7 +62,7 @@ export async function fresh(page) {
 /** Open the House of Vasa example (in memory only). */
 export async function example(page, hash = 'trad') {
   await page.goto('/#exempel');
-  await expect.poll(() => page.evaluate(() => typeof ALL !== 'undefined' ? Object.keys(ALL.persons).length : 0)).toBeGreaterThan(30);
+  await expect.poll(() => page.evaluate(() => typeof app !== 'undefined' ? Object.keys(app.ALL.persons).length : 0)).toBeGreaterThan(30);
   await page.evaluate((h) => { location.hash = h; }, hash);
 }
 /** Import the synthetic example CSV into an empty archive. */
@@ -71,7 +71,7 @@ export async function importExample(page) {
   await page.evaluate(() => { location.hash = 'import'; });
   await page.setInputFiles('#impFile', 'examples/slaktsagan-import-example.csv');
   await page.click('#impGo');
-  await expect.poll(() => page.evaluate(() => Object.keys(ALL.persons).length)).toBe(10);
+  await expect.poll(() => page.evaluate(() => Object.keys(app.ALL.persons).length)).toBe(10);
   await page.evaluate(() => document.querySelectorAll('.ov').forEach((o) => o.remove()));
 }
 /** A small synthetic JPEG drawn in the page. */
