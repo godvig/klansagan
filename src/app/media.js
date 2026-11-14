@@ -1,11 +1,11 @@
 /* Släktsagan · media.js — Photos and documents: upload, drag and drop, thumbnails, face framing, lightbox. */
-import { P, avatarMedia, avatarUrl, blobUrl, cropPct, fullName, isAudio, isImg, makeThumb, murl, shortName, storeBlob } from './domain.js?v=43';
-import { confirmBox, modal } from './modal.js?v=43';
-import { E, audioDuration, bindComments, bindVoices, recordModal, saveVoice, shrinkImage, voiceRows } from './panel.js?v=43';
-import { renderAll, select } from './router.js?v=43';
-import { ALL, S, ui } from './state.js?v=43';
-import { Hist, Store } from './store.js?v=43';
-import { $, clone, esc, genitive, toast } from './util.js?v=43';
+import { P, avatarMedia, avatarUrl, blobUrl, cropPct, fullName, isAudio, isImg, makeThumb, murl, shortName, storeBlob, thumbUrl } from './domain.js?v=44';
+import { confirmBox, modal } from './modal.js?v=44';
+import { E, audioDuration, bindComments, bindVoices, recordModal, saveVoice, shrinkImage, voiceRows } from './panel.js?v=44';
+import { renderAll, select } from './router.js?v=44';
+import { ALL, S, ui } from './state.js?v=44';
+import { Hist, Store } from './store.js?v=44';
+import { $, clone, esc, genitive, toast } from './util.js?v=44';
 
 /* ============ Photos straight onto a person ============
    Click the empty photo on a card (on a phone: take a picture or pick one), drop image
@@ -109,23 +109,52 @@ function bindMedia(){
   {const ua=pn.querySelector('#uplAudio'); if(ua) ua.onchange=async()=>{const f=ua.files[0]; if(!f) return; try{const d=await audioDuration(f); await saveVoice(o,f,{duration:d,caption:f.name.replace(/\.[^.]+$/,'')}); toast('Ljudfilen är sparad som röstminne.');}catch(e){toast('Kunde inte spara: '+(e.message||e),6000);}};}
 }
 function currentSelObj(){if(!ui.sel) return null; return ui.sel.type==='person'?P(ui.sel.id):ui.sel.type==='place'?S.places[ui.sel.id]:S.sources[ui.sel.id];}
+/**
+ * Full-screen viewer for a person's (or place's, or source's) photos and documents.
+ * Arrows, ←/→ keys and swiping step through them; voice memories about a photo play under it.
+ */
 function openLightbox(o,i){
-  const m=o.media[i]; const isImg=/^image\//.test(m.contentType||'');
-  const lb=document.createElement('div'); lb.className='lightbox';
-  lb.innerHTML=`${isImg?`<img src="${esc(murl(m))}" alt="">`:`<div style="font-size:48px">📄</div><p>${esc(m.name)}</p><a class="btn" href="${esc(murl(m))}" target="_blank" rel="noopener" style="color:var(--ink)">Öppna dokumentet</a>`}
-    ${isImg&&(o.media||[]).some(x=>isAudio(x)&&x.forImg===m.url)?`<div class="lb-voices vms">${voiceRows(o,{forImg:m.url})}</div>`:''}
-    <div class="cap">${E.canEdit?`<input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button>${isImg&&ui.sel&&ui.sel.type==='person'&&!m.profile?'<button class="btn" id="lbProf">Använd som profilbild</button>':''}${isImg&&ui.sel&&ui.sel.type==='person'?'<button class="btn" id="lbRec">🎙 Berätta om bilden</button>':''}<button class="btn danger" id="lbDel">Ta bort</button>`:`<span>${esc(m.caption||'')}</span>`}<button class="btn" id="lbClose">Stäng</button></div>`;
+  const list=(o.media||[]).map((m,j)=>[m,j]).filter(([m])=>!isAudio(m));
+  let k=Math.max(0,list.findIndex(([,j])=>j===i));
+  const lb=document.createElement('div'); lb.className='lightbox'; lb.setAttribute('role','dialog'); lb.setAttribute('aria-label','Bildvisare');
   document.body.appendChild(lb);
-  const close=()=>lb.remove();
-  lb.onclick=e=>{if(e.target===lb) close();};
-  $('#lbClose').onclick=close;
-  bindVoices(lb,o);
-  if(E.canEdit){
-    const rb=$('#lbRec'); if(rb) rb.onclick=()=>{close(); recordModal(currentSelObj(),{forImg:m.url});};
-    $('#lbSave').onclick=()=>{const c=clone(currentSelObj()); c.media[i].caption=$('#lbCap').value; Store.put(c); close();};
-    const pb=$('#lbProf'); if(pb) pb.onclick=()=>{const c=clone(currentSelObj()); c.media.forEach((x,j)=>{if(j===i) x.profile=true; else delete x.profile;}); Store.put(c); close(); toast('Profilbilden är bytt');};
-    $('#lbDel').onclick=()=>{close(); confirmBox('Ta bort filen?','Filen tas bort från arkivet för gott.','Ta bort',async()=>{const c=clone(currentSelObj()); const [rm]=c.media.splice(i,1); await Store.put(c); if(rm&&rm.assetId&&E.assets){try{await E.assets.delete(rm.assetId);}catch(e){}}});};
+  const close=()=>{lb.remove(); document.removeEventListener('keydown',onKey,true);};
+  const step=d=>{ if(list.length<2) return; k=(k+d+list.length)%list.length; show(); };
+  const onKey=e=>{ if(e.target&&e.target.id==='lbCap') { if(e.key==='Escape') close(); return; }
+    if(e.key==='ArrowRight'){e.preventDefault(); step(1);} else if(e.key==='ArrowLeft'){e.preventDefault(); step(-1);} else if(e.key==='Escape'){e.preventDefault(); close();} };
+  document.addEventListener('keydown',onKey,true);
+  function show(){
+    const [m,idx]=list[k]; const img=/^image\//.test(m.contentType||''); const many=list.length>1;
+    const forThis=img&&(o.media||[]).some(x=>isAudio(x)&&x.forImg===m.url);
+    lb.innerHTML=`<div class="lb-top"><span class="lb-count">${many?`${k+1} / ${list.length}`:''}</span><button class="lb-x" id="lbClose" aria-label="Stäng">✕</button></div>
+      <div class="lb-stage">${many?'<button class="lb-nav prev" aria-label="Föregående">‹</button>':''}
+        ${img?`<img src="${esc(murl(m))}" alt="${esc(m.caption||'')}">`:`<div class="lb-doc"><div style="font-size:48px">📄</div><p>${esc(m.name||'Dokument')}</p><a class="btn" href="${esc(murl(m))}" target="_blank" rel="noopener" style="color:var(--ink)">Öppna dokumentet</a></div>`}
+        ${many?'<button class="lb-nav next" aria-label="Nästa">›</button>':''}</div>
+      ${!E.canEdit&&m.caption?`<p class="lb-capt">${esc(m.caption)}</p>`:''}
+      ${forThis?`<div class="lb-voices vms">${voiceRows(o,{forImg:m.url})}</div>`:''}
+      ${E.canEdit?`<div class="cap"><input class="t" id="lbCap" style="width:320px;max-width:60vw" placeholder="Bildtext, t.ex. 'Konfirmation 1902'" value="${esc(m.caption||'')}"><button class="btn" id="lbSave">Spara text</button>${img&&ui.sel&&ui.sel.type==='person'&&!m.profile?'<button class="btn" id="lbProf">Använd som profilbild</button>':''}${img&&ui.sel&&ui.sel.type==='person'?'<button class="btn" id="lbRec">🎙 Berätta om bilden</button>':''}<button class="btn danger" id="lbDel">Ta bort</button></div>`:''}
+      ${many?`<div class="lb-strip">${list.map(([x],n)=>`<button class="lb-th${n===k?' on':''}" data-k="${n}" aria-label="Bild ${n+1}">${/^image\//.test(x.contentType||'')?`<img src="${esc(thumbUrl(x))}" alt="" loading="lazy">`:'📄'}</button>`).join('')}</div>`:''}`;
+    lb.querySelector('#lbClose').onclick=close;
+    const pv=lb.querySelector('.lb-nav.prev'), nx=lb.querySelector('.lb-nav.next'); if(pv) pv.onclick=()=>step(-1); if(nx) nx.onclick=()=>step(1);
+    lb.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{k=+b.dataset.k; show();});
+    {const on=lb.querySelector('.lb-th.on'); if(on&&on.scrollIntoView) on.scrollIntoView({block:'nearest',inline:'center'});}
+    bindVoices(lb,o);
+    // Load the neighbours so stepping feels instant.
+    for(const d of [1,-1]){ const n=list[(k+d+list.length)%list.length][0]; if(/^image\//.test(n.contentType||'')){const im=new Image(); im.src=murl(n);} }
+    if(E.canEdit){
+      const rb=lb.querySelector('#lbRec'); if(rb) rb.onclick=()=>{close(); recordModal(currentSelObj(),{forImg:m.url});};
+      lb.querySelector('#lbSave').onclick=()=>{const c=clone(currentSelObj()); c.media[idx].caption=lb.querySelector('#lbCap').value; Store.put(c); o=c; list[k][0]=c.media[idx]; toast('Bildtexten är sparad');};
+      const pb=lb.querySelector('#lbProf'); if(pb) pb.onclick=()=>{const c=clone(currentSelObj()); c.media.forEach((x,j)=>{if(j===idx) x.profile=true; else delete x.profile;}); Store.put(c); close(); toast('Profilbilden är bytt');};
+      lb.querySelector('#lbDel').onclick=()=>{close(); confirmBox('Ta bort filen?','Filen tas bort från arkivet för gott.','Ta bort',async()=>{const c=clone(currentSelObj()); const [rm]=c.media.splice(idx,1); await Store.put(c); if(rm&&rm.assetId&&E.assets){try{await E.assets.delete(rm.assetId);}catch(e){}}});};
+    }
   }
+  lb.onclick=e=>{if(e.target===lb||e.target.classList.contains('lb-stage')) close();};
+  // Swipe left/right on phones; a mostly vertical swipe down closes.
+  let sx=0,sy=0,st=0;
+  lb.addEventListener('touchstart',e=>{const t=e.touches[0]; sx=t.clientX; sy=t.clientY; st=Date.now();},{passive:true});
+  lb.addEventListener('touchend',e=>{const t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy; if(Date.now()-st>700) return;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) step(dx<0?1:-1); else if(dy>90&&Math.abs(dy)>Math.abs(dx)*1.5&&!(e.target.closest&&e.target.closest('.cap,.lb-strip,.lb-voices'))) close();},{passive:true});
+  show();
 }
 async function deletePerson(id){
   {const d=P(id); if(d) Hist.label('Borttagning av '+fullName(d),1500);}

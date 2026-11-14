@@ -1,7 +1,7 @@
 /* Släktsagan · pwa.js — Installing as an app. */
-import { modal } from './modal.js?v=43';
-import { renderAll } from './router.js?v=43';
-import { toast } from './util.js?v=43';
+import { modal } from './modal.js?v=44';
+import { renderAll } from './router.js?v=44';
+import { toast } from './util.js?v=44';
 
 /* ============ Install as an app (PWA) ============ */
 const PWA={prompt:null,

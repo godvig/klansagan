@@ -1,14 +1,14 @@
 /* Släktsagan · card.js — The person card page. */
-import { P, ageAt, avImg, avatarUrl, children, fullName, homePerson, initials, isAudio, isImg, lifeEvents, partners, placeName, sexColor, shortName, siblings, thumbUrl } from './domain.js?v=43';
-import { openLightbox } from './media.js?v=43';
-import { openPersonModal } from './modal.js?v=43';
-import { bindVoices, citeLinks, voiceRows } from './panel.js?v=43';
-import { personPdf } from './print.js?v=43';
-import { emptyState, setFocus } from './router.js?v=43';
-import { S, ui } from './state.js?v=43';
-import { Store } from './store.js?v=43';
-import { bindChips, chipHTML, listJoin, numw, openCard } from './theme.js?v=43';
-import { $, dateKey, esc, fmtDate, whenText, yearOf } from './util.js?v=43';
+import { P, ageAt, avImg, avatarUrl, children, fullName, homePerson, initials, isAudio, isImg, lifeEvents, partners, placeName, sexColor, shortName, siblings, thumbUrl } from './domain.js?v=44';
+import { openLightbox } from './media.js?v=44';
+import { openPersonModal } from './modal.js?v=44';
+import { bindVoices, citeLinks, voiceRows } from './panel.js?v=44';
+import { personPdf } from './print.js?v=44';
+import { emptyState, setFocus } from './router.js?v=44';
+import { S, ui } from './state.js?v=44';
+import { Store } from './store.js?v=44';
+import { bindChips, chipHTML, listJoin, numw, openCard } from './theme.js?v=44';
+import { $, dateKey, esc, fmtDate, whenText, yearOf } from './util.js?v=44';
 
 /* ============ PERSON CARD ============ */
 function storyOf(p){
@@ -62,7 +62,7 @@ function renderCard(){
     <div class="pc-grid"><div>
       <h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>
       ${imgs.some(isAudio)?`<h3>Röstminnen</h3><div class="vms">${voiceRows(p)}</div>`:''}
-      ${imgs.some(x=>!isAudio(x))?`<h3>Bilder &amp; dokument</h3><div class="gallery">${imgs.map((mm,i)=>isAudio(mm)?'':`<div class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}">${isImg(mm)?`<img src="${esc(thumbUrl(mm))}" alt="${esc(mm.caption||'')}" loading="lazy">`:'📄'}</div>`).join('')}</div>`:''}
+      ${imgs.some(x=>!isAudio(x))?`<h3>Bilder &amp; dokument</h3><div class="gallery${imgs.filter(x=>!isAudio(x)).length>=3?' feat':''}">${imgs.map((mm,i)=>isAudio(mm)?'':`<figure class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}" tabindex="0">${isImg(mm)?`<img src="${esc(thumbUrl(mm))}" alt="${esc(mm.caption||'')}" loading="lazy">`:`<span class="doc">📄<br>${esc((mm.name||'dokument').slice(0,30))}</span>`}${mm.caption?`<figcaption>${esc(mm.caption)}</figcaption>`:''}${imgs.some(x=>isAudio(x)&&x.forImg===mm.url)?'<span class="vm-mark" title="Har röstminne">🎙</span>':''}</figure>`).join('')}</div>`:''}
       <h3>Tidslinje</h3><div class="vtl">${evs.map(e=>{const y=yearOf(e.date); const age=by&&y&&e.fixed!=='birth'?y-by:null; return `<div class="it"><div class="d">${esc(fmtDate(e.date)||'okänt datum')}${age!=null&&age>=0?` · ${age} år`:''}</div><b>${esc(e.type==='Övrigt'&&e.desc?e.desc:e.type)}</b>${e.placeId?` · ${esc(placeName(e.placeId))}`:''}${e.withId&&P(e.withId)?` · med ${esc(fullName(P(e.withId)))}`:''}${e.desc&&e.type!=='Övrigt'?`<div class="muted small">${esc(e.desc)}</div>`:''}</div>`;}).join('')||'<p class="muted">Inga händelser.</p>'}</div>
       ${p.notes?`<h3>Anteckningar</h3><p style="white-space:pre-wrap;line-height:1.6">${esc(p.notes)}</p>`:''}
     </div><div>
@@ -75,7 +75,7 @@ function renderCard(){
       ${(p.citations||[]).map(c=>{const s=S.sources[c.sourceId]; return s?`<div class="cite"><b>${esc(s.title)}</b><div class="small muted">${esc([c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.ref].filter(Boolean).join(' · '))}</div>${citeLinks(c)}</div>`:'';}).join('')||'<p class="muted small">Inga källor kopplade ännu.</p>'}
     </div></div></div>`;
   bindChips(v,openCard);
-  v.querySelectorAll('[data-img]').forEach(el=>el.onclick=()=>{ui.sel={type:'person',id:p.id}; openLightbox(p,+el.dataset.img);});
+  v.querySelectorAll('[data-img]').forEach(el=>{el.onclick=()=>{ui.sel={type:'person',id:p.id}; openLightbox(p,+el.dataset.img);}; el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault(); el.onclick();}};});
   bindVoices(v,p);
   v.querySelectorAll('[data-pc]').forEach(b=>b.onclick=()=>{const a=b.dataset.pc;
     if(a==='edit') openPersonModal(p);

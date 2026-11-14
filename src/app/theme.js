@@ -1,12 +1,12 @@
 /* Släktsagan · theme.js — Themes, text size, simple mode and settings. */
-import { P, avImg, avatarUrl, fullName, homePerson, initials, lifespan, personLabel, setHome, sexColor } from './domain.js?v=43';
-import { mapState } from './map.js?v=43';
-import { modal } from './modal.js?v=43';
-import { personByLabel } from './panel.js?v=43';
-import { PWA } from './pwa.js?v=43';
-import { renderAll, setFocus } from './router.js?v=43';
-import { APP_VERSION, S, ui } from './state.js?v=43';
-import { $, esc, toast } from './util.js?v=43';
+import { P, avImg, avatarUrl, fullName, homePerson, initials, lifespan, personLabel, setHome, sexColor } from './domain.js?v=44';
+import { mapState } from './map.js?v=44';
+import { modal } from './modal.js?v=44';
+import { personByLabel } from './panel.js?v=44';
+import { PWA } from './pwa.js?v=44';
+import { renderAll, setFocus } from './router.js?v=44';
+import { APP_VERSION, S, ui } from './state.js?v=44';
+import { $, esc, toast } from './util.js?v=44';
 
 /* ============ Theme ============ */
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
