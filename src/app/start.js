@@ -1,17 +1,17 @@
 /* Släktsagan · start.js — The start page, the presentation page and separate trees. */
-import { demoActive } from './demo.js?v=44';
-import { P, ancestorsOf, descendantsOf, fullName, homePerson, personLabel, shortName } from './domain.js?v=44';
-import { findDups, mergePersons } from './dups.js?v=44';
-import { confirmBox, modal } from './modal.js?v=44';
-import { ago, commentsFor, nameColor, openQuestions, personByLabel } from './panel.js?v=44';
-import { PWA } from './pwa.js?v=44';
-import { Share } from './share.js?v=44';
-import { renderAll, setFocus } from './router.js?v=44';
-import { ALL, APP_VERSION, HIDDEN, S, activeView, ui } from './state.js?v=44';
-import { Store } from './store.js?v=44';
-import { allPersonsDatalist, bindChips, chipHTML, cssv, openCard, personPicker } from './theme.js?v=44';
-import { $, clone, esc, toast, yearOf } from './util.js?v=44';
-import { fillNames } from './views.js?v=44';
+import { demoActive } from './demo.js?v=45';
+import { P, ancestorsOf, descendantsOf, fullName, homePerson, personLabel, shortName } from './domain.js?v=45';
+import { findDups, mergePersons } from './dups.js?v=45';
+import { confirmBox, modal } from './modal.js?v=45';
+import { ago, commentsFor, nameColor, openQuestions, personByLabel } from './panel.js?v=45';
+import { PWA } from './pwa.js?v=45';
+import { Share } from './share.js?v=45';
+import { renderAll, setFocus } from './router.js?v=45';
+import { ALL, APP_VERSION, HIDDEN, S, activeView, ui } from './state.js?v=45';
+import { Store } from './store.js?v=45';
+import { allPersonsDatalist, bindChips, chipHTML, cssv, openCard, personPicker } from './theme.js?v=45';
+import { $, clone, esc, toast, yearOf } from './util.js?v=45';
+import { fillNames } from './views.js?v=45';
 
 /* ============ START ============ */
 function heroArt(){

@@ -23,3 +23,21 @@ test('the presentation page plays its film only when scrolled into view', async 
   await page.locator('.lv-video').scrollIntoViewIfNeeded();
   await expect.poll(paused).toBe(false);      // in view: plays
 });
+
+test('on a phone a relationship is shown as one chain, also over the tree', async ({ page }) => {
+  await example(page);
+  await page.evaluate(() => { app.ui.relA = 'p_ga2'; app.ui.relB = 'p_gustav1'; location.hash = 'slaktskap'; });
+  const chain = page.locator('.rel-chain-wrap .rel-chain');
+  await expect(chain).toBeVisible();
+  await expect(page.locator('.rel-cols')).toBeHidden();
+  const steps = await chain.locator('.rc-step b, .rc-link span').allTextContents();
+  expect(steps).toEqual(['Gustav II Adolf', 'son till', 'Karl IX', 'son till', 'Gustav Vasa']);
+  await page.click('#relTree');
+  const sheet = page.locator('.modal .rel-chain');
+  await expect(sheet).toBeVisible();
+  await page.click('.modal [data-x]');
+  await expect(page.locator('.ov')).toHaveCount(0);
+  await expect(page.locator('#relBanner')).toBeVisible();
+  await page.click('#relChain');
+  await expect(sheet).toBeVisible();
+});

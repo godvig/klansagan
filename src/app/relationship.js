@@ -1,11 +1,12 @@
 /* Släktsagan · relationship.js — The relationship calculator. */
-import { demoActive } from './demo.js?v=44';
-import { P, fullName, homePerson, partners, shortName } from './domain.js?v=44';
-import { personByLabel } from './panel.js?v=44';
-import { emptyState, setFocus } from './router.js?v=44';
-import { S, ui } from './state.js?v=44';
-import { allPersonsDatalist, bindChips, chipHTML, listJoin, openCard, personPicker } from './theme.js?v=44';
-import { $, blood, bloodTerm, esc, genitive, sx, toast } from './util.js?v=44';
+import { demoActive } from './demo.js?v=45';
+import { P, fullName, homePerson, partners, shortName } from './domain.js?v=45';
+import { modal } from './modal.js?v=45';
+import { personByLabel } from './panel.js?v=45';
+import { emptyState, setFocus } from './router.js?v=45';
+import { S, ui } from './state.js?v=45';
+import { allPersonsDatalist, bindChips, chipHTML, listJoin, openCard, personPicker } from './theme.js?v=45';
+import { $, blood, bloodTerm, esc, genitive, sx, toast } from './util.js?v=45';
 
 /* ============ RELATIONSHIP ============ */
 function relation(aId,bId){
@@ -26,6 +27,35 @@ function relation(aId,bId){
     return {text:t,r:r2,kind:'inlaw',via:q.id,viaSide:'a'};}}
   return {text:null};
 }
+/**
+ * The relationship as one straight chain, read top to bottom:
+ * "Astrid · dotter till · Harald · far till · Karl". Used on phones, where the tree is too wide.
+ * @returns {{ids:string[], to?:string, common?:boolean}[]}
+ */
+function relChain(aId,bId,res){
+  const childOf=id=>sx(id,'son till','dotter till','barn till');
+  const parentOf=ids=>ids.length>1?'föräldrar till':sx(ids[0],'far till','mor till','förälder till');
+  if(res.kind==='partner') return [{ids:[aId],to:(P(aId).spouseIds||[]).includes(bId)?'gift med':'partner till'},{ids:[bId]}];
+  if(!res.r) return [];
+  const r=res.r, steps=[];
+  if(res.kind==='inlaw'&&res.viaSide==='a') steps.push({ids:[aId],to:'gift med'});
+  for(const id of r.pa.slice(0,r.a)) steps.push({ids:[id],to:childOf(id)});
+  steps.push({ids:r.commons,to:r.b>0?parentOf(r.commons):'',common:r.a>0&&r.b>0});
+  const down=r.pb.slice(0,r.b).reverse();
+  down.forEach((id,i)=>steps.push({ids:[id],to:i<down.length-1?parentOf([id]):''}));
+  if(res.kind==='inlaw'&&res.viaSide==='b'){ steps[steps.length-1].to='gift med'; steps.push({ids:[bId]}); }
+  return steps;
+}
+function chainHTML(aId,bId,res){
+  const steps=relChain(aId,bId,res); if(!steps.length) return '';
+  return `<ol class="rel-chain">${steps.map(s=>`<li class="rc-step${s.common?' common':''}">${s.common?'<span class="rc-tag">gemensam ana</span>':''}${s.ids.map(id=>P(id)?chipHTML(P(id)):'').join('')}</li>${s.to?`<li class="rc-link" aria-hidden="false"><span>${esc(s.to)}</span></li>`:''}`).join('')}</ol>`;
+}
+/** The chain in a sheet over the tree, so a phone shows the whole way without zooming. */
+function relChainSheet(){
+  const h=ui.relHL; if(!h||!h.res) return;
+  modal(`<h3>${esc(h.label)}</h3>${chainHTML(h.a,h.b,h.res)}<div class="foot"><button class="btn" data-x>Visa i trädet</button></div>`,(ov,close)=>{
+    ov.querySelector('[data-x]').onclick=close; ov.querySelectorAll('[data-card]').forEach(el=>el.onclick=()=>{close(); openCard(el.dataset.card);});});
+}
 /** Open the tree around the shared ancestor and light up the chain between a and b. */
 function showRelInTree(aId,bId,res){
   const ids=new Set([aId,bId]); let top=aId, need=0, label=res.text;
@@ -34,7 +64,7 @@ function showRelInTree(aId,bId,res){
     if(res.via){ ids.add(res.via); if(res.viaSide==='b'&&r.b===0) need=Math.max(need,0); } }
   else if(res.kind==='partner'){ top=aId; }
   const commons=res.r&&res.r.commons?res.r.commons:[top];
-  ui.relHL={ids,a:aId,b:bId,commons:new Set(commons),label:`${fullName(P(bId))} är ${genitive(shortName(P(aId)))} ${label}`};
+  ui.relHL={ids,a:aId,b:bId,res,commons:new Set(commons),label:`${fullName(P(bId))} är ${genitive(shortName(P(aId)))} ${label}`};
   ui.treeLock=false; if(ui.descGen<need) ui.descGen=need; if(ui.showPartners===false&&(res.via||res.kind==='partner'||commons.length>1)) ui.showPartners=true;
   setFocus(top); ui.treeKey=null; ui.sel=null; location.hash='trad';
 }
@@ -61,7 +91,7 @@ function renderRel(){
     <div class="rel-answer">${res.text?`<div class="muted small" style="margin-bottom:6px">${res.kind==='blood'&&res.r?`${res.r.a+res.r.b} generationssteg via ${listJoin(res.r.commons.map(id=>esc(fullName(P(id)))))}`:res.kind==='inlaw'?'Släkt genom giftermål':res.kind==='partner'?'Partner':''}</div>
       <div class="big"><b>${bn}</b> är ${genitive(an)} <b>${esc(res.text)}</b>.</div>
       ${res.kind==='blood'&&res.r&&res.r.a!==res.r.b&&res.r.a>0&&res.r.b>0?`<div class="muted" style="margin-top:8px">Omvänt: ${an} är ${esc(genitive(shortName(B)))} ${esc(bloodTerm({...res.r,a:res.r.b,b:res.r.a,pa:res.r.pb,pb:res.r.pa},B.id,A.id))}.</div>`:''}
-      ${pathHTML}<div style="margin-top:16px;text-align:center"><button class="btn primary" id="relTree">🌳 Visa vägen i trädet</button></div>`
+      <div class="rel-cols">${pathHTML}</div><div class="rel-chain-wrap">${chainHTML(A.id,B.id,res)}</div><div style="margin-top:16px;text-align:center"><button class="btn primary" id="relTree">🌳 Visa vägen i trädet</button></div>`
     :`<div class="big">Ingen känd släktskap</div><p class="muted" style="margin:8px 0 0">Hittade ingen gemensam ana eller koppling via giftermål mellan ${an} och ${bn} i arkivet.</p>`}</div></div>`;
   const pick=(inp,key)=>{inp.onchange=()=>{const p=personByLabel(inp.value); if(p){ui[key]=p.id; renderRel();} else toast('Välj en person i listan');};};
   pick($('#relA'),'relA'); pick($('#relB'),'relB');
@@ -70,4 +100,4 @@ function renderRel(){
   bindChips(v,openCard);
 }
 
-export { relation, showRelInTree, renderRel };
+export { relation, relChain, chainHTML, relChainSheet, showRelInTree, renderRel };

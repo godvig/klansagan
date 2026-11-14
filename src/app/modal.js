@@ -1,10 +1,10 @@
 /* Släktsagan · modal.js — Modals and the add/edit person dialog. */
-import { P, ensurePlace, fullName, partners, personLabel, placeName } from './domain.js?v=44';
-import { personByLabel, personOptions, placeOptions } from './panel.js?v=44';
-import { renderAll, setFocus } from './router.js?v=44';
-import { S, ui } from './state.js?v=44';
-import { Store } from './store.js?v=44';
-import { clone, esc, toast, uid } from './util.js?v=44';
+import { P, ensurePlace, fullName, partners, personLabel, placeName } from './domain.js?v=45';
+import { personByLabel, personOptions, placeOptions } from './panel.js?v=45';
+import { renderAll, setFocus } from './router.js?v=45';
+import { S, ui } from './state.js?v=45';
+import { Store } from './store.js?v=45';
+import { clone, esc, toast, uid } from './util.js?v=45';
 
 /* ============ Modal ============ */
 function modal(html,onMount){

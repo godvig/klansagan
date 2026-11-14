@@ -1,18 +1,18 @@
 /* Släktsagan · tree.js — The family tree: layout, drawing, animation and the kinship highlight. */
-import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=44';
-import { pickImageFor } from './media.js?v=44';
-import { openPersonModal } from './modal.js?v=44';
-import { openCount } from './panel.js?v=44';
-import { printChart } from './print.js?v=44';
-import { relation } from './relationship.js?v=44';
-import { emptyState, renderAll, select, setFocus } from './router.js?v=44';
-import { linkModal, treeOf, trees } from './start.js?v=44';
-import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=44';
-import { Store } from './store.js?v=44';
-import { themeName } from './theme.js?v=44';
-import { $, esc, toast } from './util.js?v=44';
-import { hideModal } from './views.js?v=44';
-import { Share } from './share.js?v=44';
+import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=45';
+import { pickImageFor } from './media.js?v=45';
+import { openPersonModal } from './modal.js?v=45';
+import { openCount } from './panel.js?v=45';
+import { printChart } from './print.js?v=45';
+import { relChainSheet, relation } from './relationship.js?v=45';
+import { emptyState, renderAll, select, setFocus } from './router.js?v=45';
+import { linkModal, treeOf, trees } from './start.js?v=45';
+import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=45';
+import { Store } from './store.js?v=45';
+import { themeName } from './theme.js?v=45';
+import { $, esc, toast } from './util.js?v=45';
+import { hideModal } from './views.js?v=45';
+import { Share } from './share.js?v=45';
 
 /* ============ TREE ============ */
 const KIN_LEVELS=['Inga','Syskon','Kusiner','Sysslingar','Tremänningar','Fyrmänningar','Femmänningar','Sexmänningar','Sjumänningar','Åttamänningar','Niomänningar'];
@@ -311,8 +311,11 @@ function renderTree(fresh){
     linkSel.filter(l=>l.type==='dot').classed('hl',l=>srcs.some(q=>Math.abs(q.x-l.x)<2&&Math.abs(q.y-l.y)<2));
   }
   {let bn=$('#relBanner'); if(HL){ if(!bn){bn=document.createElement('div'); bn.id='relBanner'; $('#treeWrap').appendChild(bn);}
-      bn.innerHTML=`<span>🔗 ${esc(HL.label)}</span><button class="btn sm" id="relBack">Tillbaka</button><button class="iconbtn" id="relOff" title="Sluta markera" aria-label="Sluta markera">×</button>`;
-      $('#relOff').onclick=()=>{ui.relHL=null; renderTree();}; $('#relBack').onclick=()=>{ui.relHL=null; location.hash='slaktskap';};}
+      bn.innerHTML=`<span>🔗 ${esc(HL.label)}</span>${HL.res?'<button class="btn sm" id="relChain">Som kedja</button>':''}<button class="btn sm" id="relBack">Tillbaka</button><button class="iconbtn" id="relOff" title="Sluta markera" aria-label="Sluta markera">×</button>`;
+      $('#relOff').onclick=()=>{ui.relHL=null; renderTree();}; $('#relBack').onclick=()=>{ui.relHL=null; location.hash='slaktskap';};
+      {const c=$('#relChain'); if(c) c.onclick=relChainSheet;}
+      // On a phone the lit-up path rarely fits: show it as a chain first, with the tree behind it.
+      if(HL.res&&!HL.sheetShown&&window.matchMedia('(max-width: 700px)').matches){ HL.sheetShown=true; setTimeout(relChainSheet,250); }}
     else if(bn) bn.remove(); if(!HL) ui.relHL=null;}
   const cards=g.selectAll('g.node').data(nodes).join('g').attr('data-k',nodeKey).attr('transform',n=>`translate(${n.x-CW/2},${n.y-CH/2})`);
   const NEWS=Share.news();

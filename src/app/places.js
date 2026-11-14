@@ -1,12 +1,12 @@
 /* Släktsagan · places.js — Place and source panels. */
-import { fullName, lifeEvents } from './domain.js?v=44';
-import { mapState, renderMap } from './map.js?v=44';
-import { confirmBox, modal } from './modal.js?v=44';
-import { E, closeBtn, mediaSection } from './panel.js?v=44';
-import { select, sheetMini } from './router.js?v=44';
-import { ALL, S, ui } from './state.js?v=44';
-import { Store } from './store.js?v=44';
-import { $, SOURCE_TYPES, clone, dateKey, esc, uid } from './util.js?v=44';
+import { fullName, lifeEvents } from './domain.js?v=45';
+import { mapState, renderMap } from './map.js?v=45';
+import { confirmBox, modal } from './modal.js?v=45';
+import { E, closeBtn, mediaSection } from './panel.js?v=45';
+import { select, sheetMini } from './router.js?v=45';
+import { ALL, S, ui } from './state.js?v=45';
+import { Store } from './store.js?v=45';
+import { $, SOURCE_TYPES, clone, dateKey, esc, uid } from './util.js?v=45';
 
 /* ============ Place panel ============ */
 function placePanel(pl){
