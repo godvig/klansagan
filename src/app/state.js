@@ -1,5 +1,5 @@
 /* Släktsagan · state.js — The archive in memory (ALL), the filtered view of it (S) and UI state (ui). */
-import { computeHidden } from './util.js?v=39';
+import { computeHidden } from './util.js?v=40';
 
 /* ============ State ============ */
 const ALL={persons:{},places:{},sources:{},views:{},comments:{}};
@@ -9,7 +9,7 @@ const COLS=KinCore.COLS;
 /** Every collection of an archive-shaped object, missing ones as {} (older files and versions have no comments). */
 const cols=o=>Object.fromEntries(COLS.map(c=>[c,(o&&o[c])||{}]));
 const archiveData=()=>Object.fromEntries(COLS.map(c=>[c,ALL[c]]));
-const APP_VERSION='2026-11-14.6';
+const APP_VERSION='2026-11-14.7';
 const ui={nameMode:(()=>{try{return localStorage.getItem('sa-names')||'full';}catch(e){return 'full';}})(),simple:false,view:'trad',focus:null,sel:null,ancGen:3,descGen:2,kinDeg:2,plFilter:'alla',plSort:'namn',plQuery:'',
   tlScope:'alla',tlHist:true,mapScope:'alla',mapRoute:true,placing:null,treeKey:null,viewId:null};
 let HIDDEN=new Set();

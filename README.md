@@ -54,6 +54,7 @@ To import your own family, start from [`examples/slaktsagan-import-example.xlsx`
 - **Duplicate finder:** catches spelling variants (Gustaf/Gustav, Wasa/Vasa, Larsdtr/Larsdotter) and merges the records safely.
 - **Import:** GEDCOM 5.5 / 5.5.1 / 7 from any genealogy program (Disgen, MyHeritage, Ancestry, Geni, Holger, Legacy…), including the old ANSEL and IBM PC character sets Swedish programs used, the `*` call-name marker, dates like `ABT`/`BET … AND …`, coordinates, notes, sources with page references and marriages. A preview shows what was found before anything is saved; places and sources the archive already has are reused, and the whole import is one undoable step. Excel, CSV or cells pasted from Excel work too, with columns mapped automatically from Swedish or English headers.
 - **Export:** GEDCOM 5.5.1 (MyHeritage, Ancestry, Gramps, Disgen…), CSV and a JSON backup. The tree, fan chart and person cards print as PDF (A3/A4) or PNG.
+- **Family book:** the branch you see in the tree becomes a printable book (PDF): a cover with the focus person's photo, a table of contents, the tree as a picture, one chapter per generation, oldest first, with each person's life story, photo, family, events, voice-memory titles and sources, numbered so parents and children refer to each other, and an index of names.
 - **Collaboration:** when hosted as a Claude artifact, invited relatives edit the same tree live, and every change records who made it.
 - **Works on phones:** a bottom tab bar, a compact tree toolbar, person details as a sheet, touch zoom and pan.
 - **Easy to use:** a start page with three clear choices and a *simple mode* (big text, only Start, Tree and People) that a link can switch on with `?enkelt`. Mark yourself as "me" and kinship is counted from you. Light by default, dark mode on request.
@@ -149,12 +150,9 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 ## Roadmap
 
-Done recently: undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, browser tests in CI, the app split into ES modules, a locked tree that grows to include whoever you pick, "On this day", encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
+Done recently: a family book as PDF, undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, browser tests in CI, the app split into ES modules, a locked tree that grows to include whoever you pick, "On this day", encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
-**Next, in order**
-1. Family book as PDF
-
-**Later:** life path on the map, photo gallery on the person card, read-only share links with protection for living people, "what's new since your last visit", English UI.
+**Next:** read-only share links with protection for living people, "what's new since your last visit", life path on the map, photo gallery on the person card, English UI.
 
 ## License
 

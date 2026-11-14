@@ -1,17 +1,17 @@
 /* Släktsagan · tree.js — The family tree: layout, drawing, animation and the kinship highlight. */
-import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=39';
-import { pickImageFor } from './media.js?v=39';
-import { openPersonModal } from './modal.js?v=39';
-import { openCount } from './panel.js?v=39';
-import { printChart } from './print.js?v=39';
-import { relation } from './relationship.js?v=39';
-import { emptyState, renderAll, select, setFocus } from './router.js?v=39';
-import { linkModal, treeOf, trees } from './start.js?v=39';
-import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=39';
-import { Store } from './store.js?v=39';
-import { themeName } from './theme.js?v=39';
-import { $, esc, toast } from './util.js?v=39';
-import { hideModal } from './views.js?v=39';
+import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=40';
+import { pickImageFor } from './media.js?v=40';
+import { openPersonModal } from './modal.js?v=40';
+import { openCount } from './panel.js?v=40';
+import { printChart } from './print.js?v=40';
+import { relation } from './relationship.js?v=40';
+import { emptyState, renderAll, select, setFocus } from './router.js?v=40';
+import { linkModal, treeOf, trees } from './start.js?v=40';
+import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=40';
+import { Store } from './store.js?v=40';
+import { themeName } from './theme.js?v=40';
+import { $, esc, toast } from './util.js?v=40';
+import { hideModal } from './views.js?v=40';
 
 /* ============ TREE ============ */
 const KIN_LEVELS=['Inga','Syskon','Kusiner','Sysslingar','Tremänningar','Fyrmänningar','Femmänningar','Sexmänningar','Sjumänningar','Åttamänningar','Niomänningar'];
@@ -230,7 +230,7 @@ function renderTree(fresh){
     $('#tfName').onclick=()=>treeGoTo(ui.focus);
     $('#tOpts').onclick=e=>{const tt=e.target.closest('.tree-tools'); const o=tt.classList.toggle('open'); e.target.setAttribute('aria-expanded',o); e.target.textContent=o?'Stäng ▴':'Visa ▾';};
     $('#tLock').onclick=()=>{ui.treeLock=!ui.treeLock; toast(ui.treeLock?'Trädet är låst. Klicka på vem du vill och läs – trädet står kvar.':'Trädet är upplåst. Ett klick på en person bygger om trädet kring den personen.',4500); renderTree();};
-    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'slaktsagan-tree');
+    $('#tPrint').onclick=()=>printChart($('#treeSvg'),'Släktträd för '+fullName(P(ui.focus)),'slaktsagan-tree',{book:true});
     const svg=d3.select('#treeSvg');
     treeZoom=d3.zoom().scaleExtent([.15,2.5]).on('zoom',e=>svg.select('g.vp').attr('transform',e.transform));
     svg.call(treeZoom).on('dblclick.zoom',null);

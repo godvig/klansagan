@@ -752,3 +752,12 @@ body.dragging-files #view::after{content:'Släpp bilden på en person';position:
 .otd-what a{color:inherit;font-weight:600;text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
 .otd-what a:hover{color:var(--accent)}
 .otd+.tiles,.otd~.tiles{margin-top:26px}
+
+/* Family book */
+.book-cta{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:center;margin-top:16px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent) 8%,var(--card));border:1px solid color-mix(in srgb,var(--accent) 25%,var(--line))}
+.book-cta b{grid-column:1}
+.book-cta span{grid-column:1;font-size:13.5px;color:var(--ink2);line-height:1.45}
+.book-cta .btn{grid-column:2;grid-row:1/3}
+.bk-opts{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px}
+.bk-opts label{display:flex;gap:6px;align-items:center}
+@media (max-width:520px){.book-cta{grid-template-columns:1fr}.book-cta .btn{grid-column:1;grid-row:auto;justify-self:start;margin-top:6px}}
