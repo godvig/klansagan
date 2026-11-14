@@ -71,6 +71,9 @@ To import your own family, start from [`examples/slaktsagan-import-example.xlsx`
 - **Thumbnails:** photos get a small thumbnail when uploaded, so the tree and lists load only a few kilobytes per person; the full image is fetched when you open it.
 - **Photos framed on the face:** profile photos are centred on the face automatically (MediaPipe face detection, loaded on demand) and can be dragged and zoomed by hand.
 - **Side branches:** the tree can show siblings, cousins, second cousins and further out, packed beside the direct line. On import, use a *Tilltalsnamn* column or an asterisk (`Lars* Anders`).
+- **What's new since your last visit:** in a shared tree, the start page lists who others added, changed (and what: birth, photos, sources…) or removed, and their new questions, with who published them. Changed people carry a small *Ny*/*Ändrad* badge in the tree until you mark it as seen.
+- **Photo gallery:** the person card shows photos with their captions, the first one large, and as a swipeable strip on phones. The viewer steps through them with arrows, arrow keys, swipes and a thumbnail strip.
+- **Kinship as a chain on phones:** on a narrow screen "Hur är vi släkt?" shows the way between two people as one readable chain (*Gustav II Adolf · son till · Karl IX · son till · Gustav Vasa*), also over the tree.
 
 <details>
 <summary><b>Swedish terms used in the interface</b></summary>
@@ -154,7 +157,7 @@ To run your own: create a Supabase project, run the files in `supabase/migration
 
 Done recently: a family book as PDF, undo/redo for every change, a reminder before leaving with unpublished changes, photos dropped straight onto tree cards, backup reminders, GEDCOM import, Swedish source citations, a presentation page for first-time visitors, questions and comments per person, browser tests in CI, the app split into ES modules, a locked tree that grows to include whoever you pick, "On this day", encrypted sharing with publish and merge, version history, photo storage with thumbnails, voice memories, animated tree, kinship path in the tree, archive in IndexedDB, self-hosted fonts, phone layout, installable offline app (PWA).
 
-**Next:** "what's new since your last visit", life path on the map, photo gallery on the person card, English UI.
+**Next:** a research log per person, transcription of voice memories, English UI.
 
 ## License
 
