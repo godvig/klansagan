@@ -380,3 +380,26 @@ describe('read-only links: living people', () => {
     expect(await core.sha256hex('x')).toBe('2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881');
   });
 });
+
+describe("what's new since your last visit", () => {
+  const before = { persons: { a: { id: 'a', given: 'Karl', birthDate: '1900' }, b: { id: 'b', given: 'Berit' } }, comments: {} };
+  const base = core.hashArchive(before);
+  const after = { persons: { a: { id: 'a', given: 'Karl', birthDate: '1901', media: [{ url: 'kl:x' }], updatedAt: 'z' }, c: { id: 'c', given: 'Cecilia' } },
+    comments: { c1: { id: 'c1', by: 'Lisa', text: 'Hej' }, c2: { id: 'c2', by: 'Adam', text: 'Mitt' } } };
+
+  it('lists who was added, changed (and how) and removed, and others\' comments', () => {
+    const d = core.diffNews(base, before, after, 'Adam');
+    expect(d).toEqual({ added: ['c'], changed: { a: ['födelse', 'bilder och ljud'] }, removed: ['Berit'], comments: ['c1'] });
+  });
+
+  it('accumulates over several fetches', () => {
+    let n = core.addNews(null, core.diffNews(base, before, after, 'Adam'), ['Lisa'], '2026-11-14');
+    n = core.addNews(n, { added: [], changed: { c: ['yrke'], a: ['död'] }, removed: [], comments: [] }, ['Per'], '2026-11-15');
+    expect(n.by).toEqual(['Lisa', 'Per']);
+    expect(n.added).toEqual({ c: 1 });
+    expect(n.changed.a).toEqual(['födelse', 'bilder och ljud', 'död']);
+    expect(n.since).toBe('2026-11-14');
+    expect(core.addNews(n, { added: [], changed: {}, removed: [], comments: [] }, ['X'], 'y')).toBe(n);
+    expect(core.pruneNews(n, { persons: { a: {} }, comments: {} }).added).toEqual({});
+  });
+});

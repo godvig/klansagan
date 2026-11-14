@@ -1,17 +1,18 @@
 /* Släktsagan · tree.js — The family tree: layout, drawing, animation and the kinship highlight. */
-import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=42';
-import { pickImageFor } from './media.js?v=42';
-import { openPersonModal } from './modal.js?v=42';
-import { openCount } from './panel.js?v=42';
-import { printChart } from './print.js?v=42';
-import { relation } from './relationship.js?v=42';
-import { emptyState, renderAll, select, setFocus } from './router.js?v=42';
-import { linkModal, treeOf, trees } from './start.js?v=42';
-import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=42';
-import { Store } from './store.js?v=42';
-import { themeName } from './theme.js?v=42';
-import { $, esc, toast } from './util.js?v=42';
-import { hideModal } from './views.js?v=42';
+import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=43';
+import { pickImageFor } from './media.js?v=43';
+import { openPersonModal } from './modal.js?v=43';
+import { openCount } from './panel.js?v=43';
+import { printChart } from './print.js?v=43';
+import { relation } from './relationship.js?v=43';
+import { emptyState, renderAll, select, setFocus } from './router.js?v=43';
+import { linkModal, treeOf, trees } from './start.js?v=43';
+import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=43';
+import { Store } from './store.js?v=43';
+import { themeName } from './theme.js?v=43';
+import { $, esc, toast } from './util.js?v=43';
+import { hideModal } from './views.js?v=43';
+import { Share } from './share.js?v=43';
 
 /* ============ TREE ============ */
 const KIN_LEVELS=['Inga','Syskon','Kusiner','Sysslingar','Tremänningar','Fyrmänningar','Femmänningar','Sexmänningar','Sjumänningar','Åttamänningar','Niomänningar'];
@@ -314,6 +315,7 @@ function renderTree(fresh){
       $('#relOff').onclick=()=>{ui.relHL=null; renderTree();}; $('#relBack').onclick=()=>{ui.relHL=null; location.hash='slaktskap';};}
     else if(bn) bn.remove(); if(!HL) ui.relHL=null;}
   const cards=g.selectAll('g.node').data(nodes).join('g').attr('data-k',nodeKey).attr('transform',n=>`translate(${n.x-CW/2},${n.y-CH/2})`);
+  const NEWS=Share.news();
   cards.each(function(n){
     const el=d3.select(this), d=n.data;
     if(d.ghost){
@@ -344,6 +346,9 @@ function renderTree(fresh){
     el.append('text').attr('class','yr').attr('x',tx).attr('y',yy+(SMALL?15:20)).text(lifespan(p)||'år okänt');
     const pl=placeName(p.birthPlace)||p.occupation||''; el.append('text').attr('class','pl').attr('x',tx).attr('y',yy+(SMALL?28:37)).text(pl.length>maxc+3?pl.slice(0,maxc+2)+'…':pl);
     const nc=(p.citations||[]).length; if(!nc){el.append('circle').attr('cx',CW-11).attr('cy',11).attr('r',3.5).style('fill','var(--warn)').append('title').text('Ingen källa ännu');}
+    {const nw=NEWS&&(NEWS.added[p.id]?'Ny':NEWS.changed[p.id]?'Ändrad':''); if(nw){const g=el.append('g').attr('class','newbadge').attr('transform','translate(6,-8)');
+      g.append('rect').attr('width',nw==='Ny'?26:46).attr('height',15).attr('rx',7.5); g.append('text').attr('x',nw==='Ny'?13:23).attr('y',11).attr('text-anchor','middle').text(nw);
+      g.append('title').text(nw==='Ny'?'Ny sedan du var här senast':'Ändrad sedan du var här senast: '+(NEWS.changed[p.id]||[]).join(', '));}}
     {const oq=openCount(p.id); if(oq){const g=el.append('g').attr('class','qbadge').attr('transform',`translate(${CW-(nc?13:26)},${CH-15})`);
       g.append('path').attr('d','M-8 -6h16a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-9l-4 3v-3h-3a3 3 0 0 1-3-3v-6a3 3 0 0 1 3-3z');
       g.append('text').attr('x',0).attr('y',3).attr('text-anchor','middle').text(oq>9?'9+':oq); g.append('title').text(oq===1?'1 öppen fråga':oq+' öppna frågor');}}

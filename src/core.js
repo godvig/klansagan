@@ -483,6 +483,71 @@
     return { pub, priv };
   }
 
+  /* ------------------------------------------------ What's new since your last visit */
+
+  /** Swedish names for person fields, for "Karl: födelsedatum, bilder". */
+  const FIELD_SV = /** @type {Record<string,string>} */ ({ given: 'namn', surname: 'namn', callName: 'namn', birthDate: 'födelse', birthPlace: 'födelse',
+    deathDate: 'död', deathPlace: 'död', deceased: 'död', occupation: 'yrke', notes: 'anteckningar', story: 'berättelse', media: 'bilder och ljud',
+    events: 'händelser', citations: 'källor', fatherId: 'föräldrar', motherId: 'föräldrar', spouseIds: 'partner', sex: 'kön', home: '' });
+  const IGNORE = new Set(['updatedAt', 'updatedBy', 'createdAt', 'kind', 'id']);
+
+  /**
+   * What someone else changed between the version you last had (as hashes) and the one
+   * you just fetched. Only people and comments are reported; places and sources follow people.
+   * @param {Record<string, Record<string,string>>} baseHashes  hashArchive of the version you had
+   * @param {any} before  your copy before fetching (for the names of removed people and old field values)
+   * @param {any} after   the fetched version
+   * @param {string} me   your name, so your own comments aren't news
+   */
+  function diffNews(baseHashes, before, after, me) {
+    const bp = (baseHashes && baseHashes.persons) || {}, ap = (after && after.persons) || {}, old = (before && before.persons) || {};
+    /** @type {{added:string[], changed:Record<string,string[]>, removed:string[], comments:string[]}} */
+    const d = { added: [], changed: {}, removed: [], comments: [] };
+    for (const [id, p] of Object.entries(ap)) {
+      if (!(id in bp)) { d.added.push(id); continue; }
+      if (bp[id] === docHash(p)) continue;
+      const o = old[id] || {}, f = new Set();
+      for (const k of new Set([...Object.keys(o), ...Object.keys(p)])) {
+        if (IGNORE.has(k) || JSON.stringify(o[k] ?? null) === JSON.stringify(p[k] ?? null)) continue;
+        const l = k in FIELD_SV ? FIELD_SV[k] : 'övrigt'; if (l) f.add(l);
+      }
+      d.changed[id] = [...f];
+    }
+    for (const id of Object.keys(bp)) if (!(id in ap)) { const o = old[id]; d.removed.push(o ? [o.given, o.surname].filter(Boolean).join(' ') || 'Namnlös' : 'Någon'); }
+    const bc = (baseHashes && baseHashes.comments) || {};
+    for (const [id, c] of Object.entries((after && after.comments) || {})) if (!(id in bc) && c.by !== me) d.comments.push(id);
+    return d;
+  }
+
+  /**
+   * Add one fetch's changes to what's waiting to be seen. Someone added and then changed
+   * stays "added"; someone added and then removed disappears from the list.
+   * @param {any} news  {since, by[], added{}, changed{}, removed[], comments[]} or null
+   * @param {ReturnType<typeof diffNews>} d @param {string[]} by @param {string} at
+   */
+  function addNews(news, d, by, at) {
+    const n = news ? JSON.parse(JSON.stringify(news)) : { since: at, by: [], added: {}, changed: {}, removed: [], comments: [] };
+    const empty = !d.added.length && !Object.keys(d.changed).length && !d.removed.length && !d.comments.length;
+    if (empty) return news || null;
+    for (const b of by) if (b && !n.by.includes(b)) n.by.push(b);
+    for (const id of d.added) { n.added[id] = 1; delete n.changed[id]; }
+    for (const [id, f] of Object.entries(d.changed)) { if (n.added[id]) continue; n.changed[id] = [...new Set([...(n.changed[id] || []), ...f])]; }
+    for (const name of d.removed) n.removed.push(name);
+    n.removed = n.removed.slice(-50);
+    for (const id of d.comments) if (!n.comments.includes(id)) n.comments.push(id);
+    n.at = at;
+    return n;
+  }
+
+  /** Drop people from the news who no longer exist. @param {any} news @param {any} data */
+  function pruneNews(news, data) {
+    if (!news) return null;
+    const ps = (data && data.persons) || {}, cs = (data && data.comments) || {};
+    for (const k of ['added', 'changed']) for (const id of Object.keys(news[k])) if (!ps[id]) delete news[k][id];
+    news.comments = news.comments.filter((/** @type {string} */ id) => cs[id]);
+    return news;
+  }
+
   /** Put the editors' part back on top of the readers' part. @param {any} pub @param {any} priv */
   function joinPrivate(pub, priv) {
     /** @type {any} */ const out = {};
@@ -838,7 +903,7 @@
     };
   }
 
-  const api = { onThisDay, COLS, parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret, sha256hex, keyTag, isLiving, redactLiving, splitForReaders, joinPrivate };
+  const api = { onThisDay, COLS, parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret, sha256hex, keyTag, isLiving, redactLiving, splitForReaders, joinPrivate, diffNews, addNews, pruneNews };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;

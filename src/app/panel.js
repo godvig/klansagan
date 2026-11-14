@@ -1,16 +1,16 @@
 /* Släktsagan · panel.js — The side panel for a person: facts, family, events, sources, questions and voice memories. */
-import { P, PIXEL, ageAt, avImg, avatarUrl, blobUrl, children, ensurePlace, fullHtml, fullName, homePerson, initials, isAudio, isImg, lifeEvents, lifespan, partners, personLabel, placeName, setHome, sexColor, shortName, siblings, storeBlob, thumbUrl } from './domain.js?v=42';
-import { bindMedia, deletePerson, photoModal } from './media.js?v=42';
-import { confirmBox, modal, openPersonModal } from './modal.js?v=42';
-import { bindPlacePanel, bindSourcePanel, placePanel, sourcePanel } from './places.js?v=42';
-import { bindSheet, followPerson, renderAll, select, setFocus } from './router.js?v=42';
-import { Share, askName } from './share.js?v=42';
-import { linkModal } from './start.js?v=42';
-import { ALL, S, ui } from './state.js?v=42';
-import { Hist, Store } from './store.js?v=42';
-import { openCard } from './theme.js?v=42';
-import { $, EVENT_TYPES, SOURCE_TYPES, clone, esc, fmtDate, norm, toast, uid } from './util.js?v=42';
-import { fillNames, hideModal } from './views.js?v=42';
+import { P, PIXEL, ageAt, avImg, avatarUrl, blobUrl, children, ensurePlace, fullHtml, fullName, homePerson, initials, isAudio, isImg, lifeEvents, lifespan, partners, personLabel, placeName, setHome, sexColor, shortName, siblings, storeBlob, thumbUrl } from './domain.js?v=43';
+import { bindMedia, deletePerson, photoModal } from './media.js?v=43';
+import { confirmBox, modal, openPersonModal } from './modal.js?v=43';
+import { bindPlacePanel, bindSourcePanel, placePanel, sourcePanel } from './places.js?v=43';
+import { bindSheet, followPerson, renderAll, select, setFocus } from './router.js?v=43';
+import { Share, askName } from './share.js?v=43';
+import { linkModal } from './start.js?v=43';
+import { ALL, S, ui } from './state.js?v=43';
+import { Hist, Store } from './store.js?v=43';
+import { openCard } from './theme.js?v=43';
+import { $, EVENT_TYPES, SOURCE_TYPES, clone, esc, fmtDate, norm, toast, uid } from './util.js?v=43';
+import { fillNames, hideModal } from './views.js?v=43';
 
 /* ============ PANEL ============ */
 function renderPanel(){

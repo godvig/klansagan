@@ -1,12 +1,12 @@
 /* Släktsagan · share.js — Sharing: end-to-end encrypted trees on Supabase, publish, merge, history. */
-import { Unpub } from './backup.js?v=42';
-import { BLOB, IDB, blobRefs, fullName, homePerson, migrateInline } from './domain.js?v=42';
-import { confirmBox, modal } from './modal.js?v=42';
-import { renderAll } from './router.js?v=42';
-import { trees } from './start.js?v=42';
-import { ALL, applyView, archiveData, cols, ui } from './state.js?v=42';
-import { Hist, Store, setStatus } from './store.js?v=42';
-import { $, esc, toast } from './util.js?v=42';
+import { Unpub } from './backup.js?v=43';
+import { BLOB, IDB, blobRefs, fullName, homePerson, migrateInline } from './domain.js?v=43';
+import { confirmBox, modal } from './modal.js?v=43';
+import { renderAll } from './router.js?v=43';
+import { trees } from './start.js?v=43';
+import { ALL, applyView, archiveData, cols, ui } from './state.js?v=43';
+import { Hist, Store, setStatus } from './store.js?v=43';
+import { $, esc, toast } from './util.js?v=43';
 
 /* ============ Boot ============ */
 /* ============ SHARING (Supabase, end-to-end encrypted) ============
@@ -164,14 +164,30 @@ const Share={
     let v; try{ v=await this.fetchVersion(this.st.active,t); }catch(e){ if(e.code==='key'){ t.stale=true; this.save(); this.newer=false; this.updateStatus(); if(!quiet) toast(e.message,8000); return {conflicts:[]}; } throw e; }
     if(v.lost){ delete t.e; t.lostEdit=true; this.save(); this.applyRole(); toast('Redigeringslänken till det här trädet har bytts ut. Du kan fortfarande läsa det, men be om den nya länken för att kunna ändra.',9000); }
     const theirs=v.data;
-    const mine=this.archive(), hadLocal=this.recount()>0;
+    const mine=this.archive(), hadLocal=this.recount()>0, oldBase=t.base, oldVer=t.version;
     const {data,conflicts}=hadLocal?KinCore.merge3(t.base,mine,theirs):{data:theirs,conflicts:[]};
     Object.assign(ALL,data); Hist.clear(); t.version=v.version; t.base=KinCore.hashArchive(theirs); this.newer=false;
     t.uploaded=t.uploaded||{}; for(const [sid] of await this.blobPlan(theirs,t)) t.uploaded[sid]=1; this.save();
+    if(v.version!==oldVer) await this.noteNews(t,oldBase,mine,theirs,oldVer,v,quiet);
     applyView(); Store.saveNow(); ui.treeKey=null; renderAll(true); this.updateStatus();
     if(!quiet||conflicts.length){const by=v.meta&&v.meta.by; toast(`Hämtade version ${v.version}${by?' från '+by:''}.`+(conflicts.length?` ${conflicts.length} uppgift(er) hade ändrats av er båda – den senaste ändringen behölls.`:'')+(hadLocal?' Dina egna ändringar ligger kvar opublicerade.':''),6500);}
     return {conflicts};
   },
+  /** Remember what others changed, for "Nytt sedan sist" on the start page. */
+  async noteNews(t,oldBase,mine,theirs,oldVer,v,quiet){
+    try{
+      const d=KinCore.diffNews(oldBase,mine,theirs,this.st.name||'');
+      let by=[v.meta&&v.meta.by].filter(Boolean);
+      if(v.version-oldVer>1&&this.wkey(t)){ try{ by=(await this.history()).filter(r=>r.version>oldVer&&r.info&&r.info.by).map(r=>r.info.by).reverse(); }catch(e){} }
+      by=by.filter(b=>b!==this.st.name);
+      const before=t.news; t.news=KinCore.addNews(t.news,d,by,new Date().toISOString()); this.save();
+      if(quiet&&t.news!==before){ const n=d.added.length+Object.keys(d.changed).length; const who=by.length?by.join(' och '):'Någon';
+        toast(`${who} har publicerat ändringar${n?` (${n} ${n===1?'person':'personer'})`:''}. Se "Nytt sedan sist" på startsidan.`,7000); }
+    }catch(e){ console.warn('Kunde inte räkna fram nyheter',e); }
+  },
+  /** What's waiting to be seen in the active tree, without people who have since been removed. */
+  news(){const t=this.cur(); return t&&t.news?KinCore.pruneNews(t.news,ALL):null;},
+  seen(){const t=this.cur(); if(t){delete t.news; this.save();}},
   async publish(){
     const t=this.cur(); if(!t||this.busy) return; if(Store.demo){toast('Stäng exemplet först.');return;} if(!this.wkey(t)){toast('Du har en läslänk och kan inte publicera.');return;}
     if(!this.st.name){ const n=await askName(); if(!n) return; this.st.name=n; this.save(); }
