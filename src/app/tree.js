@@ -1,16 +1,17 @@
 /* Släktsagan · tree.js — The family tree: layout, drawing, animation and the kinship highlight. */
-import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor } from './domain.js?v=37';
-import { pickImageFor } from './media.js?v=37';
-import { openPersonModal } from './modal.js?v=37';
-import { openCount } from './panel.js?v=37';
-import { printChart } from './print.js?v=37';
-import { emptyState, renderAll, select, setFocus } from './router.js?v=37';
-import { linkModal, treeOf, trees } from './start.js?v=37';
-import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=37';
-import { Store } from './store.js?v=37';
-import { themeName } from './theme.js?v=37';
-import { $, esc, toast } from './util.js?v=37';
-import { hideModal } from './views.js?v=37';
+import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=38';
+import { pickImageFor } from './media.js?v=38';
+import { openPersonModal } from './modal.js?v=38';
+import { openCount } from './panel.js?v=38';
+import { printChart } from './print.js?v=38';
+import { relation } from './relationship.js?v=38';
+import { emptyState, renderAll, select, setFocus } from './router.js?v=38';
+import { linkModal, treeOf, trees } from './start.js?v=38';
+import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=38';
+import { Store } from './store.js?v=38';
+import { themeName } from './theme.js?v=38';
+import { $, esc, toast } from './util.js?v=38';
+import { hideModal } from './views.js?v=38';
 
 /* ============ TREE ============ */
 const KIN_LEVELS=['Inga','Syskon','Kusiner','Sysslingar','Tremänningar','Fyrmänningar','Femmänningar','Sexmänningar','Sjumänningar','Åttamänningar','Niomänningar'];
@@ -157,10 +158,39 @@ function treeLayout(F,showSp){
 }
 let treeZoom=null;
 /** Zoom the tree onto a person. If they aren't in the current tree, rebuild it around them (unless locked). */
+/* Locked tree, step 2: someone outside the locked tree was picked (from search, the panel or a link).
+   Instead of rebuilding the tree around them, grow it – more generations, wider side branches or
+   partners, same focus – until they are in it. The new branch glides in; the old view is one click away. */
+function growLockedTree(id){
+  const F=P(ui.focus); if(!F||!P(id)) return null;
+  const was={ancGen:ui.ancGen,descGen:ui.descGen,kinDeg:ui.kinDeg,showPartners:ui.showPartners};
+  const rel=relation(F.id,id), r=rel&&rel.r;
+  let a=ui.ancGen, d=ui.descGen, k=ui.kinDeg, sp=ui.showPartners!==false;
+  if(r){ a=Math.max(a,Math.min(10,r.a)); d=Math.max(d,Math.min(10,r.b-r.a)); k=Math.max(k,Math.min(KIN_LEVELS.length-1,r.a,r.b)); }
+  if(rel&&(rel.kind==='inlaw'||rel.kind==='partner')) sp=true;
+  const fits=()=>{ Object.assign(ui,{ancGen:a,descGen:d,kinDeg:k,showPartners:sp}); return treeLayout(F,sp).nodes.some(n=>n.data.p&&n.data.p.id===id); };
+  let ok=false;
+  for(let i=0;i<16;i++){ if(fits()){ok=true; break;}
+    if(!sp) sp=true; else if(k<Math.min(a,KIN_LEVELS.length-1)) k++; else if(a<10) a++; else if(d<10) d++; else break; }
+  if(!ok){ Object.assign(ui,was); return null; }
+  const ch=[]; if(a!==was.ancGen) ch.push(`anor ${was.ancGen} → ${a}`); if(d!==was.descGen) ch.push(`ättlingar ${was.descGen} → ${d}`);
+  if(k!==was.kinDeg) ch.push(`sidogrenar ${KIN_LEVELS[was.kinDeg].toLowerCase()} → ${KIN_LEVELS[k].toLowerCase()}`); if(sp&&was.showPartners===false) ch.push('partner visas');
+  return {was,changes:ch};
+}
+function reachInLockedTree(id){
+  const name=fullName(P(id)), g=growLockedTree(id);
+  if(!g){ toast(`${name} är inte släkt med ${shortName(P(ui.focus))} på ett sätt som ryms i trädet.`,7000,{label:'Bygg om runt '+shortName(P(id)),fn:()=>{ui.treeLock=false; setFocus(id); ui.treeKey=null; select('person',id); renderAll();}}); select('person',id); return; }
+  // keep the focus card where it is while the tree grows, then glide over to the new person
+  const pos=ui.treePos&&ui.treePos.get(ui.focus), el0=$('#treeSvg');
+  if(pos&&el0){ const t=d3.zoomTransform(el0); ui.treeAnchor={x:t.applyX(pos.x),y:t.applyY(pos.y),k:t.k}; }
+  ui.treeKey=null; select('person',id);
+  setTimeout(()=>{ const p2=ui.treePos&&ui.treePos.get(id); if(p2) treeGoTo(id); },750);
+  toast(`Trädet växte så att ${name} syns${g.changes.length?' ('+g.changes.join(', ')+')':''}.`,7000,{label:'Ångra',fn:()=>{Object.assign(ui,g.was); ui.treeKey=null; renderAll();}});
+}
 function treeGoTo(id){
   if(!id||!P(id)) return;
   const pos=ui.treePos&&ui.treePos.get(id);
-  if(!pos){ if(ui.treeLock){toast(`${fullName(P(id))} syns inte i det låsta trädet.`,4000);return;}
+  if(!pos){ if(ui.treeLock){ reachInLockedTree(id); return; }
     setFocus(id); ui.treeKey=null; ui.treeZoomTo=id; select('person',id); return; }
   const el0=$('#treeSvg'), t=d3.zoomTransform(el0), k=Math.max(t.k,.95), W=el0.clientWidth, H=el0.clientHeight;
   d3.select(el0).transition().duration(450).call(treeZoom.transform,d3.zoomIdentity.translate(W/2-pos.x*k,(H+50)/2-pos.y*k).scale(k));
@@ -207,6 +237,8 @@ function renderTree(fresh){
     ui.treeKey=null;
   }
   $('#tfName').textContent=fullName(F);
+  // the settings can change from elsewhere (a locked tree growing, the kinship path), so the controls follow ui
+  {const set=(sel,v)=>{const el=$(sel); if(el&&el.value!==String(v)) el.value=String(v);}; set('#tAnc',ui.ancGen); set('#tDesc',ui.descGen); set('#tKin',ui.kinDeg); const sp=$('#tSp'); if(sp) sp.checked=ui.showPartners!==false;}
   {const lb=$('#tLock'); lb.textContent=ui.treeLock?'🔒 Låst':'🔓 Lås trädet'; lb.classList.toggle('primary',!!ui.treeLock); lb.title=ui.treeLock?'Trädet står kvar när du klickar på en person. Klicka för att låsa upp.':'Lås trädet så att det står kvar när du klickar på andra personer';
    $('#treeWrap').classList.toggle('locked',!!ui.treeLock);}
   {const ts=trees(), cur=treeOf(F.id); const opts=ts.filter(t=>t.size>1||t===cur);
@@ -369,4 +401,4 @@ function renderTree(fresh){
   if(ui.treeZoomTo){const id=ui.treeZoomTo; ui.treeZoomTo=null; setTimeout(()=>treeGoTo(id),fresh?0:470);}
 }
 
-export { KIN_LEVELS, CW, CH, PX, PY, PW, PH, MAXC, SMALL, setCardSize, treeLayout, treeZoom, treeGoTo, renderTree };
+export { growLockedTree, reachInLockedTree, KIN_LEVELS, CW, CH, PX, PY, PW, PH, MAXC, SMALL, setCardSize, treeLayout, treeZoom, treeGoTo, renderTree };

@@ -47,3 +47,16 @@ test('deleting a person with all their links is one undo step', async ({ page })
   await page.click('#undoBtn');
   await expect.poll(() => page.evaluate(() => Object.values(app.ALL.persons).filter((p) => p.fatherId === 'p_johan3').length)).toBe(3);
 });
+
+test('a locked tree grows to include someone picked outside it', async ({ page }) => {
+  await example(page);
+  await page.evaluate(() => { app.ui.ancGen = 1; app.ui.kinDeg = 0; app.setFocus('p_ga2'); app.ui.treeKey = null; app.renderAll(); });
+  await page.click('#tLock');
+  await expect.poll(() => page.evaluate(() => app.ui.treeShown.has('p_gustav1'))).toBe(false);
+  await page.evaluate(() => app.followPerson('p_gustav1'));   // his grandfather, two generations up
+  await expect(page.locator('.toast')).toContainText('Trädet växte');
+  await expect.poll(() => page.evaluate(() => [app.ui.focus, app.ui.treeLock, app.ui.ancGen, app.ui.treeShown.has('p_gustav1')])).toEqual(['p_ga2', true, 2, true]);
+  await expect(page.locator('#tAnc')).toHaveValue('2');   // the control follows
+  await page.click('.toast-btn');   // "Ångra" puts the old view back
+  await expect.poll(() => page.evaluate(() => app.ui.ancGen)).toBe(1);
+});

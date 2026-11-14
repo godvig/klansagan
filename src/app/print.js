@@ -1,11 +1,11 @@
 /* Släktsagan · print.js — Printing and PDF/PNG export. */
-import { storyOf } from './card.js?v=37';
-import { P, avatarUrl, children, fullName, lifeEvents, partners, personLabel, placeName, siblings } from './domain.js?v=37';
-import { saveFile } from './importexport.js?v=37';
-import { modal } from './modal.js?v=37';
-import { S } from './state.js?v=37';
-import { applyTheme, cssv, themeName } from './theme.js?v=37';
-import { fmtDate, toast } from './util.js?v=37';
+import { storyOf } from './card.js?v=38';
+import { P, avatarUrl, children, fullName, lifeEvents, partners, personLabel, placeName, siblings } from './domain.js?v=38';
+import { saveFile } from './importexport.js?v=38';
+import { modal } from './modal.js?v=38';
+import { S } from './state.js?v=38';
+import { applyTheme, cssv, themeName } from './theme.js?v=38';
+import { fmtDate, toast } from './util.js?v=38';
 
 /* ============ PRINT / PDF ============ */
 function loadJsPDF(){return new Promise((res,rej)=>{if(window.jspdf) return res(); const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload=res; s.onerror=()=>rej(new Error('Kunde inte ladda PDF-verktyget')); document.head.appendChild(s);});}

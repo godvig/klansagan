@@ -1,22 +1,22 @@
 /* Släktsagan · router.js — Hash routing, renderAll and the empty state. */
-import { renderCard } from './card.js?v=37';
-import { loadDemo, updateDemoBar } from './demo.js?v=37';
-import { P, fullName, homePerson } from './domain.js?v=37';
-import { renderDups } from './dups.js?v=37';
-import { renderFan } from './fan.js?v=37';
-import { renderImport } from './importexport.js?v=37';
-import { mapState, renderMap } from './map.js?v=37';
-import { renderPanel } from './panel.js?v=37';
-import { renderPersons } from './persons.js?v=37';
-import { renderSources } from './places.js?v=37';
-import { renderRel } from './relationship.js?v=37';
-import { renderAbout, renderStart } from './start.js?v=37';
-import { ALL, APP_VERSION, S, activeView, applyView, ui } from './state.js?v=37';
-import { Store, updateUndoBtns } from './store.js?v=37';
-import { renderTimeline } from './timeline.js?v=37';
-import { renderTree } from './tree.js?v=37';
-import { $, esc, toast } from './util.js?v=37';
-import { updateViewBtn } from './views.js?v=37';
+import { renderCard } from './card.js?v=38';
+import { loadDemo, updateDemoBar } from './demo.js?v=38';
+import { P, homePerson } from './domain.js?v=38';
+import { renderDups } from './dups.js?v=38';
+import { renderFan } from './fan.js?v=38';
+import { renderImport } from './importexport.js?v=38';
+import { mapState, renderMap } from './map.js?v=38';
+import { renderPanel } from './panel.js?v=38';
+import { renderPersons } from './persons.js?v=38';
+import { renderSources } from './places.js?v=38';
+import { renderRel } from './relationship.js?v=38';
+import { renderAbout, renderStart } from './start.js?v=38';
+import { ALL, APP_VERSION, S, activeView, applyView, ui } from './state.js?v=38';
+import { Store, updateUndoBtns } from './store.js?v=38';
+import { renderTimeline } from './timeline.js?v=38';
+import { reachInLockedTree, renderTree } from './tree.js?v=38';
+import { $, esc, toast } from './util.js?v=38';
+import { updateViewBtn } from './views.js?v=38';
 
 /* ============ Router ============ */
 const VIEWS={om:renderAbout,start:renderStart,trad:renderTree,solfjader:renderFan,personer:renderPersons,slaktskap:renderRel,personkort:renderCard,dubbletter:renderDups,tidslinje:renderTimeline,karta:renderMap,kallor:renderSources,import:renderImport};
@@ -71,8 +71,8 @@ function showPerson(id,{focus}={}){if(focus) setFocus(id); select('person',id);}
 /* Clicking a name in the side panel moves the current view to that person. */
 function followPerson(id){
   if(ui.view==='trad'&&ui.treeLock){
-    if(ui.treeShown&&ui.treeShown.has(id)) ui.treePan=id; else toast(`${fullName(P(id))} syns inte i det låsta trädet. Lås upp trädet för att gå dit.`,4500);
-    select('person',id); return; }
+    if(ui.treeShown&&ui.treeShown.has(id)){ ui.treePan=id; select('person',id); } else reachInLockedTree(id);
+    return; }
   if(ui.view==='trad'||ui.view==='solfjader'){setFocus(id); ui.treeKey=null;}
   if(ui.view==='personkort') setFocus(id);
   if(ui.view==='slaktskap'){ui.relB=id; const h=homePerson(); if(!ui.relA||ui.relA===id) ui.relA=h&&h.id!==id?h.id:null;}
