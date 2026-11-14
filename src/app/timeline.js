@@ -1,9 +1,9 @@
 /* Släktsagan · timeline.js — The timeline. */
-import { P, fullName, lifeEvents, placeName, scopeSet, sexColor } from './domain.js?v=46';
-import { emptyState, showPerson } from './router.js?v=46';
-import { S, ui } from './state.js?v=46';
-import { cssv } from './theme.js?v=46';
-import { $, HIST, NOW_Y, dateKey, esc } from './util.js?v=46';
+import { P, fullName, lifeEvents, placeName, scopeSet, sexColor } from './domain.js?v=47';
+import { emptyState, showPerson } from './router.js?v=47';
+import { S, ui } from './state.js?v=47';
+import { cssv } from './theme.js?v=47';
+import { $, HIST, NOW_Y, dateKey, esc } from './util.js?v=47';
 
 /* ============ TIMELINE ============ */
 function renderTimeline(){

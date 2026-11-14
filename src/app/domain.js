@@ -1,10 +1,10 @@
 /* Släktsagan · domain.js — Family logic on top of the store: names, places, relatives, ancestors, blobs and thumbnails. */
-import { loadImg } from './media.js?v=46';
-import { renderAll, select, setFocus } from './router.js?v=46';
-import { Share } from './share.js?v=46';
-import { ALL, S, applyView, bumpRev, ui } from './state.js?v=46';
-import { Store } from './store.js?v=46';
-import { NOW_Y, clone, dateKey, esc, norm, toast, uid, yearOf } from './util.js?v=46';
+import { loadImg } from './media.js?v=47';
+import { renderAll, select, setFocus } from './router.js?v=47';
+import { Share } from './share.js?v=47';
+import { ALL, S, applyView, bumpRev, ui } from './state.js?v=47';
+import { Store } from './store.js?v=47';
+import { NOW_Y, clone, dateKey, esc, norm, toast, uid, yearOf } from './util.js?v=47';
 
 /* ============ Domain helpers ============ */
 const P=id=>S.persons[id];
@@ -20,7 +20,18 @@ const initials=p=>{const w=[p.given,p.surname].filter(Boolean).join(' ').split(/
 function lifespan(p){const b=yearOf(p.birthDate),d=yearOf(p.deathDate); if(!b&&!d) return p.deceased?'†':''; return (b||'?')+' – '+(d||(p.deceased?'?':b&&NOW_Y-b<105?'':'?'));}
 const sexColor=p=>p&&p.sex==='M'?'var(--male)':p&&p.sex==='K'?'var(--female)':'var(--unk)';
 const placeName=id=>id&&S.places[id]?S.places[id].name:'';
-function children(id){return Object.values(S.persons).filter(c=>c.fatherId===id||c.motherId===id).sort((a,b)=>(dateKey(a.birthDate)||9999)-(dateKey(b.birthDate)||9999));}
+/* Children by parent, rebuilt only when the set of people shown changes (applyView and
+   withAll swap S.persons for a new object, so its identity is the cache key). Walking the
+   whole archive for every children() call made one edit cost ~120 ms at 1 500 people. */
+let _kidsOf=null,_kids=new Map();
+function kidsIndex(){
+  if(_kidsOf===S.persons) return _kids;
+  const m=new Map(); for(const c of Object.values(S.persons)) for(const k of [c.fatherId,c.motherId]) if(k){ let a=m.get(k); if(!a) m.set(k,a=[]); if(!a.includes(c)) a.push(c); }
+  const key=new Map(); const k=c=>{let v=key.get(c); if(v===undefined){v=dateKey(c.birthDate)||9999; key.set(c,v);} return v;};
+  for(const a of m.values()) if(a.length>1) a.sort((x,y)=>k(x)-k(y));
+  _kidsOf=S.persons; _kids=m; return m;
+}
+function children(id){const a=kidsIndex().get(id); return a?a.slice():[];}
 function partners(p){const set=new Set(p.spouseIds||[]); for(const c of children(p.id)){const o=c.fatherId===p.id?c.motherId:c.fatherId; if(o) set.add(o);} set.delete(p.id); return [...set].map(P).filter(Boolean);}
 function siblings(p){if(!p.fatherId&&!p.motherId) return []; return Object.values(S.persons).filter(s=>s.id!==p.id&&((p.fatherId&&s.fatherId===p.fatherId)||(p.motherId&&s.motherId===p.motherId))).sort((a,b)=>(dateKey(a.birthDate)||9999)-(dateKey(b.birthDate)||9999));}
 const isImg=m=>/^image\//.test(m&&m.contentType||'');
