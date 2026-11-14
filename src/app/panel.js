@@ -1,16 +1,16 @@
 /* Släktsagan · panel.js — The side panel for a person: facts, family, events, sources, questions and voice memories. */
-import { P, PIXEL, ageAt, avImg, avatarUrl, blobUrl, children, ensurePlace, fullHtml, fullName, homePerson, initials, isAudio, isImg, lifeEvents, lifespan, partners, personLabel, placeName, setHome, sexColor, shortName, siblings, storeBlob, thumbUrl } from './domain.js?v=47';
-import { bindMedia, deletePerson, photoModal } from './media.js?v=47';
-import { confirmBox, modal, openPersonModal } from './modal.js?v=47';
-import { bindPlacePanel, bindSourcePanel, placePanel, sourcePanel } from './places.js?v=47';
-import { bindSheet, followPerson, renderAll, select, setFocus } from './router.js?v=47';
-import { Share, askName } from './share.js?v=47';
-import { linkModal } from './start.js?v=47';
-import { ALL, S, ui } from './state.js?v=47';
-import { Hist, Store } from './store.js?v=47';
-import { openCard } from './theme.js?v=47';
-import { $, EVENT_TYPES, SOURCE_TYPES, clone, esc, fmtDate, norm, toast, uid } from './util.js?v=47';
-import { fillNames, hideModal } from './views.js?v=47';
+import { P, PIXEL, ageAt, avImg, avatarUrl, blobUrl, children, ensurePlace, fullHtml, fullName, homePerson, initials, isAudio, isImg, lifeEvents, lifespan, partners, personLabel, placeName, setHome, sexColor, shortName, siblings, storeBlob, thumbUrl } from './domain.js?v=48';
+import { bindMedia, deletePerson, photoModal } from './media.js?v=48';
+import { confirmBox, modal, openPersonModal } from './modal.js?v=48';
+import { bindPlacePanel, bindSourcePanel, placePanel, sourcePanel } from './places.js?v=48';
+import { bindSheet, followPerson, renderAll, select, setFocus } from './router.js?v=48';
+import { Share, askName } from './share.js?v=48';
+import { linkModal } from './start.js?v=48';
+import { ALL, S, ui } from './state.js?v=48';
+import { Hist, Store } from './store.js?v=48';
+import { openCard } from './theme.js?v=48';
+import { $, EVENT_TYPES, SOURCE_TYPES, clone, esc, fmtDate, norm, toast, uid } from './util.js?v=48';
+import { fillNames, hideModal } from './views.js?v=48';
 
 /* ============ PANEL ============ */
 function renderPanel(){
@@ -67,16 +67,16 @@ function personPanel(p){
     ${sibs.map(s=>relRow('Syskon',s)).join('')}
     ${ed?`<div class="acts" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" data-add="partner">+ Partner</button><button class="btn sm" data-add="child">+ Barn</button><button class="btn sm" data-add="sibling">+ Syskon</button><button class="btn sm" data-act="link" title="Koppla till en person som redan finns i arkivet">🔗 Koppla till befintlig person</button></div>`:''}
   </div>
-  <div class="sec"><h4>Händelser ${ed?'<button class="btn sm" data-act="addev">+ Händelse</button>':''}</h4>
+  ${ed||evs.length?`  <div class="sec"><h4>Händelser ${ed?'<button class="btn sm" data-act="addev">+ Händelse</button>':''}</h4>
     <div id="evform"></div>
     ${evs.length?evs.map(e=>{const nc=e.id?cites.filter(c=>c.about==='event:'+e.id).length:0; return `<div class="ev"><span class="d">${esc(e.date||'–')}</span><span class="w"><b>${esc(e.type)}</b>${e.placeId?` · <a href="#" data-place="${e.placeId}">${esc(placeName(e.placeId))}</a>`:''}${e.withId&&P(e.withId)?` · med <a href="#" data-goto="${e.withId}">${esc(fullName(P(e.withId)))}</a>`:''}${e.desc?`<div class="small muted">${esc(e.desc)}</div>`:''}${nc?`<div class="small muted">📜 ${nc} källhänvisning${nc>1?'ar':''}</div>`:''}</span>
       <span>${ed&&e.id?`<button class="iconbtn" data-editev="${e.id}" title="Redigera">✎</button>`:''}</span></div>`}).join(''):'<div class="muted small">Inga händelser registrerade.</div>'}
-  </div>
-  <div class="sec cites"><h4>Källor ${ed?'<button class="btn sm" data-act="addcite">+ Källhänvisning</button>':''}</h4>
+  </div>`:''}
+  ${ed||cites.length?`  <div class="sec cites"><h4>Källor ${ed?'<button class="btn sm" data-act="addcite">+ Källhänvisning</button>':''}</h4>
     <div id="citeform"></div>
     ${cites.length?cites.map(c=>{const s=S.sources[c.sourceId]; return `<div class="cite"><div style="display:flex;gap:6px"><b data-src="${c.sourceId}" style="flex:1">${esc(s?s.title:'(borttagen källa)')}</b>${ed?`<button class="iconbtn" data-delcite="${c.id}" title="Ta bort">×</button>`:''}</div>
       <div class="small muted">${esc(aboutLabel(c.about))}${c.detail?' · '+esc(c.detail):''}${s&&s.ref&&!(c.detail||'').includes(s.ref)?' · '+esc(s.ref):''}</div>${citeLinks(c)}</div>`}).join(''):`<div class="muted small">Inga källor ännu. Koppla husförhörslängder, dopböcker m.m. så vet du var uppgifterna kommer ifrån.</div>`}
-  </div>
+  </div>`:''}
   ${commentSection(p)}
   ${voiceSection(p)}
   ${mediaSection(p)}
@@ -138,6 +138,7 @@ function voiceRows(o,{forImg,edit}={}){
       ${edit?`<button class="iconbtn" data-vedit="${i}" title="Ändra">✎</button>`:''}</div>`;}).join('');
 }
 function voiceSection(o){
+  if(!E.canEdit&&!(o.media||[]).some(isAudio)) return '';
   const n=(o.media||[]).filter(isAudio).length, ed=E.canEdit;
   if(!n&&!ed) return '';
   return `<div class="sec"><h4>Röstminnen ${ed?`<span style="display:flex;gap:6px"><button class="btn sm" data-act="record">🎙 Spela in</button><label class="btn sm" style="cursor:pointer" title="Ladda upp en ljudfil">↑ Fil<input type="file" id="uplAudio" accept="audio/*" hidden></label></span>`:''}</h4>
@@ -217,6 +218,7 @@ function recordModal(o,{forImg}={}){
   });
 }
 function mediaSection(o){
+  if(!E.canEdit&&!(o.media||[]).some(m=>!isAudio(m))) return '';
   const ed=E.canEdit; const can=ed;
   return `<div class="sec"><h4>Bilder &amp; dokument ${can?`<label class="btn sm" style="cursor:pointer">+ Ladda upp<input type="file" id="upl" multiple accept="${E.assets?'image/*,application/pdf':'image/*'}" hidden></label>`:''}</h4>
     <div id="uplprog"></div>

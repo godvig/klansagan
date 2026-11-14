@@ -1,9 +1,9 @@
 /* Släktsagan · backup.js — Backup reminders and the unpublished-changes warning. */
-import { doExport } from './importexport.js?v=47';
-import { Share } from './share.js?v=47';
-import { ALL } from './state.js?v=47';
-import { Store } from './store.js?v=47';
-import { fmtDate, toast } from './util.js?v=47';
+import { doExport } from './importexport.js?v=48';
+import { Share } from './share.js?v=48';
+import { ALL } from './state.js?v=48';
+import { Store } from './store.js?v=48';
+import { fmtDate, toast } from './util.js?v=48';
 
 /* ============ Backups ============
    A local archive lives only in this browser. Remember when a backup file was last saved,

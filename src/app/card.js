@@ -1,14 +1,14 @@
 /* Släktsagan · card.js — The person card page. */
-import { P, ageAt, avImg, avatarUrl, children, fullName, homePerson, initials, isAudio, isImg, lifeEvents, partners, placeName, sexColor, shortName, siblings, thumbUrl } from './domain.js?v=47';
-import { openLightbox } from './media.js?v=47';
-import { openPersonModal } from './modal.js?v=47';
-import { bindVoices, citeLinks, voiceRows } from './panel.js?v=47';
-import { personPdf } from './print.js?v=47';
-import { emptyState, setFocus } from './router.js?v=47';
-import { S, ui } from './state.js?v=47';
-import { Store } from './store.js?v=47';
-import { bindChips, chipHTML, listJoin, numw, openCard } from './theme.js?v=47';
-import { $, dateKey, esc, fmtDate, whenText, yearOf } from './util.js?v=47';
+import { P, ageAt, avImg, avatarUrl, children, fullName, homePerson, initials, isAudio, isImg, lifeEvents, partners, placeName, sexColor, shortName, siblings, thumbUrl } from './domain.js?v=48';
+import { openLightbox } from './media.js?v=48';
+import { openPersonModal } from './modal.js?v=48';
+import { bindVoices, citeLinks, voiceRows } from './panel.js?v=48';
+import { personPdf } from './print.js?v=48';
+import { emptyState, setFocus } from './router.js?v=48';
+import { S, ui } from './state.js?v=48';
+import { Store } from './store.js?v=48';
+import { bindChips, chipHTML, listJoin, numw, openCard } from './theme.js?v=48';
+import { $, dateKey, esc, fmtDate, whenText, yearOf } from './util.js?v=48';
 
 /* ============ PERSON CARD ============ */
 function storyOf(p){
@@ -60,7 +60,7 @@ function renderCard(){
       <div><h1>${esc(fullName(p))}</h1><div class="life">${esc([p.birthDate?'* '+fmtDate(p.birthDate):'',p.deathDate?'† '+fmtDate(p.deathDate):''].filter(Boolean).join('   '))}${p.occupation?`<br>${esc(p.occupation)}`:''}</div>
       <div class="acts">${Store.canEdit?'<button class="btn" data-pc="edit">Redigera</button>':''}<button class="btn" data-pc="tree">Visa i trädet</button><button class="btn" data-pc="fan">Solfjäder</button><button class="btn" data-pc="rel">Hur är vi släkt?</button><button class="btn" data-pc="pdf">⎙ Skriv ut / PDF</button></div></div></div>
     <div class="pc-grid"><div>
-      <h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>
+      ${story||Store.canEdit?`<h3>Livsberättelse</h3><p class="story">${story?esc(story):'<span class="muted">Lägg till datum, platser och händelser så skrivs en berättelse automatiskt.</span>'}</p>`:''}
       ${imgs.some(isAudio)?`<h3>Röstminnen</h3><div class="vms">${voiceRows(p)}</div>`:''}
       ${imgs.some(x=>!isAudio(x))?`<h3>Bilder &amp; dokument</h3><div class="gallery${imgs.filter(x=>!isAudio(x)).length>=3?' feat':''}">${imgs.map((mm,i)=>isAudio(mm)?'':`<figure class="m" data-img="${i}" title="${esc(mm.caption||mm.name||'')}" tabindex="0">${isImg(mm)?`<img src="${esc(thumbUrl(mm))}" alt="${esc(mm.caption||'')}" loading="lazy">`:`<span class="doc">📄<br>${esc((mm.name||'dokument').slice(0,30))}</span>`}${mm.caption?`<figcaption>${esc(mm.caption)}</figcaption>`:''}${imgs.some(x=>isAudio(x)&&x.forImg===mm.url)?'<span class="vm-mark" title="Har röstminne">🎙</span>':''}</figure>`).join('')}</div>`:''}
       <h3>Tidslinje</h3><div class="vtl">${evs.map(e=>{const y=yearOf(e.date); const age=by&&y&&e.fixed!=='birth'?y-by:null; return `<div class="it"><div class="d">${esc(fmtDate(e.date)||'okänt datum')}${age!=null&&age>=0?` · ${age} år`:''}</div><b>${esc(e.type==='Övrigt'&&e.desc?e.desc:e.type)}</b>${e.placeId?` · ${esc(placeName(e.placeId))}`:''}${e.withId&&P(e.withId)?` · med ${esc(fullName(P(e.withId)))}`:''}${e.desc&&e.type!=='Övrigt'?`<div class="muted small">${esc(e.desc)}</div>`:''}</div>`;}).join('')||'<p class="muted">Inga händelser.</p>'}</div>
@@ -71,8 +71,8 @@ function renderCard(){
       ${parts.map(sp=>{const ck=kids.filter(c=>c.fatherId===sp.id||c.motherId===sp.id); return `<div class="fam-group"><h5>${(p.spouseIds||[]).includes(sp.id)?(sp.sex==='K'?'Hustru':sp.sex==='M'?'Make':'Partner'):'Partner'}</h5><div class="recent" style="grid-template-columns:1fr">${chipHTML(sp)}</div>${ck.length?`<h5 style="margin-top:8px">Barn (${ck.length})</h5><div class="recent" style="grid-template-columns:1fr">${ck.map(c=>chipHTML(c)).join('')}</div>`:''}</div>`;}).join('')}
       ${(()=>{const solo=kids.filter(c=>!parts.some(sp=>c.fatherId===sp.id||c.motherId===sp.id)); return solo.length?`<div class="fam-group"><h5>Barn</h5><div class="recent" style="grid-template-columns:1fr">${solo.map(c=>chipHTML(c)).join('')}</div></div>`:'';})()}
       ${sibs.length?`<div class="fam-group"><h5>Syskon (${sibs.length})</h5><div class="recent" style="grid-template-columns:1fr">${sibs.map(c=>chipHTML(c)).join('')}</div></div>`:''}
-      <h3 style="margin-top:22px">Källor</h3>
-      ${(p.citations||[]).map(c=>{const s=S.sources[c.sourceId]; return s?`<div class="cite"><b>${esc(s.title)}</b><div class="small muted">${esc([c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.ref].filter(Boolean).join(' · '))}</div>${citeLinks(c)}</div>`:'';}).join('')||'<p class="muted small">Inga källor kopplade ännu.</p>'}
+      ${Store.canEdit||(p.citations||[]).some(c=>S.sources[c.sourceId])?`      <h3 style="margin-top:22px">Källor</h3>
+      ${(p.citations||[]).map(c=>{const s=S.sources[c.sourceId]; return s?`<div class="cite"><b>${esc(s.title)}</b><div class="small muted">${esc([c.about&&!c.about.startsWith('event:')?c.about:'',c.detail,s.ref].filter(Boolean).join(' · '))}</div>${citeLinks(c)}</div>`:'';}).join('')||'<p class="muted small">Inga källor kopplade ännu.</p>'}`:''}
     </div></div></div>`;
   bindChips(v,openCard);
   v.querySelectorAll('[data-img]').forEach(el=>{el.onclick=()=>{ui.sel={type:'person',id:p.id}; openLightbox(p,+el.dataset.img);}; el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault(); el.onclick();}};});

@@ -36,6 +36,7 @@ test('a read-only link shows living people as name and birth year, and cannot pu
   await B.evaluate((pid) => { location.hash = 'trad'; app.select('person', pid); }, pid);
   await expect(B.locator('#panel')).toContainText('Personen lever');
   await expect(B.locator('#panel')).not.toContainText('Redigera');
+  for (const t of ['Inga källor', 'Inga filer', 'Inga händelser', 'Spela in', 'Ladda upp']) await expect(B.locator('#panel')).not.toContainText(t);
 
   // Even the raw payload, decrypted with the read key, holds nothing more.
   const raw = await B.evaluate(async () => { const t = app.Share.cur(); const r = (await app.Share.rpc('kl_get', { tree: app.Share.st.active }))[0]; return JSON.stringify(await KinCore.decryptJSON(r.payload, t.r)); });
