@@ -741,3 +741,14 @@ body.dragging-files #view::after{content:'Släpp bilden på en person';position:
 .qrow:hover{border-color:var(--accent)}
 .qrow .qbody{display:flex;flex-direction:column;gap:2px;min-width:0}
 .qrow .qbody>span{color:var(--ink2);line-height:1.45}
+
+/* "Den här dagen" on the start page */
+.otd{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.otd-row{display:flex;gap:14px;padding:10px 14px;border-top:1px solid var(--line);align-items:baseline}
+.otd-row:first-child{border-top:none}
+.otd-row.today{background:color-mix(in srgb,var(--accent) 8%,var(--card))}
+.otd-when{flex:none;width:86px;font-size:13px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.otd-row.today .otd-when{color:var(--accent);font-weight:700}
+.otd-what a{color:inherit;font-weight:600;text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+.otd-what a:hover{color:var(--accent)}
+.otd+.tiles,.otd~.tiles{margin-top:26px}

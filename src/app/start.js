@@ -1,16 +1,16 @@
 /* Släktsagan · start.js — The start page, the presentation page and separate trees. */
-import { demoActive } from './demo.js?v=38';
-import { P, ancestorsOf, descendantsOf, fullName, homePerson, personLabel, shortName } from './domain.js?v=38';
-import { findDups, mergePersons } from './dups.js?v=38';
-import { confirmBox, modal } from './modal.js?v=38';
-import { ago, commentsFor, nameColor, openQuestions, personByLabel } from './panel.js?v=38';
-import { PWA } from './pwa.js?v=38';
-import { renderAll, setFocus } from './router.js?v=38';
-import { ALL, APP_VERSION, HIDDEN, S, activeView, ui } from './state.js?v=38';
-import { Store } from './store.js?v=38';
-import { allPersonsDatalist, bindChips, chipHTML, cssv, openCard, personPicker } from './theme.js?v=38';
-import { $, clone, esc, toast, yearOf } from './util.js?v=38';
-import { fillNames } from './views.js?v=38';
+import { demoActive } from './demo.js?v=39';
+import { P, ancestorsOf, descendantsOf, fullName, homePerson, personLabel, shortName } from './domain.js?v=39';
+import { findDups, mergePersons } from './dups.js?v=39';
+import { confirmBox, modal } from './modal.js?v=39';
+import { ago, commentsFor, nameColor, openQuestions, personByLabel } from './panel.js?v=39';
+import { PWA } from './pwa.js?v=39';
+import { renderAll, setFocus } from './router.js?v=39';
+import { ALL, APP_VERSION, HIDDEN, S, activeView, ui } from './state.js?v=39';
+import { Store } from './store.js?v=39';
+import { allPersonsDatalist, bindChips, chipHTML, cssv, openCard, personPicker } from './theme.js?v=39';
+import { $, clone, esc, toast, yearOf } from './util.js?v=39';
+import { fillNames } from './views.js?v=39';
 
 /* ============ START ============ */
 function heroArt(){
@@ -59,6 +59,18 @@ function renderAbout(){
     </div><div class="hero-art">${heroArt()}</div></div>${landingMore()}<p class="muted small" style="text-align:center;margin-top:-8px">Version ${esc(APP_VERSION)}</p></div>`;
   bindLanding(v);
 }
+/** "Den här dagen": birthdays (living relatives turning N), death days and wedding days, today and the coming two weeks. */
+function onThisDayHTML(){
+  const items=KinCore.onThisDay(S.persons,new Date(),{days:13}).filter(x=>P(x.personId)).slice(0,6); if(!items.length) return '';
+  const wd=['sön','mån','tis','ons','tors','fre','lör'], mo=['jan','feb','mars','april','maj','juni','juli','aug','sep','okt','nov','dec'];
+  const when=n=>{ if(n===0) return 'I dag'; if(n===1) return 'I morgon'; const d=new Date(); d.setDate(d.getDate()+n); return `${wd[d.getDay()]} ${d.getDate()} ${mo[d.getMonth()]}`; };
+  const nm=id=>`<a href="#" data-otd="${esc(id)}">${esc(fullName(P(id)))}</a>`;
+  const line=x=>{ const w=x.withId&&P(x.withId);
+    if(x.kind==='birth') return x.living?`🎂 ${nm(x.personId)} fyller <b>${x.years}</b>`:`${nm(x.personId)} föddes ${x.year} – för ${x.years} år sedan`;
+    if(x.kind==='death') return `${nm(x.personId)} dog ${x.year} – för ${x.years} år sedan`;
+    return x.living?`💍 ${nm(x.personId)}${w?' och '+nm(w.id):''} har bröllopsdag – <b>${x.years}</b> år`:`${nm(x.personId)}${w?' och '+nm(w.id):''} gifte sig ${x.year} – för ${x.years} år sedan`; };
+  return `<h2 class="sec-t">Den här dagen</h2><div class="otd">${items.map(x=>`<div class="otd-row${x.inDays===0?' today':''}"><span class="otd-when">${when(x.inDays)}</span><span class="otd-what">${line(x)}</span></div>`).join('')}</div>`;
+}
 function renderStart(){
   const v=$('#view'); const all=Object.values(S.persons);
   const ed=Store.canEdit;
@@ -102,6 +114,7 @@ function renderStart(){
       <div class="hero-links">${demoActive()?'':'<a href="#" onclick="loadDemo();return false">👑 Titta på exemplet Vasaätten</a>'}${ui.simple?'<a href="#" onclick="applySimple(false);renderAll(true);return false">Visa alla funktioner</a>':'<a href="#" onclick="applySimple(true);applySize(true);renderAll(true);return false">Enkelt läge</a>'}<a href="#" onclick="settingsModal();return false">Inställningar</a>${PWA.can()?'<a href="#" onclick="PWA.install();return false">📲 Installera som app</a>':''}</div>
     </div><div class="hero-art">${heroArt()}</div></div>
     ${treesSection()}
+    ${onThisDayHTML()}
     <div class="tiles">${tiles.map(([h,ic,t,d])=>`<a class="tile" href="${h}"><span class="ic">${ic}</span><b>${t}</b><span>${d}</span></a>`).join('')}</div>
     ${(()=>{const qs=openQuestions().sort((a,b)=>(b.at||'').localeCompare(a.at||'')); if(!qs.length) return '';
       return `<h2 class="sec-t">Öppna frågor <span class="muted" style="font-weight:400">· ${qs.length}</span></h2><div class="qlist">${qs.slice(0,6).map(c=>{const p=P(c.personId); const nr=commentsFor(c.personId).filter(r=>r.replyTo===c.id).length;
@@ -110,6 +123,7 @@ function renderStart(){
     <div class="recent">${recent.map(p=>chipHTML(p,p.updatedBy&&Store.user?`av <span data-uid="${esc(p.updatedBy)}">…</span>`:'')).join('')}</div>
     ${activeView()?`<p class="small muted" style="margin-top:18px">Du tittar på vyn <b>${esc(activeView().name)}</b> – ${HIDDEN.size} personer är dolda. Byt vy uppe till höger.</p>`:''}</div>`;
   bindChips(v,openCard); fillNames(v); bindTrees(v);
+  v.querySelectorAll('[data-otd]').forEach(a=>a.onclick=e=>{e.preventDefault(); openCard(a.dataset.otd);});
   v.querySelectorAll('[data-q]').forEach(a=>a.onclick=e=>{e.preventDefault(); setFocus(a.dataset.q); ui.sel={type:'person',id:a.dataset.q}; location.hash='trad'; setTimeout(()=>{const el=document.querySelector('#panel .comments'); if(el) el.scrollIntoView({block:'start',behavior:'smooth'});},350);});
 }
 
@@ -217,4 +231,4 @@ function linkPersons(a,rel,b){
   return 'Okänd koppling';
 }
 
-export { heroArt, REPO_URL, landingMore, bindLanding, renderAbout, renderStart, _treesKey, _trees, trees, treeOf, crossTreeDups, treesSection, bindTrees, LINK_REL, linkModal, linkPersons };
+export { onThisDayHTML, heroArt, REPO_URL, landingMore, bindLanding, renderAbout, renderStart, _treesKey, _trees, trees, treeOf, crossTreeDups, treesSection, bindTrees, LINK_REL, linkModal, linkPersons };

@@ -1,10 +1,10 @@
 /* Släktsagan · map.js — The map. */
-import { P, lifeEvents, scopeSet } from './domain.js?v=38';
-import { E } from './panel.js?v=38';
-import { select } from './router.js?v=38';
-import { S, ui } from './state.js?v=38';
-import { Store } from './store.js?v=38';
-import { $, clone, esc, genitive, toast } from './util.js?v=38';
+import { P, lifeEvents, scopeSet } from './domain.js?v=39';
+import { E } from './panel.js?v=39';
+import { select } from './router.js?v=39';
+import { S, ui } from './state.js?v=39';
+import { Store } from './store.js?v=39';
+import { $, clone, esc, genitive, toast } from './util.js?v=39';
 
 /* ============ MAP ============ */
 const mapState={world:null,loading:false,drawn:false,proj:null,zoom:null,k:1,focusPlace:null};

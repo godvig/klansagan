@@ -1,13 +1,13 @@
 /* Släktsagan · importexport.js — Excel/CSV and GEDCOM import, export (GEDCOM, CSV, JSON backup). */
-import { Backup } from './backup.js?v=38';
-import { exitDemo } from './demo.js?v=38';
-import { P, blobId, blobUrl, ensurePlace, fullName, partners, personLabel, placeName } from './domain.js?v=38';
-import { confirmBox, modal } from './modal.js?v=38';
-import { E } from './panel.js?v=38';
-import { renderAll, setFocus } from './router.js?v=38';
-import { ALL, COLS, KIND, S, ui, withAll } from './state.js?v=38';
-import { Hist, Store } from './store.js?v=38';
-import { $, clone, dateKey, esc, gedDate, norm, parseDelimited, toast, uid, yearOf } from './util.js?v=38';
+import { Backup } from './backup.js?v=39';
+import { exitDemo } from './demo.js?v=39';
+import { P, blobId, blobUrl, ensurePlace, fullName, partners, personLabel, placeName } from './domain.js?v=39';
+import { confirmBox, modal } from './modal.js?v=39';
+import { E } from './panel.js?v=39';
+import { renderAll, setFocus } from './router.js?v=39';
+import { ALL, COLS, KIND, S, ui, withAll } from './state.js?v=39';
+import { Hist, Store } from './store.js?v=39';
+import { $, clone, dateKey, esc, gedDate, norm, parseDelimited, toast, uid, yearOf } from './util.js?v=39';
 
 /* ============ IMPORT / EXPORT ============ */
 const FIELDS=[

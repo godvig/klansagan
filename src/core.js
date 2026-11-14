@@ -412,6 +412,44 @@
     return b64u(new Uint8Array(await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('klansagan-write'))));
   }
 
+  /* --------------------------------------------------------------- On this day */
+
+  /**
+   * Birthdays, death days and wedding days falling today or within the next `days` days.
+   * Only exact dates count ("1850-03-14", not "ca 1850" or "1850-03"). Someone with no death
+   * date born less than 105 years ago is treated as living ("fyller 34"). 29 February is
+   * remembered on the 28th in other years. Weddings are listed once per couple.
+   * @param {Record<string,any>} persons @param {Date} today @param {{days?:number}} [opts]
+   * @returns {{kind:'birth'|'death'|'wedding', personId:string, withId?:string, year:number, years:number, inDays:number, living:boolean}[]}
+   */
+  function onThisDay(persons, today, { days = 13 } = {}) {
+    const t0 = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const exact = (/** @type {any} */ d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || '').trim()); return m ? { y: +m[1], m: +m[2], d: +m[3] } : null; };
+    const leap = (/** @type {number} */ y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    /** days from today to the next occurrence of month/day, and the year it falls in */
+    const next = (/** @type {{m:number,d:number}} */ x) => {
+      for (const y of [today.getFullYear(), today.getFullYear() + 1]) {
+        const d = x.m === 2 && x.d === 29 && !leap(y) ? 28 : x.d;
+        const n = Math.round((Date.UTC(y, x.m - 1, d) - t0) / 864e5);
+        if (n >= 0) return { n, y };
+      }
+      return { n: 999, y: today.getFullYear() };
+    };
+    const out = /** @type {any[]} */ ([]); const seen = new Set();
+    for (const p of Object.values(persons)) {
+      const b = exact(p.birthDate), dd = exact(p.deathDate);
+      const living = !p.deathDate && !!b && today.getFullYear() - b.y < 105;
+      const add = (/** @type {any} */ x, /** @type {string} */ kind, /** @type {any} */ extra = {}) => { if (!x) return; const { n, y } = next(x); if (n <= days && y > x.y) out.push({ kind, personId: p.id, year: x.y, years: y - x.y, inDays: n, living, ...extra }); };
+      add(b, 'birth'); add(dd, 'death');
+      for (const e of p.events || []) if (e.type === 'Vigsel') {
+        const key = [p.id, e.withId || ''].sort().join('|') + '|' + e.date; if (seen.has(key)) continue; seen.add(key);
+        const w = e.withId && persons[e.withId]; const both = !p.deathDate && (!w || !w.deathDate);
+        add(exact(e.date), 'wedding', { withId: e.withId, living: both && !!exact(e.date) && today.getFullYear() - exact(e.date).y < 80 });
+      }
+    }
+    return out.sort((a, b) => a.inDays - b.inDays || (b.living ? 1 : 0) - (a.living ? 1 : 0) || a.year - b.year);
+  }
+
   /* ------------------------------------------------- Swedish source citations */
 
   /** County letters used in Swedish church-record references, e.g. "Röke (L)". */
@@ -722,7 +760,7 @@
     };
   }
 
-  const api = { COLS, parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
+  const api = { onThisDay, COLS, parseSwedishCitation, seriesType, COUNTY, parseGedcom, decodeGedcom, fromGedDate, sourceType, createHistory, yearOf, dateKey, MONTHS, fmtDate, whenText, gedDate, genitive, slugify, parseDelimited, nrm, lev, dupScore, computeHidden, upMap, blood, bloodTerm, components, docHash, hashArchive, merge3, b64u, unb64u, newKey, encryptJSON, decryptJSON, writeSecret };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   // @ts-ignore — browser global
   root.KinCore = api;

@@ -318,3 +318,22 @@ describe('Swedish source citations', () => {
   });
   it('ignores other text', () => { expect(p('Muntligt från moster Lena')).toBeNull(); expect(p('')).toBeNull(); });
 });
+
+describe('onThisDay', () => {
+  const ps = {
+    a: { id: 'a', birthDate: '1990-11-14' },                            // living, birthday today
+    b: { id: 'b', birthDate: '1594-12-09', deathDate: '1632-11-16' },  // died 16 Nov
+    c: { id: 'c', birthDate: 'ca 1850-11-14' },                        // not exact
+    d: { id: 'd', birthDate: '1888-02-29', deathDate: '1950-01-01' },
+    e: { id: 'e', events: [{ type: 'Vigsel', date: '1960-11-20', withId: 'f' }] },
+    f: { id: 'f', events: [{ type: 'Vigsel', date: '1960-11-20', withId: 'e' }] },
+  };
+  it('lists today first, then the coming days, once per wedding', () => {
+    const r = core.onThisDay(ps, new Date(2026, 10, 14));
+    expect(r.map((x) => [x.kind, x.personId, x.inDays, x.years, x.living])).toEqual([
+      ['birth', 'a', 0, 36, true], ['death', 'b', 2, 394, false], ['wedding', 'e', 6, 66, true]]);
+  });
+  it('remembers 29 February on the 28th in other years', () => {
+    expect(core.onThisDay(ps, new Date(2027, 1, 28), { days: 0 }).map((x) => x.personId)).toEqual(['d']);
+  });
+});
