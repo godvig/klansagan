@@ -1,16 +1,16 @@
 /* Släktsagan · start.js — The start page, the presentation page and separate trees. */
-import { demoActive } from './demo.js?v=40';
-import { P, ancestorsOf, descendantsOf, fullName, homePerson, personLabel, shortName } from './domain.js?v=40';
-import { findDups, mergePersons } from './dups.js?v=40';
-import { confirmBox, modal } from './modal.js?v=40';
-import { ago, commentsFor, nameColor, openQuestions, personByLabel } from './panel.js?v=40';
-import { PWA } from './pwa.js?v=40';
-import { renderAll, setFocus } from './router.js?v=40';
-import { ALL, APP_VERSION, HIDDEN, S, activeView, ui } from './state.js?v=40';
-import { Store } from './store.js?v=40';
-import { allPersonsDatalist, bindChips, chipHTML, cssv, openCard, personPicker } from './theme.js?v=40';
-import { $, clone, esc, toast, yearOf } from './util.js?v=40';
-import { fillNames } from './views.js?v=40';
+import { demoActive } from './demo.js?v=41';
+import { P, ancestorsOf, descendantsOf, fullName, homePerson, personLabel, shortName } from './domain.js?v=41';
+import { findDups, mergePersons } from './dups.js?v=41';
+import { confirmBox, modal } from './modal.js?v=41';
+import { ago, commentsFor, nameColor, openQuestions, personByLabel } from './panel.js?v=41';
+import { PWA } from './pwa.js?v=41';
+import { renderAll, setFocus } from './router.js?v=41';
+import { ALL, APP_VERSION, HIDDEN, S, activeView, ui } from './state.js?v=41';
+import { Store } from './store.js?v=41';
+import { allPersonsDatalist, bindChips, chipHTML, cssv, openCard, personPicker } from './theme.js?v=41';
+import { $, clone, esc, toast, yearOf } from './util.js?v=41';
+import { fillNames } from './views.js?v=41';
 
 /* ============ START ============ */
 function heroArt(){
@@ -65,11 +65,13 @@ function onThisDayHTML(){
   const wd=['sön','mån','tis','ons','tors','fre','lör'], mo=['jan','feb','mars','april','maj','juni','juli','aug','sep','okt','nov','dec'];
   const when=n=>{ if(n===0) return 'I dag'; if(n===1) return 'I morgon'; const d=new Date(); d.setDate(d.getDate()+n); return `${wd[d.getDay()]} ${d.getDate()} ${mo[d.getMonth()]}`; };
   const nm=id=>`<a href="#" data-otd="${esc(id)}">${esc(fullName(P(id)))}</a>`;
-  const line=x=>{ const w=x.withId&&P(x.withId);
-    if(x.kind==='birth') return x.living?`🎂 ${nm(x.personId)} fyller <b>${x.years}</b>`:`${nm(x.personId)} föddes ${x.year} – för ${x.years} år sedan`;
-    if(x.kind==='death') return `${nm(x.personId)} dog ${x.year} – för ${x.years} år sedan`;
-    return x.living?`💍 ${nm(x.personId)}${w?' och '+nm(w.id):''} har bröllopsdag – <b>${x.years}</b> år`:`${nm(x.personId)}${w?' och '+nm(w.id):''} gifte sig ${x.year} – för ${x.years} år sedan`; };
-  return `<h2 class="sec-t">Den här dagen</h2><div class="otd">${items.map(x=>`<div class="otd-row${x.inDays===0?' today':''}"><span class="otd-when">${when(x.inDays)}</span><span class="otd-what">${line(x)}</span></div>`).join('')}</div>`;
+  const on=n=>{ if(n===0) return ' i dag'; if(n===1) return ' i morgon'; const d=new Date(); d.setDate(d.getDate()+n); return n<7?` på ${['söndag','måndag','tisdag','onsdag','torsdag','fredag','lördag'][d.getDay()]}`:` den ${d.getDate()} ${mo[d.getMonth()]}`; };
+  const line=x=>{ const w=x.withId&&P(x.withId), ago=x.inDays===0?'i dag för':'för';
+    if(x.kind==='birth') return x.living?`🎂 ${nm(x.personId)} fyller <b>${x.years}</b>${on(x.inDays)}`:`${nm(x.personId)} föddes ${x.year} – ${ago} ${x.years} år sedan`;
+    if(x.kind==='death') return `${nm(x.personId)} dog ${x.year} – ${ago} ${x.years} år sedan`;
+    return x.living?`💍 ${nm(x.personId)}${w?' och '+nm(w.id):''} har bröllopsdag${on(x.inDays)} – <b>${x.years}</b> år`:`${nm(x.personId)}${w?' och '+nm(w.id):''} gifte sig ${x.year} – ${ago} ${x.years} år sedan`; };
+  const head=items.every(x=>x.inDays===0)?'Den här dagen':'I dag och de närmaste dagarna';
+  return `<h2 class="sec-t">${head}</h2><div class="otd">${items.map(x=>`<div class="otd-row${x.inDays===0?' today':''}"><span class="otd-when">${when(x.inDays)}</span><span class="otd-what">${line(x)}</span></div>`).join('')}</div>`;
 }
 function renderStart(){
   const v=$('#view'); const all=Object.values(S.persons);

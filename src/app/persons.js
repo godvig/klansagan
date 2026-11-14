@@ -1,9 +1,9 @@
 /* Släktsagan · persons.js — The person list. */
-import { P, ancestorsOf, fullName, placeName, sexColor, shortName } from './domain.js?v=40';
-import { emptyState, showPerson } from './router.js?v=40';
-import { DATA_REV, S, ui } from './state.js?v=40';
-import { Store } from './store.js?v=40';
-import { $, dateKey, esc, norm, yearOf } from './util.js?v=40';
+import { P, ancestorsOf, fullName, placeName, sexColor, shortName } from './domain.js?v=41';
+import { emptyState, showPerson } from './router.js?v=41';
+import { DATA_REV, S, ui } from './state.js?v=41';
+import { Store } from './store.js?v=41';
+import { $, dateKey, esc, norm, yearOf } from './util.js?v=41';
 
 /* ============ PERSONS ============ */
 function renderPersons(fresh){

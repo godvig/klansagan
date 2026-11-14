@@ -1,11 +1,11 @@
 /* Släktsagan · relationship.js — The relationship calculator. */
-import { demoActive } from './demo.js?v=40';
-import { P, fullName, homePerson, partners, shortName } from './domain.js?v=40';
-import { personByLabel } from './panel.js?v=40';
-import { emptyState, setFocus } from './router.js?v=40';
-import { S, ui } from './state.js?v=40';
-import { allPersonsDatalist, bindChips, chipHTML, listJoin, openCard, personPicker } from './theme.js?v=40';
-import { $, blood, bloodTerm, esc, genitive, sx, toast } from './util.js?v=40';
+import { demoActive } from './demo.js?v=41';
+import { P, fullName, homePerson, partners, shortName } from './domain.js?v=41';
+import { personByLabel } from './panel.js?v=41';
+import { emptyState, setFocus } from './router.js?v=41';
+import { S, ui } from './state.js?v=41';
+import { allPersonsDatalist, bindChips, chipHTML, listJoin, openCard, personPicker } from './theme.js?v=41';
+import { $, blood, bloodTerm, esc, genitive, sx, toast } from './util.js?v=41';
 
 /* ============ RELATIONSHIP ============ */
 function relation(aId,bId){

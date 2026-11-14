@@ -1,11 +1,11 @@
 /* Släktsagan · media.js — Photos and documents: upload, drag and drop, thumbnails, face framing, lightbox. */
-import { P, avatarMedia, avatarUrl, blobUrl, cropPct, fullName, isAudio, isImg, makeThumb, murl, shortName, storeBlob } from './domain.js?v=40';
-import { confirmBox, modal } from './modal.js?v=40';
-import { E, audioDuration, bindComments, bindVoices, recordModal, saveVoice, shrinkImage, voiceRows } from './panel.js?v=40';
-import { renderAll, select } from './router.js?v=40';
-import { ALL, S, ui } from './state.js?v=40';
-import { Hist, Store } from './store.js?v=40';
-import { $, clone, esc, genitive, toast } from './util.js?v=40';
+import { P, avatarMedia, avatarUrl, blobUrl, cropPct, fullName, isAudio, isImg, makeThumb, murl, shortName, storeBlob } from './domain.js?v=41';
+import { confirmBox, modal } from './modal.js?v=41';
+import { E, audioDuration, bindComments, bindVoices, recordModal, saveVoice, shrinkImage, voiceRows } from './panel.js?v=41';
+import { renderAll, select } from './router.js?v=41';
+import { ALL, S, ui } from './state.js?v=41';
+import { Hist, Store } from './store.js?v=41';
+import { $, clone, esc, genitive, toast } from './util.js?v=41';
 
 /* ============ Photos straight onto a person ============
    Click the empty photo on a card (on a phone: take a picture or pick one), drop image
