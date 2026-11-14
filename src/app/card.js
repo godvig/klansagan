@@ -1,14 +1,14 @@
 /* Släktsagan · card.js — The person card page. */
-import { P, ageAt, avImg, avatarUrl, children, fullName, homePerson, initials, isAudio, isImg, lifeEvents, partners, placeName, sexColor, shortName, siblings, thumbUrl } from './domain.js?v=45';
-import { openLightbox } from './media.js?v=45';
-import { openPersonModal } from './modal.js?v=45';
-import { bindVoices, citeLinks, voiceRows } from './panel.js?v=45';
-import { personPdf } from './print.js?v=45';
-import { emptyState, setFocus } from './router.js?v=45';
-import { S, ui } from './state.js?v=45';
-import { Store } from './store.js?v=45';
-import { bindChips, chipHTML, listJoin, numw, openCard } from './theme.js?v=45';
-import { $, dateKey, esc, fmtDate, whenText, yearOf } from './util.js?v=45';
+import { P, ageAt, avImg, avatarUrl, children, fullName, homePerson, initials, isAudio, isImg, lifeEvents, partners, placeName, sexColor, shortName, siblings, thumbUrl } from './domain.js?v=46';
+import { openLightbox } from './media.js?v=46';
+import { openPersonModal } from './modal.js?v=46';
+import { bindVoices, citeLinks, voiceRows } from './panel.js?v=46';
+import { personPdf } from './print.js?v=46';
+import { emptyState, setFocus } from './router.js?v=46';
+import { S, ui } from './state.js?v=46';
+import { Store } from './store.js?v=46';
+import { bindChips, chipHTML, listJoin, numw, openCard } from './theme.js?v=46';
+import { $, dateKey, esc, fmtDate, whenText, yearOf } from './util.js?v=46';
 
 /* ============ PERSON CARD ============ */
 function storyOf(p){

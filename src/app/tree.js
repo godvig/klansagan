@@ -1,18 +1,18 @@
 /* Släktsagan · tree.js — The family tree: layout, drawing, animation and the kinship highlight. */
-import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=45';
-import { pickImageFor } from './media.js?v=45';
-import { openPersonModal } from './modal.js?v=45';
-import { openCount } from './panel.js?v=45';
-import { printChart } from './print.js?v=45';
-import { relChainSheet, relation } from './relationship.js?v=45';
-import { emptyState, renderAll, select, setFocus } from './router.js?v=45';
-import { linkModal, treeOf, trees } from './start.js?v=45';
-import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=45';
-import { Store } from './store.js?v=45';
-import { themeName } from './theme.js?v=45';
-import { $, esc, toast } from './util.js?v=45';
-import { hideModal } from './views.js?v=45';
-import { Share } from './share.js?v=45';
+import { P, avatarMedia, avatarUrl, children, cropPct, fullName, homePerson, initials, lifespan, partners, placeName, sexColor, shortName } from './domain.js?v=46';
+import { pickImageFor } from './media.js?v=46';
+import { openPersonModal } from './modal.js?v=46';
+import { openCount } from './panel.js?v=46';
+import { printChart } from './print.js?v=46';
+import { relChainSheet, relation } from './relationship.js?v=46';
+import { emptyState, renderAll, select, setFocus } from './router.js?v=46';
+import { linkModal, treeOf, trees } from './start.js?v=46';
+import { DATA_REV, HIDDEN, S, activeView, ui } from './state.js?v=46';
+import { Store } from './store.js?v=46';
+import { themeName } from './theme.js?v=46';
+import { $, esc, toast } from './util.js?v=46';
+import { hideModal } from './views.js?v=46';
+import { Share } from './share.js?v=46';
 
 /* ============ TREE ============ */
 const KIN_LEVELS=['Inga','Syskon','Kusiner','Sysslingar','Tremänningar','Fyrmänningar','Femmänningar','Sexmänningar','Sjumänningar','Åttamänningar','Niomänningar'];
@@ -366,7 +366,24 @@ function renderTree(fresh){
       if(o){const sx=o.x+dx, sy=o.y+dy; if(Math.abs(sx-n.x)+Math.abs(sy-n.y)<1) return; changed=true;
         el.attr('transform',`translate(${sx-CW/2},${sy-CH/2})`).transition('glide').duration(DUR).ease(ease).attr('transform',`translate(${n.x-CW/2},${n.y-CH/2})`);}
       else {changed=true; el.style('opacity',0).transition('glide').delay(DUR*.55).duration(DUR*.6).style('opacity',1).on('end interrupt',function(){this.style.opacity='';});}});
-    if(changed){ linkSel.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null);
+    if(changed){
+    // Lines glide with the cards: every point of a line is moved back by how much the
+    // nearest card moved, then slides to its place. Lines touching a new card fade in instead.
+    const moved=nodes.map(n=>{const o=was.get(nodeKey(n)); return o?{x:n.x,y:n.y,dx:n.x-(o.x+dx),dy:n.y-(o.y+dy)}:{x:n.x,y:n.y,none:true};});
+    const near=(x,y)=>{let b=moved[0],bd=Infinity; for(const m of moved){const e=(m.x-x)**2+(m.y-y)**2; if(e<bd){bd=e;b=m;}} return b;};
+    const pt=q=>({x:q.x,y:q.y,mid:q.mid});
+    const oldLink=l=>{
+      if(l.type==='cp'){const a=near(l.x1,l.y),b=near(l.x2,l.y); return a.none||b.none?null:{...l,x1:l.x1-a.dx,x2:l.x2-b.dx,y:l.y-a.dy};}
+      if(l.type==='dot'){const a=near(l.x,l.y); return a.none?null:{...l,x:l.x-a.dx,y:l.y-a.dy};}
+      const a=near(l.s.x,l.s.y),b=near(l.t.x,l.t.y); if(a.none||b.none) return null;
+      return {...l,s:{...pt(l.s),x:l.s.x-a.dx,y:l.s.y-a.dy},t:{x:l.t.x-b.dx,y:l.t.y-b.dy},my:l.my-(a.dy+b.dy)/2};};
+    const lerp=(o,l,k)=>{const f=(u,v)=>u+(v-u)*k;
+      if(l.type==='cp') return {...l,x1:f(o.x1,l.x1),x2:f(o.x2,l.x2),y:f(o.y,l.y)};
+      if(l.type==='dot') return {...l,x:f(o.x,l.x),y:f(o.y,l.y)};
+      return {...l,s:{...pt(l.s),x:f(o.s.x,l.s.x),y:f(o.s.y,l.s.y)},t:{x:f(o.t.x,l.t.x),y:f(o.t.y,l.t.y)},my:f(o.my,l.my)};};
+    linkSel.each(function(l){ const o=oldLink(l), el=d3.select(this);
+      if(!o){ el.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null); return; }
+      el.attr('d',lp(o)).transition('glide').duration(DUR).ease(ease).attrTween('d',()=>k=>lp(lerp(o,l,k))); });
     labels.style('opacity',0).transition('glide').delay(DUR*.7).duration(DUR*.5).style('opacity',null);
     // cards that leave the view fade out where they were
     const ex=g.insert('g',':first-child').attr('class','exiting').attr('pointer-events','none');

@@ -1,13 +1,13 @@
 /* Släktsagan · views.js — Views that hide branches. */
-import { P, fullName, personLabel } from './domain.js?v=45';
-import { mapState } from './map.js?v=45';
-import { confirmBox, modal } from './modal.js?v=45';
-import { personByLabel } from './panel.js?v=45';
-import { renderAll } from './router.js?v=45';
-import { Share, shareTreeModal } from './share.js?v=45';
-import { ALL, HIDDEN, activeView, applyView, ui, viewCounts, withAll } from './state.js?v=45';
-import { Store } from './store.js?v=45';
-import { $, clone, computeHidden, esc, genitive, slugify, toast, uid } from './util.js?v=45';
+import { P, fullName, personLabel } from './domain.js?v=46';
+import { mapState } from './map.js?v=46';
+import { confirmBox, modal } from './modal.js?v=46';
+import { personByLabel } from './panel.js?v=46';
+import { renderAll } from './router.js?v=46';
+import { Share, shareTreeModal } from './share.js?v=46';
+import { ALL, HIDDEN, activeView, applyView, ui, viewCounts, withAll } from './state.js?v=46';
+import { Store } from './store.js?v=46';
+import { $, clone, computeHidden, esc, genitive, slugify, toast, uid } from './util.js?v=46';
 
 /* ============ Views (dölj/visa) & sharing ============ */
 const ARTIFACT_URL='https://claude.ai/artifact/JvGs2s1WF8hstNwPqi7SW1';

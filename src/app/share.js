@@ -1,12 +1,12 @@
 /* Släktsagan · share.js — Sharing: end-to-end encrypted trees on Supabase, publish, merge, history. */
-import { Unpub } from './backup.js?v=45';
-import { BLOB, IDB, blobRefs, fullName, homePerson, migrateInline } from './domain.js?v=45';
-import { confirmBox, modal } from './modal.js?v=45';
-import { renderAll } from './router.js?v=45';
-import { trees } from './start.js?v=45';
-import { ALL, applyView, archiveData, cols, ui } from './state.js?v=45';
-import { Hist, Store, setStatus } from './store.js?v=45';
-import { $, esc, toast } from './util.js?v=45';
+import { Unpub } from './backup.js?v=46';
+import { BLOB, IDB, blobRefs, fullName, homePerson, migrateInline } from './domain.js?v=46';
+import { confirmBox, modal } from './modal.js?v=46';
+import { renderAll } from './router.js?v=46';
+import { trees } from './start.js?v=46';
+import { ALL, applyView, archiveData, cols, ui } from './state.js?v=46';
+import { Hist, Store, setStatus } from './store.js?v=46';
+import { $, esc, toast } from './util.js?v=46';
 
 /* ============ Boot ============ */
 /* ============ SHARING (Supabase, end-to-end encrypted) ============
